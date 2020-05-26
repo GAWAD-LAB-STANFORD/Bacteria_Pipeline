@@ -101,7 +101,7 @@ echo "### Aligning reads to contigs ### - END: $(date)"
 
 echo "### Collecting contig alignment metrics ### - START: $(date)"
 gatk --java-options "-XX:+UseParallelGC -XX:ParallelGCThreads=4 -Xmx64g" CollectAlignmentSummaryMetrics \
-    -R $REF_FASTA -I ${SAMPLE}_contig_aligned.bam -O ${SAMPLE}${CONTIG_ALIGNMENT_METRICS_SUFFIX}
+    -R ${SAMPLE}${CONTIGS_SUFFIX} -I ${SAMPLE}_contig_aligned.bam -O ${SAMPLE}${CONTIG_ALIGNMENT_METRICS_SUFFIX}
 echo "### Collecting contig alignment metrics ### - END: $(date)"
 
 echo "### Exporting summarized and contig read targets from BAM ### - START: $(date)"
