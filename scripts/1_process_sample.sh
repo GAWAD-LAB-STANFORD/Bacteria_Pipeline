@@ -23,7 +23,7 @@ HUMAN_ALIGNMENT_METRICS_SUFFIX=${13}
 CONTIG_ALIGNMENT_METRICS_SUFFIX=${14}
 NCBI_BLAST_TOOL_DIR=${15}
 MASK_LOW_COMPLEXITY=${16}
-TRIMMOMATIC_DIR=${17}
+TOOLS_DIR=${17}
 
 echo -e "START: $(date)\nBacteria Pipeline\nFastq dir: $FASTQ_DIR\nResults dir: $RESULTS_DIR"
 cd $RESULTS_DIR
@@ -38,7 +38,7 @@ export PATH=${KRAKEN_TOOL_DIR}:$PATH
 echo "Sample: $SAMPLE"
 
 echo "### Trimming fastqs ### - START: $(date)"
-java -jar ${TRIMMOMATIC_DIR}/trimmomatic-0.35.jar PE -phred33 -trimlog \
+java -jar ${TOOLS_DIR}/Trimmomatic-0.35/trimmomatic-0.35.jar PE -phred33 -trimlog \
     ${SAMPLE}_trimmomatic_log.txt ${FASTQ_DIR}/${SAMPLE}${R1_SUFFIX} ${FASTQ_DIR}/${SAMPLE}${R2_SUFFIX} \
     ${SAMPLE}_trimmed${R1_SUFFIX} ${SAMPLE}_unpaired_trimmed${R1_SUFFIX} \
     ${SAMPLE}_trimmed${R2_SUFFIX} ${SAMPLE}_unpaired_trimmed${R2_SUFFIX} \

@@ -61,6 +61,7 @@ while [ "$1" != "" ]; do
     shift
 done
 REFERENCE_DIR="/oak/stanford/groups/cgawad/Reference_Files/GATK_Resource_Bundle_hg38"
+TOOLS_DIR="/oak/stanford/groups/cgawad/Sequencing_Analysis_Tools"
 REF_FASTA="${REFERENCE_DIR}/Homo_sapiens_assembly38.fasta"
 SCRIPT_DIR="${PIPELINE_DIR}/scripts"
 # Intermediate prefixes and suffixes
@@ -81,7 +82,6 @@ BLAST_DB_TYPES="nt-plasmid-viral"
 NCBI_BLAST_TOOL_DIR="/oak/stanford/groups/cgawad/Sequencing_Analysis_Tools/ncbi-blast-2.10.0+"
 NCBI_DB_DIR_PREFIX="/oak/stanford/groups/cgawad/Reference_Files/NCBI_RefSeq_Databases/ncbi_database_"
 NCBI_ANNOTATIONS_DIR="/oak/stanford/groups/cgawad/Reference_Files/NCBI_Annotations"
-TRIMMOMATIC_DIR="/oak/stanford/groups/cgawad/Sequencing_Analysis_Tools/Trimmomatic-0.35"
 # Consolidated metric files
 SAMPLE_READ_COUNTS="${PROJECT}.sample_read_counts.tsv"
 KRAKEN_DATA_SUFFIX=".kraken_reports.tsv"
@@ -163,7 +163,7 @@ SAMPLE_JOB=$(sbatch --parsable --wait -e $STD_ERR_OUT_DIR/%A_%a_%x.err -o $STD_E
     $CONTIGS_SUFFIX $SUMMED_READ_TARGETS_SUFFIX $CONTIGS_READ_TARGETS_SUFFIX \
     $KRAKEN_TOOL_DIR $KRAKEN_DB_TYPES $KRAKEN_DB_DIR_PREFIX $KRAKEN_REPORT_SUFFIX \
     $HUMAN_ALIGNMENT_METRICS_SUFFIX $CONTIG_ALIGNMENT_METRICS_SUFFIX $NCBI_BLAST_TOOL_DIR \
-    $MASK_LOW_COMPLEXITY $TRIMMOMATIC_DIR)
+    $MASK_LOW_COMPLEXITY $TOOLS_DIR)
 echo "Submitted batch job $SAMPLE_JOB"
 if [ $(ls *${CONTIGS_SUFFIX} | wc -l) -eq 0 ]; then
     echo "No contig files found. Exiting with code 1"
