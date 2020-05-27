@@ -13,13 +13,13 @@ args <- commandArgs(trailingOnly = TRUE)
 project <- args[1]
 sample_read_count_filename <- args[2]
 summed_read_targets_filename <- args[3]
-contig_read_targets_filename <- args[3]
-contig_data_filename <- args[4]
-kraken_db_types <- unlist(strsplit(args[5], "-"))
-kraken_jtree_suffix <- args[6]
-blast_db_types <- unlist(strsplit(args[7], "-"))
-blast_results_suffix <- args[8]
-ncbi_annotations_dir <- args[9]
+contig_read_targets_filename <- args[4]
+contig_data_filename <- args[5]
+kraken_db_types <- unlist(strsplit(args[6], "-"))
+kraken_jtree_suffix <- args[7]
+blast_db_types <- unlist(strsplit(args[8], "-"))
+blast_results_suffix <- args[9]
+ncbi_annotations_dir <- args[10]
 
 
 # Common themes and functions ------------------------------------------------------
