@@ -132,21 +132,20 @@ if [ $MASK_LOW_COMPLEXITY -eq 1 ]; then
     echo "### Marking low complexity regions in contigs ### - END: $(date)"
 fi
 
-if [ -f ${SAMPLE}_no_human_vs_kraken.tsv ]; then
-    echo -e "END: $(date)\nRuntime: $(($(date +%s)-$START_TIME)) seconds"
-    rm ${SAMPLE}_trimmed${R1_SUFFIX} ${SAMPLE}_trimmed${R2_SUFFIX}
-    rm ${SAMPLE}_unpaired_trimmed${R1_SUFFIX} ${SAMPLE}_unpaired_trimmed${R2_SUFFIX}
-    rm -r contigs_${SAMPLE} 
-    rm ${SAMPLE}${CONTIGS_SUFFIX}.amb ${SAMPLE}${CONTIGS_SUFFIX}.ann ${SAMPLE}${CONTIGS_SUFFIX}.bwt
-    rm ${SAMPLE}${CONTIGS_SUFFIX}.pac ${SAMPLE}${CONTIGS_SUFFIX}.sa
-    rm ${SAMPLE}_R1.sai ${SAMPLE}_R2.sai
-    rm ${SAMPLE}_human_aligned.bam* ${SAMPLE}_no_human.bam* ${SAMPLE}_contig_aligned.bam*
-    rm ${SAMPLE}_temp_contig_read_targets.txt
-    rm ${SAMPLE}_no_human${R1_SUFFIX} ${SAMPLE}_no_human${R2_SUFFIX}
-    rm ${SAMPLE}_any_mapping_to_human_query_names.txt
-    rm ${SAMPLE}_no_human_vs_kraken.tsv
-    exit 0
-else
+if [ ! -f ${SAMPLE}_no_human_vs_kraken.tsv ]; then
     echo "Final file ${SAMPLE}_no_human_vs_kraken.tsv not found. Exiting with code 1"
     exit 1
 fi
+rm ${SAMPLE}_trimmomatic_log.txt
+rm ${SAMPLE}_trimmed${R1_SUFFIX} ${SAMPLE}_trimmed${R2_SUFFIX}
+rm ${SAMPLE}_unpaired_trimmed${R1_SUFFIX} ${SAMPLE}_unpaired_trimmed${R2_SUFFIX}
+rm -r contigs_${SAMPLE} 
+rm ${SAMPLE}${CONTIGS_SUFFIX}.amb ${SAMPLE}${CONTIGS_SUFFIX}.ann ${SAMPLE}${CONTIGS_SUFFIX}.bwt
+rm ${SAMPLE}${CONTIGS_SUFFIX}.pac ${SAMPLE}${CONTIGS_SUFFIX}.sa
+rm ${SAMPLE}_R1.sai ${SAMPLE}_R2.sai
+rm ${SAMPLE}_human_aligned.bam* ${SAMPLE}_no_human.bam* ${SAMPLE}_contig_aligned.bam*
+rm ${SAMPLE}_temp_contig_read_targets.txt
+rm ${SAMPLE}_no_human${R1_SUFFIX} ${SAMPLE}_no_human${R2_SUFFIX}
+rm ${SAMPLE}_any_mapping_to_human_query_names.txt
+rm ${SAMPLE}_no_human_vs_kraken.tsv
+echo -e "END: $(date)\nRuntime: $(($(date +%s)-$START_TIME)) seconds"

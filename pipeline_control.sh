@@ -304,14 +304,13 @@ Rscript ${SCRIPT_DIR}/analyze_and_plot_results.R \
 echo "### Processing contamination and BLAST results ### - END: $(date)"
 
 
-if [ -f ${PROJECT}.${BLAST_DB_TYPES_ARRAY[0]}${BLAST_DATA_SUFFIX} ]; then
-    echo -e "END: $(date)\nRuntime: $(($(date +%s)-$START_TIME)) seconds"
-    rm ${READ_COUNT_FILENAMES[@]} ${PROJECT}.*${KRAKEN_JTREE_SUFFIX}
-    rm ${KRAKEN_REPORT_FILENAMES[@]} ${CONTIGS_FILENAMES[@]} 
-    rm ${SUMMED_READ_TARGETS_FILENAMES[@]} ${CONTIG_READ_TARGETS_FILENAMES[@]}
-    rm ${HUMAN_ALIGNMENT_METRICS_FILENAMES[@]} ${CONTIG_ALIGNMENT_METRICS_FILENAMES[@]}
-    rm ${BLAST_RESULTS_PREFIX}*.json # ${ORGANIZED_CONTIGS_PREFIX}*
-else
+if [ ! -f ${PROJECT}.${BLAST_DB_TYPES_ARRAY[0]}${BLAST_DATA_SUFFIX} ]; then
     echo "Final file ${PROJECT}.${BLAST_DB_TYPES_ARRAY[0]}${BLAST_DATA_SUFFIX} not found. Exiting with code 1"
     exit 1
 fi
+rm ${READ_COUNT_FILENAMES[@]} ${PROJECT}.*${KRAKEN_JTREE_SUFFIX}
+rm ${KRAKEN_REPORT_FILENAMES[@]} ${CONTIGS_FILENAMES[@]} 
+rm ${SUMMED_READ_TARGETS_FILENAMES[@]} ${CONTIG_READ_TARGETS_FILENAMES[@]}
+rm ${HUMAN_ALIGNMENT_METRICS_FILENAMES[@]} ${CONTIG_ALIGNMENT_METRICS_FILENAMES[@]}
+rm ${BLAST_RESULTS_PREFIX}*.json # ${ORGANIZED_CONTIGS_PREFIX}*
+echo -e "END: $(date)\nRuntime: $(($(date +%s)-$START_TIME)) seconds"
