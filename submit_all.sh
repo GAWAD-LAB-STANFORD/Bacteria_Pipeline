@@ -5,7 +5,7 @@ HELP="\
 Purpose: \n\t\
     This pipeline is built to identify bacterial species from pair-end fastq.gz files and remove human contamination \n\n\
 Required arguments: -p/--project <arg> and either -f/--fastq_dir <arg> or -r/--results_dir <arg> \n\
-Optional arguments: -b/--run_dir <arg>, --sample_sheet <arg>, --R1_suffix <arg>, --R2_suffix <arg>, --err_out_dir <arg>, --contig_len_min <arg>, --all_complexity, --slurm <arg> \n\
+Optional arguments: -b/--run_dir <arg>, --sample_sheet <arg>, --R1_suffix <arg>, --R2_suffix <arg>, --err_out_dir <arg>, --contig_len_min <arg>, --slurm <arg> \n\
 Defaults: \n\t\
     If no fastq_dir specified, uses results_dir \n\t\
     If no results_dir specified, makes new directory in fastq_dir \n\t\
@@ -22,7 +22,6 @@ Run with demultiplexing, wait 12 hours before starting, and email notification w
 For more information, read the README.md"
 
 # Reads in command line option arguments and assigns them to variables
-MASK_LOW_COMPLEXITY=1
 while [ "$1" != "" ]; do
     case $1 in
         -h | --help )           echo -e $HELP
@@ -45,8 +44,6 @@ while [ "$1" != "" ]; do
                                 ;;
         --contig_len_min )      shift
                                 CONTIG_LENGTH_MINIMUM=$1
-                                ;;
-        --all_complexity )      MASK_LOW_COMPLEXITY=0
                                 ;;
         -f | --fastq_dir )      shift
                                 FASTQ_DIR=$1
@@ -104,9 +101,6 @@ if [ ! -z $R2_SUFFIX ]; then
 fi
 if [ ! -z $CONTIG_LENGTH_MINIMUM ]; then
     OPTIONS+=( "--contig_len_min $CONTIG_LENGTH_MINIMUM" )
-fi
-if [ $MASK_LOW_COMPLEXITY -eq 0 ]; then
-    OPTIONS+=( "--all_complexity" )
 fi
 
 sbatch ${SLURM_OPTIONS[@]} -J $PROJECT -e $STD_ERR_OUT_DIR/%A_%x.err -o $STD_ERR_OUT_DIR/%A_%x.out ${PIPELINE_DIR}/pipeline_control.sh --err_out_dir $STD_ERR_OUT_DIR -f $FASTQ_DIR -r $RESULTS_DIR -p $PROJECT -d $PIPELINE_DIR ${OPTIONS[@]}

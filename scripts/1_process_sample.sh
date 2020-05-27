@@ -15,15 +15,12 @@ REF_FASTA=$5
 CONTIGS_SUFFIX=$6
 SUMMED_READ_TARGETS_SUFFIX=$7
 CONTIGS_READ_TARGETS_SUFFIX=$8
-KRAKEN_TOOL_DIR=$9
-KRAKEN_DB_TYPES_ARRAY=( $(echo ${10} | sed 's/-/ /g') )
-KRAKEN_DB_DIR_PREFIX=${11}
-KRAKEN_REPORT_SUFFIX=${12}
-HUMAN_ALIGNMENT_METRICS_SUFFIX=${13}
-CONTIG_ALIGNMENT_METRICS_SUFFIX=${14}
-NCBI_BLAST_TOOL_DIR=${15}
-MASK_LOW_COMPLEXITY=${16}
-TOOLS_DIR=${17}
+KRAKEN_DB_TYPES_ARRAY=( $(echo $9 | sed 's/-/ /g') )
+KRAKEN_DB_DIR_PREFIX=${10}
+KRAKEN_REPORT_SUFFIX=${11}
+HUMAN_ALIGNMENT_METRICS_SUFFIX=${12}
+CONTIG_ALIGNMENT_METRICS_SUFFIX=${13}
+TOOLS_DIR=${14}
 
 echo -e "START: $(date)\nBacteria Pipeline\nFastq dir: $FASTQ_DIR\nResults dir: $RESULTS_DIR"
 cd $RESULTS_DIR
@@ -33,7 +30,7 @@ ml biology bwa samtools gatk
 
 SAMPLE=$(find ${FASTQ_DIR}/ -maxdepth 1 -name "*${R1_SUFFIX}" -exec basename {} \; | \
     grep -v "Undetermined" | sed "s/${R1_SUFFIX}//" | sed -n ${SLURM_ARRAY_TASK_ID}p)
-export PATH=${KRAKEN_TOOL_DIR}:$PATH
+export PATH=${TOOLS_DIR}/kraken2-2.0.8-beta:$PATH
 
 echo "Sample: $SAMPLE"
 
@@ -117,20 +114,16 @@ printf "${SAMPLE}\n%0.s" $(seq $(cat ${SAMPLE}_temp_contig_read_targets.txt | wc
     paste - ${SAMPLE}_temp_contig_read_targets.txt >> ${SAMPLE}${CONTIGS_READ_TARGETS_SUFFIX}
 echo "### Exporting summarized and contig read targets from BAM ### - END: $(date)"
 
+# echo "### Marking low complexity regions in contigs ### - START: $(date)"
+# ${TOOLS_DIR}/ncbi-blast-2.10.0+/bin/dustmasker -in ${SAMPLE}${CONTIGS_SUFFIX} -outfmt fasta -out ${SAMPLE}_contigs_high_complexity.fasta
+# echo "### Marking low complexity regions in contigs ### - END: $(date)"
+
 echo "### Running kraken2 on non-human matches ### - START: $(date)"
 for DB_TYPE in ${KRAKEN_DB_TYPES_ARRAY[@]}; do
     kraken2 --db ${KRAKEN_DB_DIR_PREFIX}${DB_TYPE} --threads 4 --output ${SAMPLE}_no_human_vs_kraken.tsv --paired --gzip-compressed \
         --report ${SAMPLE}_${DB_TYPE}${KRAKEN_REPORT_SUFFIX} ${SAMPLE}_no_human${R1_SUFFIX} ${SAMPLE}_no_human${R2_SUFFIX}
 done
 echo "### Running kraken2 on non-human matches ### - END: $(date)"
-
-if [ $MASK_LOW_COMPLEXITY -eq 1 ]; then
-    echo "### Marking low complexity regions in contigs ### - START: $(date)"
-    mv ${SAMPLE}${CONTIGS_SUFFIX} ${SAMPLE}${CONTIGS_SUFFIX}_temp
-    ${NCBI_BLAST_TOOL_DIR}/bin/dustmasker -in ${SAMPLE}${CONTIGS_SUFFIX}_temp -outfmt fasta -out ${SAMPLE}${CONTIGS_SUFFIX}
-    rm ${SAMPLE}${CONTIGS_SUFFIX}_temp 
-    echo "### Marking low complexity regions in contigs ### - END: $(date)"
-fi
 
 if [ ! -f ${SAMPLE}_no_human_vs_kraken.tsv ]; then
     echo "Final file ${SAMPLE}_no_human_vs_kraken.tsv not found. Exiting with code 1"

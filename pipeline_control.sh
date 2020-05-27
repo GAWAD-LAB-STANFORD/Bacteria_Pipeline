@@ -19,7 +19,6 @@ PIPELINE_DIR=
 
 # Reads in command line option arguments and assigns them to variables
 CONTIG_LENGTH_MINIMUM=5000
-MASK_LOW_COMPLEXITY=1
 while [ "$1" != "" ]; do
     case $1 in
         -h | --help )           echo -e $HELP
@@ -42,8 +41,6 @@ while [ "$1" != "" ]; do
                                 ;;
         --contig_len_min )      shift
                                 CONTIG_LENGTH_MINIMUM=$1
-                                ;;
-        --all_complexity )      MASK_LOW_COMPLEXITY=0
                                 ;;
         -f | --fastq_dir )      shift
                                 FASTQ_DIR=$1
@@ -76,7 +73,6 @@ HUMAN_ALIGNMENT_METRICS_SUFFIX="_human_alignment_metrics.tsv"
 CONTIG_ALIGNMENT_METRICS_SUFFIX="_contig_alignment_metrics.tsv"
 # Tools and databases
 KRAKEN_DB_TYPES="microbial-plasmid-viral"
-KRAKEN_TOOL_DIR="/oak/stanford/groups/cgawad/Sequencing_Analysis_Tools/kraken2-2.0.8-beta"
 KRAKEN_DB_DIR_PREFIX="/oak/stanford/groups/cgawad/Reference_Files/Kraken2_Fatfree_Databases/kraken2-fatfree-"
 BLAST_DB_TYPES="nt-plasmid-viral"
 NCBI_BLAST_TOOL_DIR="/oak/stanford/groups/cgawad/Sequencing_Analysis_Tools/ncbi-blast-2.10.0+"
@@ -102,11 +98,6 @@ if [ -z $FASTQ_DIR ] || [ -z $RESULTS_DIR ] || [ -z $PROJECT ] || [ -z $PIPELINE
 fi
 echo -e "START: $(date)\nBacteria Pipeline\nErr out dir: $STD_ERR_OUT_DIR\nFastq dir: $FASTQ_DIR\nResults dir: $RESULTS_DIR\nProject: $PROJECT\nContig len min: $CONTIG_LENGTH_MINIMUM"
 cd $RESULTS_DIR
-if [ $MASK_LOW_COMPLEXITY -eq 0 ]; then
-    echo "No masking of low complexity regions will occur"
-else
-    echo "Low complexity regions will be masked"
-fi
 
 ml perl R/3.6.1
 
@@ -161,9 +152,8 @@ SAMPLE_JOB=$(sbatch --parsable --wait -e $STD_ERR_OUT_DIR/%A_%a_%x.err -o $STD_E
     --array=1-${JOB_COUNT} ${SCRIPT_DIR}/1_process_sample.sh \
     $FASTQ_DIR $RESULTS_DIR $R1_SUFFIX $R2_SUFFIX $REF_FASTA \
     $CONTIGS_SUFFIX $SUMMED_READ_TARGETS_SUFFIX $CONTIGS_READ_TARGETS_SUFFIX \
-    $KRAKEN_TOOL_DIR $KRAKEN_DB_TYPES $KRAKEN_DB_DIR_PREFIX $KRAKEN_REPORT_SUFFIX \
-    $HUMAN_ALIGNMENT_METRICS_SUFFIX $CONTIG_ALIGNMENT_METRICS_SUFFIX $NCBI_BLAST_TOOL_DIR \
-    $MASK_LOW_COMPLEXITY $TOOLS_DIR)
+    $KRAKEN_DB_TYPES $KRAKEN_DB_DIR_PREFIX $KRAKEN_REPORT_SUFFIX \
+    $HUMAN_ALIGNMENT_METRICS_SUFFIX $CONTIG_ALIGNMENT_METRICS_SUFFIX $TOOLS_DIR)
 echo "Submitted batch job $SAMPLE_JOB"
 if [ $(ls *${CONTIGS_SUFFIX} | wc -l) -eq 0 ]; then
     echo "No contig files found. Exiting with code 1"
@@ -278,7 +268,7 @@ echo -e "Blast jobs to run: $JOB_COUNT"
 BLAST_JOB=$(sbatch --dependency=afterok:${SAMPLE_JOB} --parsable --wait \
     -e $STD_ERR_OUT_DIR/%A_%a_%x.err -o $STD_ERR_OUT_DIR/%A_%a_%x.out --array=1-${JOB_COUNT} \
     ${SCRIPT_DIR}/2_blast_contigs.sh $RESULTS_DIR $ORGANIZED_CONTIGS_PREFIX \
-    $NCBI_BLAST_TOOL_DIR $BLAST_DB_TYPES $NCBI_DB_DIR_PREFIX $BLAST_RESULTS_PREFIX)
+    $TOOLS_DIR $BLAST_DB_TYPES $NCBI_DB_DIR_PREFIX $BLAST_RESULTS_PREFIX)
 echo "Submitted batch job $BLAST_JOB"
 if [ $(ls ${BLAST_RESULTS_PREFIX}* | wc -l) -eq 0 ]; then
     echo "No BLAST results found. Exiting with code 1"

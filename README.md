@@ -30,12 +30,11 @@
         - If you do not specify a fastq directory, the program will assume the fastq.gz files are in the results directory you specified, and will end the program if no fastq.gz files are found
         - If you do not specify a results directory, the program will make a new folder with the current date in the name within the fastq directory 
     - Specify the project name for the final resulting VCF that will be made using *-p* or *--project*
-- Optional arguments: -b/--run_dir, --sample_sheet, --R1_suffix, --R2_suffix, --err_out_dir, --contig_len_min, --all_complexity, --slurm
+- Optional arguments: -b/--run_dir, --sample_sheet, --R1_suffix, --R2_suffix, --err_out_dir, --contig_len_min, --slurm
     - You can have the script demultiplex your BCL files into fastq.gz files by specifying a run folder using *-b* or *--run_dir*. The program will look for a sample sheet called SampleSheet.csv in the first level within the run_dir or you can specify a different sample sheet with *--sample_sheet*. The program will make the fastq directory if it does not exist and tell you the sizes of undeteremined vs fully demultiplexed reads
     - If your read 1 and read 2 fastq.gz files differentiate themselves by some pattern other than _L001_R1_001.fastq.gz and _L001_R2_001.fastq.gz or _R1_001.fastq.gz and _R2_001.fastq.gz, use *--R1_suffix* and *--R2_suffix* options to let the pipeline know
     - You can specify a directory to output the standard error and out print statements of all jobs to using *--err_out_dir*
     - You can change the default minimum length for contigs that are kept from 5000 to a chosen number using *--contig_len_min*
-    - You can have the pipeline process all contig data regardless of its complexity by using *--all_complexity*, otherwise the pipeline will mask and remove low complexity regions from contigs
     - Besides the already implemented job name and standard error and output print statements, you can specify additional slurm commands for the pipeline job following the use of the *--slurm* option. If you use this option, **make sure it is the last one you use**
         - A useful example would be setting a future time to run the job and asking for email notifications like so:
 
