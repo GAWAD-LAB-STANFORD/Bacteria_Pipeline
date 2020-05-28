@@ -61,32 +61,12 @@ REFERENCE_DIR="/oak/stanford/groups/cgawad/Reference_Files/GATK_Resource_Bundle_
 TOOLS_DIR="/oak/stanford/groups/cgawad/Sequencing_Analysis_Tools"
 REF_FASTA="${REFERENCE_DIR}/Homo_sapiens_assembly38.fasta"
 SCRIPT_DIR="${PIPELINE_DIR}/scripts"
-# Intermediate prefixes and suffixes
-CONTIGS_SUFFIX="_contigs.fasta"
-SUMMED_READ_TARGETS_SUFFIX="_summed_read_targets.tsv"
-CONTIGS_READ_TARGETS_SUFFIX="_contig_read_targets.tsv"
-KRAKEN_REPORT_SUFFIX="_kraken_report.tsv"
-KRAKEN_JTREE_SUFFIX=".kraken_jtree.json"
-ORGANIZED_CONTIGS_PREFIX="long_contigs_"
-BLAST_RESULTS_PREFIX="blast_results_"
-HUMAN_ALIGNMENT_METRICS_SUFFIX="_human_alignment_metrics.tsv"
-CONTIG_ALIGNMENT_METRICS_SUFFIX="_contig_alignment_metrics.tsv"
 # Tools and databases
 KRAKEN_DB_TYPES="microbial-plasmid-viral"
 KRAKEN_DB_DIR_PREFIX="/oak/stanford/groups/cgawad/Reference_Files/Kraken2_Fatfree_Databases/kraken2-fatfree-"
 BLAST_DB_TYPES="nt-plasmid-viral"
-NCBI_BLAST_TOOL_DIR="/oak/stanford/groups/cgawad/Sequencing_Analysis_Tools/ncbi-blast-2.10.0+"
 NCBI_DB_DIR_PREFIX="/oak/stanford/groups/cgawad/Reference_Files/NCBI_RefSeq_Databases/ncbi_database_"
 NCBI_ANNOTATIONS_DIR="/oak/stanford/groups/cgawad/Reference_Files/NCBI_Annotations"
-# Consolidated metric files
-SAMPLE_READ_COUNTS="${PROJECT}.sample_read_counts.tsv"
-KRAKEN_DATA_SUFFIX=".kraken_reports.tsv"
-CONTIG_DATA="${PROJECT}.contig_data.tsv"
-SUMMED_READ_TARGETS="${PROJECT}.summed_read_targets.tsv"
-CONTIG_READ_TARGETS="${PROJECT}.contig_read_targets.tsv"
-BLAST_DATA_SUFFIX=".blast_results.tsv"
-HUMAN_ALIGNMENT_METRICS="${PROJECT}.human_alignment_metrics.tsv"
-CONTIG_ALIGNMENT_METRICS="${PROJECT}.contig_alignment_metrics.tsv"
 # Variables
 CONTIGS_PER_BLAST_JOB=320
 
@@ -151,11 +131,9 @@ echo -e "Assemble jobs to run: $JOB_COUNT"
 SAMPLE_JOB=$(sbatch --parsable --wait -e $STD_ERR_OUT_DIR/%A_%a_%x.err -o $STD_ERR_OUT_DIR/%A_%a_%x.out \
     --array=1-${JOB_COUNT} ${SCRIPT_DIR}/1_process_sample.sh \
     $FASTQ_DIR $RESULTS_DIR $R1_SUFFIX $R2_SUFFIX $REF_FASTA \
-    $CONTIGS_SUFFIX $SUMMED_READ_TARGETS_SUFFIX $CONTIGS_READ_TARGETS_SUFFIX \
-    $KRAKEN_DB_TYPES $KRAKEN_DB_DIR_PREFIX $KRAKEN_REPORT_SUFFIX \
-    $HUMAN_ALIGNMENT_METRICS_SUFFIX $CONTIG_ALIGNMENT_METRICS_SUFFIX $TOOLS_DIR)
+    $KRAKEN_DB_TYPES $KRAKEN_DB_DIR_PREFIX $TOOLS_DIR)
 echo "Submitted batch job $SAMPLE_JOB"
-if [ $(ls *${CONTIGS_SUFFIX} | wc -l) -eq 0 ]; then
+if [ $(ls *_contigs.fasta | wc -l) -eq 0 ]; then
     echo "No contig files found. Exiting with code 1"
     exit 1
 fi
@@ -167,8 +145,8 @@ ml python/3.6.1 py-pandas/0.23.0_py36 py-numpy/1.14.3_py36
 
 
 echo "### Summarizing metrics ### - START: $(date)"
-READ_COUNT_SUFFIX=".read_counts.tsv"
-READ_COUNT_FILENAMES=( $(ls *${READ_COUNT_SUFFIX}) )
+SAMPLE_READ_COUNTS="${PROJECT}.sample_read_counts.tsv"
+READ_COUNT_FILENAMES=( $(ls *.read_counts.tsv) )
 head -n 1 ${READ_COUNT_FILENAMES[0]} > $SAMPLE_READ_COUNTS
 for i in ${READ_COUNT_FILENAMES[@]}; do tail -n +2 $i; done >> $SAMPLE_READ_COUNTS
 if [ ! -z $RUN_DIR ]; then
@@ -196,66 +174,66 @@ if [ ! -z $RUN_DIR ]; then
     fi
 fi
 
-HUMAN_ALIGNMENT_METRICS_FILENAMES=( $(ls *${HUMAN_ALIGNMENT_METRICS_SUFFIX}) )
-echo -e sample"\t"$(head -n 7 ${HUMAN_ALIGNMENT_METRICS_FILENAMES[0]} | tail -n 1) | sed 's/ /\t/g' > $HUMAN_ALIGNMENT_METRICS
+HUMAN_ALIGNMENT_METRICS_FILENAMES=( $(ls *_human_alignment_metrics.tsv) )
+echo -e sample"\t"$(head -n 7 ${HUMAN_ALIGNMENT_METRICS_FILENAMES[0]} | tail -n 1) | sed 's/ /\t/g' > ${PROJECT}.human_alignment_metrics.tsv
 for i in ${HUMAN_ALIGNMENT_METRICS_FILENAMES[@]}; do 
-    SAMPLE=$(echo $i | sed "s/$HUMAN_ALIGNMENT_METRICS_SUFFIX//")
+    SAMPLE=$(echo $i | sed "s/_human_alignment_metrics.tsv//")
     R1=$(head -n 8 $i | tail -n 1)
     R2=$(head -n 9 $i | tail -n 1)
     PAIR=$(head -n 10 $i | tail -n 1)
     echo -e "$SAMPLE\t$R1\n$SAMPLE\t$R2\n$SAMPLE\t$PAIR"
-done | sed 's/ /\t/g' >> $HUMAN_ALIGNMENT_METRICS
+done | sed 's/ /\t/g' >> ${PROJECT}.human_alignment_metrics.tsv
 echo "Merged human alignment metrics"
 
-CONTIG_ALIGNMENT_METRICS_FILENAMES=( $(ls *${CONTIG_ALIGNMENT_METRICS_SUFFIX}) )
-echo -e sample"\t"$(head -n 7 ${CONTIG_ALIGNMENT_METRICS_FILENAMES[0]} | tail -n 1) | sed 's/ /\t/g' > $CONTIG_ALIGNMENT_METRICS
+CONTIG_ALIGNMENT_METRICS_FILENAMES=( $(ls *_contig_alignment_metrics.tsv) )
+echo -e sample"\t"$(head -n 7 ${CONTIG_ALIGNMENT_METRICS_FILENAMES[0]} | tail -n 1) | sed 's/ /\t/g' > ${PROJECT}.contig_alignment_metrics.tsv
 for i in ${CONTIG_ALIGNMENT_METRICS_FILENAMES[@]}; do 
-    SAMPLE=$(echo $i | sed "s/$CONTIG_ALIGNMENT_METRICS_SUFFIX//")
+    SAMPLE=$(echo $i | sed "s/_contig_alignment_metrics.tsv//")
     R1=$(head -n 8 $i | tail -n 1)
     R2=$(head -n 9 $i | tail -n 1)
     PAIR=$(head -n 10 $i | tail -n 1)
     echo -e "$SAMPLE\t$R1\n$SAMPLE\t$R2\n$SAMPLE\t$PAIR"
-done | sed 's/ /\t/g' >> $CONTIG_ALIGNMENT_METRICS
+done | sed 's/ /\t/g' >> ${PROJECT}.contig_alignment_metrics.tsv
 echo "Merged contig alignment metrics"
 
 KRAKEN_DB_TYPES_ARRAY=( $(echo $KRAKEN_DB_TYPES | sed 's/-/ /g') )
 for DB_TYPE in ${KRAKEN_DB_TYPES_ARRAY[@]}; do
     echo -e "sample\tpercent_fragments_covered\tfragments_covered\tfragments_assigned\trank_code\ttaxid\tsciname" > \
-        ${PROJECT}.${DB_TYPE}${KRAKEN_DATA_SUFFIX}
-    KRAKEN_REPORT_FILENAMES=( $(ls *_${DB_TYPE}${KRAKEN_REPORT_SUFFIX}) )
+        ${PROJECT}.${DB_TYPE}.kraken_reports.tsv
+    KRAKEN_REPORT_FILENAMES=( $(ls *_${DB_TYPE}_kraken_report.tsv) )
     for i in ${KRAKEN_REPORT_FILENAMES[@]}; do
-        SAMPLE=$(echo $i | sed "s/_${DB_TYPE}${KRAKEN_REPORT_SUFFIX}//")
-        cat $i | sed 's/^ \+/'${SAMPLE}'\t/' | awk '$2>=1.00' >> ${PROJECT}.${DB_TYPE}${KRAKEN_DATA_SUFFIX}
+        SAMPLE=$(echo $i | sed "s/_${DB_TYPE}_kraken_report.tsv//")
+        cat $i | sed 's/^ \+/'${SAMPLE}'\t/' | awk '$2>=1.00' >> ${PROJECT}.${DB_TYPE}.kraken_reports.tsv
     done
-    python3 ${SCRIPT_DIR}/kraken_report_to_jtree.py ${PROJECT}.${DB_TYPE}${KRAKEN_DATA_SUFFIX} \
-        $PROJECT .${DB_TYPE}$KRAKEN_JTREE_SUFFIX
+    python3 ${SCRIPT_DIR}/kraken_report_to_jtree.py ${PROJECT}.${DB_TYPE}.kraken_reports.tsv \
+        $PROJECT .${DB_TYPE}.kraken_jtree.json
 done
-KRAKEN_REPORT_FILENAMES=( $(ls *${KRAKEN_REPORT_SUFFIX}) )
+KRAKEN_REPORT_FILENAMES=( $(ls *_kraken_report.tsv) )
 echo "Merged kraken reports"
 
-echo -e "sample\tfasta_header" > $CONTIG_DATA
-CONTIGS_FILENAMES=( $(ls *${CONTIGS_SUFFIX}) )
+echo -e "sample\tfasta_header" > ${PROJECT}.contig_data.tsv
+CONTIGS_FILENAMES=( $(ls *_contigs.fasta) )
 for i in ${CONTIGS_FILENAMES[@]}; do 
-    grep ">" $i | xargs -i echo -e $(echo $i | sed "s/${CONTIGS_SUFFIX}//")"\t"{} >> $CONTIG_DATA; 
+    grep ">" $i | xargs -i echo -e $(echo $i | sed "s/_contigs.fasta//")"\t"{} >> ${PROJECT}.contig_data.tsv; 
 done
 echo "Merged contigs"
 
-SUMMED_READ_TARGETS_FILENAMES=( $(ls *${SUMMED_READ_TARGETS_SUFFIX}) )
-head -n 1 ${SUMMED_READ_TARGETS_FILENAMES[0]} > $SUMMED_READ_TARGETS
-for i in ${SUMMED_READ_TARGETS_FILENAMES[@]}; do sed -n 2p $i >> $SUMMED_READ_TARGETS; done
+SUMMED_READ_TARGETS_FILENAMES=( $(ls *_summed_read_targets.tsv) )
+head -n 1 ${SUMMED_READ_TARGETS_FILENAMES[0]} > ${PROJECT}.summed_read_targets.tsv
+for i in ${SUMMED_READ_TARGETS_FILENAMES[@]}; do sed -n 2p $i >> ${PROJECT}.summed_read_targets.tsv; done
 echo "Merged summarized read targets"
 
-CONTIG_READ_TARGETS_FILENAMES=( $(ls *${CONTIGS_READ_TARGETS_SUFFIX}) )
-head -n 1 ${CONTIG_READ_TARGETS_FILENAMES[0]} > $CONTIG_READ_TARGETS
-for i in ${CONTIG_READ_TARGETS_FILENAMES[@]}; do tail -n +2 $i >> $CONTIG_READ_TARGETS; done
+CONTIG_READ_TARGETS_FILENAMES=( $(ls *_contig_read_targets.tsv) )
+head -n 1 ${CONTIG_READ_TARGETS_FILENAMES[0]} > ${PROJECT}.contig_read_targets.tsv
+for i in ${CONTIG_READ_TARGETS_FILENAMES[@]}; do tail -n +2 $i >> ${PROJECT}.contig_read_targets.tsv; done
 echo "Merged contig read targets"
 echo "### Summarizing metrics ### - END: $(date)"
 
 
 echo "### Organzing contigs ### - START: $(date)"
 python3 ${SCRIPT_DIR}/organize_contigs.py \
-    $CONTIGS_SUFFIX $CONTIG_LENGTH_MINIMUM $CONTIGS_PER_BLAST_JOB $ORGANIZED_CONTIGS_PREFIX
-if [ $(ls ${ORGANIZED_CONTIGS_PREFIX}* | wc -l) -eq 0 ]; then
+    "_contigs.fasta" $CONTIG_LENGTH_MINIMUM $CONTIGS_PER_BLAST_JOB "long_contigs_"
+if [ $(ls long_contigs_* | wc -l) -eq 0 ]; then
     echo "No contigs longer than $CONTIG_LENGTH_MINIMUM. Exiting with code 1"
     exit 1
 fi
@@ -263,14 +241,13 @@ echo "### Organzing contigs ### - END: $(date)"
 
 
 echo "### BLAST aligning contigs to nucleotide database ### - START: $(date)"
-JOB_COUNT=$(ls ${ORGANIZED_CONTIGS_PREFIX}* | wc -l)
+JOB_COUNT=$(ls long_contigs_* | wc -l)
 echo -e "Blast jobs to run: $JOB_COUNT"
 BLAST_JOB=$(sbatch --dependency=afterok:${SAMPLE_JOB} --parsable --wait \
     -e $STD_ERR_OUT_DIR/%A_%a_%x.err -o $STD_ERR_OUT_DIR/%A_%a_%x.out --array=1-${JOB_COUNT} \
-    ${SCRIPT_DIR}/2_blast_contigs.sh $RESULTS_DIR $ORGANIZED_CONTIGS_PREFIX \
-    $TOOLS_DIR $BLAST_DB_TYPES $NCBI_DB_DIR_PREFIX $BLAST_RESULTS_PREFIX)
+    ${SCRIPT_DIR}/2_blast_contigs.sh $RESULTS_DIR $TOOLS_DIR $BLAST_DB_TYPES $NCBI_DB_DIR_PREFIX)
 echo "Submitted batch job $BLAST_JOB"
-if [ $(ls ${BLAST_RESULTS_PREFIX}* | wc -l) -eq 0 ]; then
+if [ $(ls blast_results_* | wc -l) -eq 0 ]; then
     echo "No BLAST results found. Exiting with code 1"
     exit 1
 fi
@@ -281,26 +258,27 @@ echo "### Parsing BLAST results ### - START: $(date)"
 BLAST_DB_TYPES_ARRAY=( $(echo $BLAST_DB_TYPES | sed 's/-/ /g') )
 for DB_TYPE in ${BLAST_DB_TYPES_ARRAY[@]}; do
     python3 ${SCRIPT_DIR}/parse_blast_results.py $DB_TYPE \
-        ${BLAST_RESULTS_PREFIX}${DB_TYPE}_ ${PROJECT}.${DB_TYPE}${BLAST_DATA_SUFFIX}
+        blast_results_${DB_TYPE}_ ${PROJECT}.${DB_TYPE}.blast_results.tsv
 done
 echo "### Parsing BLAST results ### - END: $(date)"
 
 
 echo "### Processing contamination and BLAST results ### - START: $(date)"
 Rscript ${SCRIPT_DIR}/analyze_and_plot_results.R \
-    $PROJECT $SAMPLE_READ_COUNTS $SUMMED_READ_TARGETS $CONTIG_READ_TARGETS $CONTIG_DATA \
-    $KRAKEN_DB_TYPES $KRAKEN_JTREE_SUFFIX \
-    $BLAST_DB_TYPES $BLAST_DATA_SUFFIX $NCBI_ANNOTATIONS_DIR
+    $PROJECT $SAMPLE_READ_COUNTS ${PROJECT}.summed_read_targets.tsv \
+    ${PROJECT}.contig_read_targets.tsv ${PROJECT}.contig_data.tsv \
+    $KRAKEN_DB_TYPES ".kraken_jtree.json" \
+    $BLAST_DB_TYPES ".blast_results.tsv" $NCBI_ANNOTATIONS_DIR
 echo "### Processing contamination and BLAST results ### - END: $(date)"
 
 
-if [ ! -f ${PROJECT}.${BLAST_DB_TYPES_ARRAY[0]}${BLAST_DATA_SUFFIX} ]; then
-    echo "Final file ${PROJECT}.${BLAST_DB_TYPES_ARRAY[0]}${BLAST_DATA_SUFFIX} not found. Exiting with code 1"
+if [ ! -f ${PROJECT}.${BLAST_DB_TYPES_ARRAY[0]}.blast_results.tsv ]; then
+    echo "Final file ${PROJECT}.${BLAST_DB_TYPES_ARRAY[0]}.blast_results.tsv not found. Exiting with code 1"
     exit 1
 fi
-rm ${READ_COUNT_FILENAMES[@]} ${PROJECT}.*${KRAKEN_JTREE_SUFFIX}
+rm ${READ_COUNT_FILENAMES[@]} ${PROJECT}.*.kraken_jtree.json
 rm ${KRAKEN_REPORT_FILENAMES[@]} ${CONTIGS_FILENAMES[@]} 
 rm ${SUMMED_READ_TARGETS_FILENAMES[@]} ${CONTIG_READ_TARGETS_FILENAMES[@]}
 rm ${HUMAN_ALIGNMENT_METRICS_FILENAMES[@]} ${CONTIG_ALIGNMENT_METRICS_FILENAMES[@]}
-rm ${BLAST_RESULTS_PREFIX}*.json # ${ORGANIZED_CONTIGS_PREFIX}*
+rm blast_results_*.json # long_contigs_*
 echo -e "END: $(date)\nRuntime: $(($(date +%s)-$START_TIME)) seconds"

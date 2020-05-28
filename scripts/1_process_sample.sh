@@ -12,15 +12,9 @@ RESULTS_DIR=$2
 R1_SUFFIX=$3
 R2_SUFFIX=$4
 REF_FASTA=$5
-CONTIGS_SUFFIX=$6
-SUMMED_READ_TARGETS_SUFFIX=$7
-CONTIGS_READ_TARGETS_SUFFIX=$8
-KRAKEN_DB_TYPES_ARRAY=( $(echo $9 | sed 's/-/ /g') )
-KRAKEN_DB_DIR_PREFIX=${10}
-KRAKEN_REPORT_SUFFIX=${11}
-HUMAN_ALIGNMENT_METRICS_SUFFIX=${12}
-CONTIG_ALIGNMENT_METRICS_SUFFIX=${13}
-TOOLS_DIR=${14}
+KRAKEN_DB_TYPES_ARRAY=( $(echo $6 | sed 's/-/ /g') )
+KRAKEN_DB_DIR_PREFIX=$7
+TOOLS_DIR=$8
 
 echo -e "START: $(date)\nBacteria Pipeline\nFastq dir: $FASTQ_DIR\nResults dir: $RESULTS_DIR"
 cd $RESULTS_DIR
@@ -65,7 +59,7 @@ echo "### Aligning sample to human ### - START: $(date)"
 
 echo "### Collecting human alignment metrics ### - START: $(date)"
 gatk --java-options "-XX:+UseParallelGC -XX:ParallelGCThreads=4 -Xmx64g" CollectAlignmentSummaryMetrics \
-    -R $REF_FASTA -I ${SAMPLE}_human_aligned.bam -O ${SAMPLE}${HUMAN_ALIGNMENT_METRICS_SUFFIX}
+    -R $REF_FASTA -I ${SAMPLE}_human_aligned.bam -O ${SAMPLE}_human_alignment_metrics.tsv
 echo "### Collecting human alignment metrics ### - END: $(date)"
 
 echo "### Getting meta data for human matches from BAM ### - START: $(date)"
@@ -87,41 +81,41 @@ echo "### De novo assembling contigs ### - START: $(date)"
 mkdir contigs_${SAMPLE}
 python3 /oak/stanford/groups/cgawad/Sequencing_Analysis_Tools/SPAdes-3.14.0-Linux/bin/spades.py \
     -t 4 -m 64 -1 ${SAMPLE}_no_human${R1_SUFFIX} -2 ${SAMPLE}_no_human${R2_SUFFIX} -o contigs_${SAMPLE}
-mv contigs_${SAMPLE}/contigs.fasta ${SAMPLE}${CONTIGS_SUFFIX}
+mv contigs_${SAMPLE}/contigs.fasta ${SAMPLE}_contigs.fasta
 echo "### De novo assembling contigs ### - END: $(date)"
 
 echo "### Aligning reads to contigs ### - START: $(date)"
-bwa index ${SAMPLE}${CONTIGS_SUFFIX}
-bwa mem -M ${SAMPLE}${CONTIGS_SUFFIX} ${SAMPLE}_no_human${R1_SUFFIX} ${SAMPLE}_no_human${R2_SUFFIX} | \
+bwa index ${SAMPLE}_contigs.fasta
+bwa mem -M ${SAMPLE}_contigs.fasta ${SAMPLE}_no_human${R1_SUFFIX} ${SAMPLE}_no_human${R2_SUFFIX} | \
     samtools view -b - | samtools sort -o ${SAMPLE}_contig_aligned.bam -
 echo "### Aligning reads to contigs ### - END: $(date)"
 
 echo "### Collecting contig alignment metrics ### - START: $(date)"
 gatk --java-options "-XX:+UseParallelGC -XX:ParallelGCThreads=4 -Xmx64g" CollectAlignmentSummaryMetrics \
-    -R ${SAMPLE}${CONTIGS_SUFFIX} -I ${SAMPLE}_contig_aligned.bam -O ${SAMPLE}${CONTIG_ALIGNMENT_METRICS_SUFFIX}
+    -R ${SAMPLE}_contigs.fasta -I ${SAMPLE}_contig_aligned.bam -O ${SAMPLE}_contig_alignment_metrics.tsv
 echo "### Collecting contig alignment metrics ### - END: $(date)"
 
 echo "### Exporting summarized and contig read targets from BAM ### - START: $(date)"
 HUMAN_ALIGNED_READS=$(samtools view ${SAMPLE}_human_aligned.bam | cut -f 3 | grep "chr" | wc -l)
 CONTIG_ALIGNED_READS=$(samtools view ${SAMPLE}_contig_aligned.bam | cut -f 3 | grep "NODE" | wc -l)
 UNALIGNED_READS=$(samtools view ${SAMPLE}_contig_aligned.bam | cut -f 3 | grep -v "NODE" | wc -l)
-echo -e "sample\thuman_aligned\tcontig_aligned\tunaligned" > ${SAMPLE}${SUMMED_READ_TARGETS_SUFFIX}
-echo -e "${SAMPLE}\t${HUMAN_ALIGNED_READS}\t${CONTIG_ALIGNED_READS}\t${UNALIGNED_READS}" >> ${SAMPLE}${SUMMED_READ_TARGETS_SUFFIX}
+echo -e "sample\thuman_aligned\tcontig_aligned\tunaligned" > ${SAMPLE}_summed_read_targets.tsv
+echo -e "${SAMPLE}\t${HUMAN_ALIGNED_READS}\t${CONTIG_ALIGNED_READS}\t${UNALIGNED_READS}" >> ${SAMPLE}_summed_read_targets.tsv
 
-echo -e "sample\ttarget" > ${SAMPLE}${CONTIGS_READ_TARGETS_SUFFIX}
+echo -e "sample\ttarget" > ${SAMPLE}_contig_read_targets.tsv
 samtools view ${SAMPLE}_contig_aligned.bam | cut -f 3 | grep "NODE" > ${SAMPLE}_temp_contig_read_targets.txt
 printf "${SAMPLE}\n%0.s" $(seq $(cat ${SAMPLE}_temp_contig_read_targets.txt | wc -l)) | \
-    paste - ${SAMPLE}_temp_contig_read_targets.txt >> ${SAMPLE}${CONTIGS_READ_TARGETS_SUFFIX}
+    paste - ${SAMPLE}_temp_contig_read_targets.txt >> ${SAMPLE}_contig_read_targets.tsv
 echo "### Exporting summarized and contig read targets from BAM ### - END: $(date)"
 
 # echo "### Marking low complexity regions in contigs ### - START: $(date)"
-# ${TOOLS_DIR}/ncbi-blast-2.10.0+/bin/dustmasker -in ${SAMPLE}${CONTIGS_SUFFIX} -outfmt fasta -out ${SAMPLE}_contigs_high_complexity.fasta
+# ${TOOLS_DIR}/ncbi-blast-2.10.0+/bin/dustmasker -in ${SAMPLE}_contigs.fasta -outfmt fasta -out ${SAMPLE}_contigs_high_complexity.fasta
 # echo "### Marking low complexity regions in contigs ### - END: $(date)"
 
 echo "### Running kraken2 on non-human matches ### - START: $(date)"
 for DB_TYPE in ${KRAKEN_DB_TYPES_ARRAY[@]}; do
     kraken2 --db ${KRAKEN_DB_DIR_PREFIX}${DB_TYPE} --threads 4 --output ${SAMPLE}_no_human_vs_kraken.tsv --paired --gzip-compressed \
-        --report ${SAMPLE}_${DB_TYPE}${KRAKEN_REPORT_SUFFIX} ${SAMPLE}_no_human${R1_SUFFIX} ${SAMPLE}_no_human${R2_SUFFIX}
+        --report ${SAMPLE}_${DB_TYPE}_kraken_report.tsv ${SAMPLE}_no_human${R1_SUFFIX} ${SAMPLE}_no_human${R2_SUFFIX}
 done
 echo "### Running kraken2 on non-human matches ### - END: $(date)"
 
@@ -133,8 +127,8 @@ rm ${SAMPLE}_trimmomatic_log.txt
 rm ${SAMPLE}_trimmed${R1_SUFFIX} ${SAMPLE}_trimmed${R2_SUFFIX}
 rm ${SAMPLE}_unpaired_trimmed${R1_SUFFIX} ${SAMPLE}_unpaired_trimmed${R2_SUFFIX}
 rm -r contigs_${SAMPLE} 
-rm ${SAMPLE}${CONTIGS_SUFFIX}.amb ${SAMPLE}${CONTIGS_SUFFIX}.ann ${SAMPLE}${CONTIGS_SUFFIX}.bwt
-rm ${SAMPLE}${CONTIGS_SUFFIX}.pac ${SAMPLE}${CONTIGS_SUFFIX}.sa
+rm ${SAMPLE}_contigs.fasta.amb ${SAMPLE}_contigs.fasta.ann ${SAMPLE}_contigs.fasta.bwt
+rm ${SAMPLE}_contigs.fasta.pac ${SAMPLE}_contigs.fasta.sa
 rm ${SAMPLE}_R1.sai ${SAMPLE}_R2.sai
 rm ${SAMPLE}_human_aligned.bam* ${SAMPLE}_no_human.bam* ${SAMPLE}_contig_aligned.bam*
 rm ${SAMPLE}_temp_contig_read_targets.txt
