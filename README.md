@@ -58,12 +58,14 @@ Will submit the pipeline_control.sh master script to run the entire pipeline. Wh
 - **1_process_sample.sh** - For each sample, a job will be run to do the following:
     - Trimmomatic trimming
     - Count the reads before trimming, the reads left after trimming, and the reads that were removed after trimming
-    - Align to human genome using BWA ALN
+    - Align all reads to human genome using BWA ALN
     - De novo assembly of contigs using SPAdes from non-human reads
-    - Align non-human to contigs using BWA MEM
+    - Align non-human reads to contigs using BWA MEM
     - Collect alignment metrics
-    - Count human, non-human, and unaligned reads
+    - Count human, contig, and unaligned reads
     - Run kraken2 on non-human reads for microbes, plasmids, and phages
+- Summarize metrics like human and contig alignment metrics, read targets, and kraken2 report output
+    - Create json jtree files from kraken2 report outputs for later Rscript
 - Only keep long contigs (default 5kb), remove low complexity regions of contigs, and consolidate them into files (320 contigs each)
 - **2_blast_contigs.sh** - For each file of long contigs, a job will run to classify them using BLAST+ (blastn) against entire nucleotide database, plasmid database, and phage database
 - Parse BLAST results
