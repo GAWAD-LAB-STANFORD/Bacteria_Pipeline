@@ -54,8 +54,8 @@
 Will submit the pipeline_control.sh master script to run the entire pipeline. Why have an additional script instead of just submitting pipeline_control.sh directly? It makes it just a little easier for a novice Slurm user
 
 ### pipeline_control.sh
-- Demultiplexing will be done if specified
-- For each sample, a job will be run to do the following:
+- **0_demultiplexer.sh** - Demultiplexing will be done if specified
+- **1_process_sample.sh** - For each sample, a job will be run to do the following:
     - Trimmomatic trimming
     - Count the reads before trimming, the reads left after trimming, and the reads that were removed after trimming
     - Align to human genome using BWA ALN
@@ -64,9 +64,8 @@ Will submit the pipeline_control.sh master script to run the entire pipeline. Wh
     - Collect alignment metrics
     - Count human, non-human, and unaligned reads
     - Run kraken2 on non-human reads for microbes, plasmids, and phages
-    - Mask low complexity reads
 - Only keep long contigs (default 5kb), remove low complexity regions of contigs, and consolidate them into files (320 contigs each)
-- For each file of long contigs, a job will run to classify them using BLAST+ (blastn) against entire nucleotide database, plasmid database, and phage database
+- **2_blast_contigs.sh** - For each file of long contigs, a job will run to classify them using BLAST+ (blastn) against entire nucleotide database, plasmid database, and phage database
 - Parse BLAST results
 - Graph human contamination, kraken results, BLAST results, and other measures
 
