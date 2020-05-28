@@ -23,10 +23,6 @@ for contig in contigs:
     for record in sample_records:
         if len(record) >= record_length_minimum:
             long_contig_count += 1
-            original_length = len(record.seq)
-            record.seq = Seq(re.sub("[a-z]", "", str(record.seq)), SingleLetterAlphabet())
-            if len(record.seq) != original_length:
-                contigs_with_low_complexity += 1
             record.id = "{}.{}".format(sample, record.id)
             long_records.append(record)
     print("\t{} long contigs found for sample {}".format(long_contig_count, sample))
