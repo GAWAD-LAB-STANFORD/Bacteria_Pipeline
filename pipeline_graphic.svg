@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg width="100%" height="100%" viewBox="0 0 2550 2550" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xml:space="preserve" xmlns:serif="http://www.serif.com/" style="fill-rule:evenodd;clip-rule:evenodd;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:1.5;">
+    <g transform="matrix(1.07721,0,0,1.03429,8.29703,520.895)">
+        <rect x="119.818" y="112.68" width="804.602" height="181.36" style="fill:white;stroke:rgb(66,117,255);stroke-width:19.73px;"/>
+    </g>
+    <g transform="matrix(1,0,0,1,21.31,528.725)">
+        <text x="245.788px" y="223.752px" style="font-family:'ArialMT', 'Arial', sans-serif;font-size:83.333px;">Fastq <tspan x="475.85px 523.661px 551.412px " y="223.752px 223.752px 223.752px ">Tri</tspan>mming</text>
+    </g>
+    <g transform="matrix(1.05504,0,0,0.683826,28.7965,596.57)">
+        <rect x="924.42" y="139.658" width="759.009" height="120.996" style="fill:rgb(0,60,225);stroke:rgb(0,60,225);stroke-width:23.43px;"/>
+    </g>
+    <g transform="matrix(1,0,0,1,75.9794,541.155)">
+        <text x="988.812px" y="199.875px" style="font-family:'ArialMT', 'Arial', sans-serif;font-size:50px;fill:white;">- fastq <tspan x="1138.81px 1288.81px " y="199.875px 199.875px "> -</tspan> trimmomatic</text>
+    </g>
+    <g transform="matrix(1,0,0,1,169.209,537.751)">
+        <text x="1667.8px" y="212.875px" style="font-family:'ArialMT', 'Arial', sans-serif;font-size:50px;">1_process_sample.sh</text>
+    </g>
+    <g transform="matrix(1.07721,0,0,1.03429,7.95276,1404.99)">
+        <rect x="119.818" y="112.68" width="804.602" height="181.36" style="fill:white;stroke:rgb(66,117,255);stroke-width:19.73px;"/>
+    </g>
+    <g transform="matrix(1,0,0,1,20.9657,1412.82)">
+        <text x="252.665px" y="223.752px" style="font-family:'ArialMT', 'Arial', sans-serif;font-size:83.333px;">Contig Filtering</text>
+    </g>
+    <g transform="matrix(1.05504,0,0,0.683826,28.4523,1480.66)">
+        <rect x="924.42" y="139.658" width="759.009" height="120.996" style="fill:rgb(0,60,225);stroke:rgb(0,60,225);stroke-width:23.43px;"/>
+    </g>
+    <g transform="matrix(1,0,0,1,75.6352,1425.25)">
+        <text x="988.812px" y="199.875px" style="font-family:'ArialMT', 'Arial', sans-serif;font-size:50px;fill:white;">- python</text>
+    </g>
+    <g transform="matrix(1,0,0,1,168.864,1421.84)">
+        <text x="1667.8px" y="212.875px" style="font-family:'ArialMT', 'Arial', sans-serif;font-size:50px;">pipeline_control.sh</text>
+    </g>
+    <g transform="matrix(1.07721,0,0,1.03429,7.95276,1597.81)">
+        <rect x="119.818" y="112.68" width="804.602" height="181.36" style="fill:white;stroke:rgb(66,117,255);stroke-width:19.73px;"/>
+    </g>
+    <g transform="matrix(1,0,0,1,20.9657,1605.64)">
+        <text x="248.779px" y="223.752px" style="font-family:'ArialMT', 'Arial', sans-serif;font-size:83.333px;">BLAST<tspan x="511.271px 534.423px " y="223.752px 223.752px "> C</tspan>ontigs</text>
+    </g>
+    <g transform="matrix(1.05504,0,0,0.683826,28.4523,1673.49)">
+        <rect x="924.42" y="139.658" width="759.009" height="120.996" style="fill:rgb(0,60,225);stroke:rgb(0,60,225);stroke-width:23.43px;"/>
+    </g>
+    <g transform="matrix(1,0,0,1,75.6352,1618.07)">
+        <text x="988.812px" y="199.875px" style="font-family:'ArialMT', 'Arial', sans-serif;font-size:50px;fill:white;">- blast+</text>
+    </g>
+    <g transform="matrix(1,0,0,1,168.864,1614.67)">
+        <text x="1667.8px" y="212.875px" style="font-family:'ArialMT', 'Arial', sans-serif;font-size:50px;">2_blast_contigs.sh</text>
+    </g>
+    <g transform="matrix(1.07721,0,0,1.03429,7.95276,1795.57)">
+        <rect x="119.818" y="112.68" width="804.602" height="181.36" style="fill:white;stroke:rgb(66,117,255);stroke-width:19.73px;"/>
+    </g>
+    <g transform="matrix(1,0,0,1,20.9657,1803.4)">
+        <text x="266.56px" y="223.752px" style="font-family:'ArialMT', 'Arial', sans-serif;font-size:83.333px;">Graph Results</text>
+    </g>
+    <g transform="matrix(1.05504,0,0,0.683826,28.4523,1871.25)">
+        <rect x="924.42" y="139.658" width="759.009" height="120.996" style="fill:rgb(0,60,225);stroke:rgb(0,60,225);stroke-width:23.43px;"/>
+    </g>
+    <g transform="matrix(1,0,0,1,75.6352,1815.83)">
+        <text x="988.812px" y="199.875px" style="font-family:'ArialMT', 'Arial', sans-serif;font-size:50px;fill:white;">- r</text>
+    </g>
+    <g transform="matrix(1,0,0,1,168.864,1812.43)">
+        <text x="1667.8px" y="212.875px" style="font-family:'ArialMT', 'Arial', sans-serif;font-size:50px;">pipeline_control.sh</text>
+    </g>
+    <g transform="matrix(1.07721,0,0,1.03429,8.29703,713.744)">
+        <rect x="119.818" y="112.68" width="804.602" height="181.36" style="fill:white;stroke:rgb(66,117,255);stroke-width:19.73px;"/>
+    </g>
+    <g transform="matrix(1,0,0,1,21.31,721.575)">
+        <text x="210.957px" y="223.752px" style="font-family:'ArialMT', 'Arial', sans-serif;font-size:83.333px;">Human Detection</text>
+    </g>
+    <g transform="matrix(1.05504,0,0,1.29775,28.7965,703.681)">
+        <rect x="924.42" y="139.658" width="759.009" height="120.996" style="fill:rgb(0,60,225);stroke:rgb(0,60,225);stroke-width:17.62px;"/>
+    </g>
+    <g transform="matrix(1,0,0,1,75.9794,734.005)">
+        <text x="988.812px" y="199.875px" style="font-family:'ArialMT', 'Arial', sans-serif;font-size:50px;fill:white;">- bwa <tspan x="1138.81px 1288.81px " y="199.875px 199.875px "> -</tspan> gatk</text>
+        <text x="988.812px" y="270.708px" style="font-family:'ArialMT', 'Arial', sans-serif;font-size:50px;fill:white;">- fastq <tspan x="1138.81px 1288.81px " y="270.708px 270.708px "> -</tspan> bam</text>
+    </g>
+    <g transform="matrix(1,0,0,1,169.209,730.6)">
+        <text x="1667.8px" y="212.875px" style="font-family:'ArialMT', 'Arial', sans-serif;font-size:50px;">1_process_sample.sh</text>
+    </g>
+    <g transform="matrix(1.07721,0,0,1.03429,8.6413,925.4)">
+        <rect x="119.818" y="112.68" width="804.602" height="181.36" style="fill:white;stroke:rgb(66,117,255);stroke-width:19.73px;"/>
+    </g>
+    <g transform="matrix(1,0,0,1,21.6543,933.231)">
+        <text x="231.77px" y="223.752px" style="font-family:'ArialMT', 'Arial', sans-serif;font-size:83.333px;">Building Contigs</text>
+    </g>
+    <g transform="matrix(1.05504,0,0,1.34242,29.1408,909.098)">
+        <rect x="924.42" y="139.658" width="759.009" height="120.996" style="fill:rgb(0,60,225);stroke:rgb(0,60,225);stroke-width:17.26px;"/>
+    </g>
+    <g transform="matrix(1,0,0,1,76.3237,945.661)">
+        <text x="988.812px" y="199.875px" style="font-family:'ArialMT', 'Arial', sans-serif;font-size:50px;fill:white;">- samtools <tspan x="1288.81px " y="199.875px ">-</tspan> gatk</text>
+        <text x="988.812px" y="270.708px" style="font-family:'ArialMT', 'Arial', sans-serif;font-size:50px;fill:white;">- spades</text>
+    </g>
+    <g transform="matrix(1.07721,0,0,1.03429,8.6413,925.4)">
+        <rect x="119.818" y="112.68" width="804.602" height="181.36" style="fill:white;stroke:rgb(66,117,255);stroke-width:19.73px;"/>
+    </g>
+    <g transform="matrix(1,0,0,1,21.6543,933.231)">
+        <text x="231.77px" y="223.752px" style="font-family:'ArialMT', 'Arial', sans-serif;font-size:83.333px;">Building Contigs</text>
+    </g>
+    <g transform="matrix(1.05504,0,0,1.34242,29.1408,909.098)">
+        <rect x="924.42" y="139.658" width="759.009" height="120.996" style="fill:rgb(0,60,225);stroke:rgb(0,60,225);stroke-width:17.26px;"/>
+    </g>
+    <g transform="matrix(1,0,0,1,76.3237,945.661)">
+        <text x="988.812px" y="199.875px" style="font-family:'ArialMT', 'Arial', sans-serif;font-size:50px;fill:white;">- samtools <tspan x="1288.81px " y="199.875px ">-</tspan> gatk</text>
+        <text x="988.812px" y="270.708px" style="font-family:'ArialMT', 'Arial', sans-serif;font-size:50px;fill:white;">- spades <tspan x="1288.81px " y="270.708px ">-</tspan> fastq</text>
+    </g>
+    <g transform="matrix(1,0,0,1,169.553,942.256)">
+        <text x="1667.8px" y="212.875px" style="font-family:'ArialMT', 'Arial', sans-serif;font-size:50px;">1_process_sample.sh</text>
+    </g>
+    <g transform="matrix(1.07466,0,0,1.03184,8.60283,334.037)">
+        <rect x="119.818" y="112.68" width="804.602" height="181.36" style="fill:white;stroke:rgb(66,117,255);stroke-width:19.78px;"/>
+    </g>
+    <g transform="matrix(1,0,0,1,21.1856,341.46)">
+        <text x="258.739px" y="223.752px" style="font-family:'ArialMT', 'Arial', sans-serif;font-size:83.333px;">Demultiplexing</text>
+    </g>
+    <g transform="matrix(1.05254,0,0,0.645696,29.0538,414.632)">
+        <rect x="924.42" y="139.658" width="759.009" height="120.996" style="fill:rgb(0,60,225);stroke:rgb(0,60,225);stroke-width:23.86px;"/>
+    </g>
+    <g transform="matrix(1,0,0,1,73.7821,353.861)">
+        <text x="988.812px" y="199.875px" style="font-family:'ArialMT', 'Arial', sans-serif;font-size:50px;fill:white;">- bcl <tspan x="1138.81px 1288.81px " y="199.875px 199.875px "> -</tspan> fastq</text>
+    </g>
+    <g transform="matrix(1,0,0,1,165.182,350.433)">
+        <text x="1667.8px" y="212.875px" style="font-family:'ArialMT', 'Arial', sans-serif;font-size:50px;">0_demultiplexer<tspan x="2018.02px 2031.91px " y="212.875px 212.875px ">.s</tspan>h</text>
+    </g>
+    <g transform="matrix(1.07466,0,0,1.42073,8.94711,1098.92)">
+        <rect x="119.818" y="112.68" width="804.602" height="181.36" style="fill:white;stroke:rgb(66,117,255);stroke-width:16.54px;"/>
+    </g>
+    <g transform="matrix(1,0,0,1,21.5299,1150.16)">
+        <text x="332.856px" y="223.752px" style="font-family:'ArialMT', 'Arial', sans-serif;font-size:83.333px;">T<tspan x="374.523px 420.869px " y="223.752px 223.752px ">ax</tspan>onomic</text>
+        <text x="298.066px" y="309.811px" style="font-family:'ArialMT', 'Arial', sans-serif;font-size:83.333px;">Identiﬁcation</text>
+    </g>
+    <g transform="matrix(1.05254,0,0,1.30401,29.398,1131.39)">
+        <rect x="924.42" y="139.658" width="759.009" height="120.996" style="fill:rgb(0,60,225);stroke:rgb(0,60,225);stroke-width:17.58px;"/>
+    </g>
+    <g transform="matrix(1,0,0,1,74.1263,1162.56)">
+        <text x="988.812px" y="199.875px" style="font-family:'ArialMT', 'Arial', sans-serif;font-size:50px;fill:white;">- kraken2 <tspan x="1288.81px " y="199.875px ">-</tspan> samtools</text>
+        <text x="988.812px" y="270.708px" style="font-family:'ArialMT', 'Arial', sans-serif;font-size:50px;fill:white;">- fastq</text>
+    </g>
+    <g transform="matrix(1,0,0,1,165.526,1159.13)">
+        <text x="1667.8px" y="212.875px" style="font-family:'ArialMT', 'Arial', sans-serif;font-size:50px;">1_process_sample.sh</text>
+    </g>
+</svg>

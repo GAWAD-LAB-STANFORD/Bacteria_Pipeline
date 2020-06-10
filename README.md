@@ -50,6 +50,8 @@
 
 ## What It Does Exactly
 
+![Pipeline Graphic](pipeline_graphic.png)
+
 ### submit_all.sh
 Will submit the pipeline_control.sh master script to run the entire pipeline. Why have an additional script instead of just submitting pipeline_control.sh directly? It makes it just a little easier for a novice Slurm user
 
@@ -66,7 +68,7 @@ Will submit the pipeline_control.sh master script to run the entire pipeline. Wh
     - Run kraken2 on non-human reads for microbes, plasmids, and phages
 - Summarize metrics like human and contig alignment metrics, read targets, and kraken2 report output
     - Create json jtree files from kraken2 report outputs for later Rscript
-- Only keep long contigs (default 5kb), remove low complexity regions of contigs, and consolidate them into files (320 contigs each)
+- Only keep long contigs (default 5kb) and consolidate them into files (320 contigs each)
 - **2_blast_contigs.sh** - For each file of long contigs, a job will run to classify them using BLAST+ (blastn) against entire nucleotide database, plasmid database, and phage database
 - Parse BLAST results
 - Graph human contamination, kraken results, BLAST results, and other measures
