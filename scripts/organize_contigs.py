@@ -18,7 +18,6 @@ long_records = []
 for contig in contigs:
     sample = re.sub(contig_file_suffix, "", contig)
     long_contig_count = 0
-    contigs_with_low_complexity = 0
     sample_records = list(SeqIO.parse(contig, "fasta"))
     for record in sample_records:
         if len(record) >= record_length_minimum:
@@ -26,7 +25,6 @@ for contig in contigs:
             record.id = "{}.{}".format(sample, record.id)
             long_records.append(record)
     print("\t{} long contigs found for sample {}".format(long_contig_count, sample))
-    print("\t{} contigs had low complexity regions that were removed".format(contigs_with_low_complexity))
 print("{} total long contigs found across all samples".format(len(long_records)))
 
 file_count = 0
