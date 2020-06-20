@@ -128,11 +128,10 @@ fi
 echo "### De novo assembling contigs and detecting contamination ### - START: $(date)"
 JOB_COUNT=${#SAMPLE_ARRAY[@]}
 echo -e "Assemble jobs to run: $JOB_COUNT"
-SAMPLE_JOB=$(sbatch --parsable --wait -e $STD_ERR_OUT_DIR/%A_%a_%x.err -o $STD_ERR_OUT_DIR/%A_%a_%x.out \
+sbatch --wait -e $STD_ERR_OUT_DIR/%A_%a_%x.err -o $STD_ERR_OUT_DIR/%A_%a_%x.out \
     --array=1-${JOB_COUNT} ${SCRIPT_DIR}/1_process_sample.sh \
     $FASTQ_DIR $RESULTS_DIR $R1_SUFFIX $R2_SUFFIX $REF_FASTA \
-    $KRAKEN_DB_TYPES $KRAKEN_DB_DIR_PREFIX $TOOLS_DIR)
-echo "Submitted batch job $SAMPLE_JOB"
+    $KRAKEN_DB_TYPES $KRAKEN_DB_DIR_PREFIX $TOOLS_DIR
 if [ $(ls *_contigs.fasta | wc -l) -eq 0 ]; then
     echo "No contig files found. Exiting with code 1"
     exit 1
@@ -243,10 +242,9 @@ echo "### Organzing contigs ### - END: $(date)"
 echo "### BLAST aligning contigs to nucleotide database ### - START: $(date)"
 JOB_COUNT=$(ls long_contigs_* | wc -l)
 echo -e "Blast jobs to run: $JOB_COUNT"
-BLAST_JOB=$(sbatch --dependency=afterok:${SAMPLE_JOB} --parsable --wait \
-    -e $STD_ERR_OUT_DIR/%A_%a_%x.err -o $STD_ERR_OUT_DIR/%A_%a_%x.out --array=1-${JOB_COUNT} \
-    ${SCRIPT_DIR}/2_blast_contigs.sh $RESULTS_DIR $TOOLS_DIR $BLAST_DB_TYPES $NCBI_DB_DIR_PREFIX)
-echo "Submitted batch job $BLAST_JOB"
+sbatch --wait -e $STD_ERR_OUT_DIR/%A_%a_%x.err -o $STD_ERR_OUT_DIR/%A_%a_%x.out \
+    --array=1-${JOB_COUNT} ${SCRIPT_DIR}/2_blast_contigs.sh \
+    $RESULTS_DIR $TOOLS_DIR $BLAST_DB_TYPES $NCBI_DB_DIR_PREFIX
 if [ $(ls blast_results_* | wc -l) -eq 0 ]; then
     echo "No BLAST results found. Exiting with code 1"
     exit 1

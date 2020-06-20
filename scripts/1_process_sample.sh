@@ -23,7 +23,7 @@ ml python/3.6.1 java
 ml biology bwa samtools gatk
 
 SAMPLE=$(find ${FASTQ_DIR}/ -maxdepth 1 -name "*${R1_SUFFIX}" -exec basename {} \; | \
-    grep -v "Undetermined" | sed "s/${R1_SUFFIX}//" | sed -n ${SLURM_ARRAY_TASK_ID}p)
+    grep -v "Undetermined" | greo -v "trimmed" | sed "s/${R1_SUFFIX}//" | sed -n ${SLURM_ARRAY_TASK_ID}p)
 export PATH=${TOOLS_DIR}/kraken2-2.0.8-beta:$PATH
 
 echo "Sample: $SAMPLE"
