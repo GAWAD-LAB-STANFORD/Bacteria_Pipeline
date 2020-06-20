@@ -15,18 +15,16 @@ REF_FASTA=$5
 KRAKEN_DB_TYPES_ARRAY=( $(echo $6 | sed 's/-/ /g') )
 KRAKEN_DB_DIR_PREFIX=$7
 TOOLS_DIR=$8
+SAMPLE_ARRAY=( $(echo $9 | sed 's/:/ /g') )
+SAMPLE=${SAMPLE_ARRAY[$(( $SLURM_ARRAY_TASK_ID - 1 ))]}
 
-echo -e "START: $(date)\nBacteria Pipeline\nFastq dir: $FASTQ_DIR\nResults dir: $RESULTS_DIR"
+echo -e "START: $(date)\nBacteria Pipeline\nFastq dir: $FASTQ_DIR\nResults dir: $RESULTS_DIR\nSample: $SAMPLE"
 cd $RESULTS_DIR
 
 ml python/3.6.1 java 
 ml biology bwa samtools gatk
 
-SAMPLE=$(find ${FASTQ_DIR}/ -maxdepth 1 -name "*${R1_SUFFIX}" -exec basename {} \; | \
-    grep -v "Undetermined" | greo -v "trimmed" | sed "s/${R1_SUFFIX}//" | sed -n ${SLURM_ARRAY_TASK_ID}p)
 export PATH=${TOOLS_DIR}/kraken2-2.0.8-beta:$PATH
-
-echo "Sample: $SAMPLE"
 
 echo "### Trimming fastqs ### - START: $(date)"
 java -jar ${TOOLS_DIR}/Trimmomatic-0.35/trimmomatic-0.35.jar PE -phred33 -trimlog \

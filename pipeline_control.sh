@@ -127,11 +127,12 @@ fi
 
 echo "### De novo assembling contigs and detecting contamination ### - START: $(date)"
 JOB_COUNT=${#SAMPLE_ARRAY[@]}
+SAMPLES_STRING=$( IFS=$':'; echo "${SAMPLE_ARRAY[*]}" )
 echo -e "Assemble jobs to run: $JOB_COUNT"
 sbatch --wait -e $STD_ERR_OUT_DIR/%A_%a_%x.err -o $STD_ERR_OUT_DIR/%A_%a_%x.out \
     --array=1-${JOB_COUNT} ${SCRIPT_DIR}/1_process_sample.sh \
     $FASTQ_DIR $RESULTS_DIR $R1_SUFFIX $R2_SUFFIX $REF_FASTA \
-    $KRAKEN_DB_TYPES $KRAKEN_DB_DIR_PREFIX $TOOLS_DIR
+    $KRAKEN_DB_TYPES $KRAKEN_DB_DIR_PREFIX $TOOLS_DIR $SAMPLES_STRING
 if [ $(ls *_contigs.fasta | wc -l) -eq 0 ]; then
     echo "No contig files found. Exiting with code 1"
     exit 1
