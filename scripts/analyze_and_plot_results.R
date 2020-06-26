@@ -335,7 +335,7 @@ scaled_taxonomic_proportion_of_contig_length_plot <- function(sample_df, taxonom
 }
 export_with_ncbi_annotations <- function(summed_df, ncbi_annotation_string, taxonomic_variable_string, blast_db_string) {
   ncbi_annotation_string <- tolower(ncbi_annotation_string)
-  taxonomic_variable_string <- tolower(taxonomic_variable_string)
+  taxonomic_variable_string <- tolower(taxonomic_variable_sstring)
   if (!is.na(ncbi_annotations_dir)) {
     annotation_df <- read.table(sprintf("%s/%s_annotations.tsv", ncbi_annotations_dir, ncbi_annotation_string), sep="\t", header = TRUE, quote="")
     summed_df <- plyr::join(summed_df, annotation_df, by = c(taxonomic_variable_string), type = "left", match = "first")
@@ -351,7 +351,7 @@ export_with_ncbi_annotations <- function(summed_df, ncbi_annotation_string, taxo
 
 # Nucleotide, plasmid, and viral BLAST results ------------------------------------------------
 taxonomic_variable_string_list <- c("Genus", "Plasmid", "Phage")
-ncbi_annotation_string_list <- c("Bacteria", "Plasmid", "Viral")
+ncbi_annotation_string_list <- c("Microorganism", "Plasmid", "Viral")
 
 # Load and preprocess all BLAST result dataframes
 # Plot contig alignment bar plots, taxonomy heatmaps, 
