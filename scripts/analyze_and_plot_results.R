@@ -204,7 +204,8 @@ summarize_sample_metrics <- function(sample_df, taxonomic_variable_string) {
   taxonomic_variable_string <- tolower(taxonomic_variable_string)
   summed_sample_df <- sample_df %>%
     mutate(reverse_ranking = (max(contig_rank) + 1) - contig_rank) %>%
-    mutate(total_read_count = sum(read_count),
+    mutate(total_largest_contig = max(contig_length),
+           total_read_count = sum(read_count),
            total_contigs = length(contig), 
            total_contig_length = sum(contig_length),
            total_blast_length = sum(top_hsp_align_len),
@@ -213,6 +214,7 @@ summarize_sample_metrics <- function(sample_df, taxonomic_variable_string) {
            total_blast_alignment_fractions = sum(tophit_aln_query_fraction)) %>%
     group_by(.dots = taxonomic_variable_string) %>%
     mutate(max_reference_len = max(reference_len),
+           largest_contig = max(contig_length),
            summed_read_count = sum(read_count),
            summed_contigs = n(),
            summed_contig_length = sum(contig_length),
@@ -220,7 +222,8 @@ summarize_sample_metrics <- function(sample_df, taxonomic_variable_string) {
            summed_contig_graph_cov = sum(contig_graph_cov),
            summed_reverse_rankings = sum(reverse_ranking),
            summed_blast_alignment_fractions = sum(tophit_aln_query_fraction)) %>%
-    mutate(percent_read_count = summed_read_count / total_read_count * 100,
+    mutate(percent_largest_contig = largest_contig / total_largest_contig * 100,
+           percent_read_count = summed_read_count / total_read_count * 100,
            percent_contigs = summed_contigs / total_contigs * 100,
            percent_contig_length = summed_contig_length / total_contig_length * 100,
            percent_blast_length = summed_blast_length / total_blast_length * 100,
@@ -229,12 +232,41 @@ summarize_sample_metrics <- function(sample_df, taxonomic_variable_string) {
            percent_blast_alignment_fraction = summed_blast_alignment_fractions / total_blast_alignment_fractions * 100,
            percent_reference_covered_by_contigs = summed_contig_length / max_reference_len * 100,
            percent_reference_covered_by_blasts = summed_blast_length / max_reference_len * 100) %>%
-    select(sample, taxonomic_variable_string, summed_read_count, summed_contigs, summed_contig_length, summed_blast_length, summed_contig_graph_cov, summed_blast_alignment_fractions,
-           percent_read_count, percent_contigs, percent_contig_length, percent_contig_graph_cov, percent_reverse_ranking, 
-           percent_blast_alignment_fraction, percent_reference_covered_by_contigs, percent_reference_covered_by_blasts, max_reference_len) %>%
+    select(sample, taxonomic_variable_string, largest_contig, summed_read_count, summed_contigs, summed_contig_length, 
+           summed_blast_length, summed_contig_graph_cov, summed_blast_alignment_fractions,
+           percent_largest_contig, percent_read_count, percent_contigs, percent_contig_length, 
+           percent_blast_length, percent_contig_graph_cov, percent_reverse_ranking, 
+           percent_blast_alignment_fraction, percent_reference_covered_by_contigs, 
+           percent_reference_covered_by_blasts, max_reference_len) %>%
     distinct() %>%
     ungroup()
   return(summed_sample_df)
+}
+lg50_contigs_over_reference <- function(sample_df, taxonomic_variable_string) {
+  taxonomic_variable_string <- tolower(taxonomic_variable_string)
+  sample_lg50_df <- data.frame()
+  for (temp_taxonomic_string in unique(pull(sample_df, !!sym(taxonomic_variable_string)))) {
+    contig_count <- 0
+    summed_contig_length <- 0
+    temp_taxonomic_df <- sample_df %>%
+      filter(!!sym(taxonomic_variable_string) == temp_taxonomic_string) %>%
+      arrange(desc(contig_length))
+    max_reference_length <- max(temp_taxonomic_df$reference_len)
+    if (sum(temp_taxonomic_df$contig_length) < (max_reference_length/2)) {
+      next
+    }
+    while (contig_count <= nrow(temp_taxonomic_df) & summed_contig_length <= (max_reference_length/2)) {
+      summed_contig_length = summed_contig_length + temp_taxonomic_df[(contig_count+1), "contig_length"]
+      contig_count = contig_count + 1
+    }
+    sample_lg50_df <- rbind(sample_lg50_df, data.frame(sample = unique(sample_df$sample), lg50_count = contig_count,
+                                                       taxonomic_variable_string = temp_taxonomic_string,
+                                                       lg50_percent = round(contig_count / nrow(temp_taxonomic_df) * 100, 2)))
+  }
+  if (nrow(sample_lg50_df) > 0) {
+    colnames(sample_lg50_df) <- c("sample", "lg50_count", taxonomic_variable_string, "lg50_percent")
+  }
+  return(sample_lg50_df)
 }
 kraken_ggtree_plot <- function(sample_string, db_type) {
   json <- fromJSON(file = sprintf("%s.%s.%s%s", project, sample_string, db_type, kraken_jtree_suffix))
@@ -255,15 +287,23 @@ metric_bar_plots_list <- function(summed_sample_df, taxonomic_plot_string, taxon
     geom_bar(stat="identity") + geom_text(aes(label=round(summed_read_count,2)), vjust=-1) +
     labs( x = taxonomic_plot_string, y = "Percent of all reads", title = sprintf("%s read count", taxonomic_plot_string)) + 
     ylim(0, 100) + ggplot_theme_no_legend + scale_color_manual(values = taxonomic_color_vector)
-  plot2 <- ggplot(summed_sample_df, aes(reorder(get(taxonomic_variable_string), percent_contig_length), percent_contig_length, fill = get(taxonomic_variable_string))) +
-    geom_bar(stat="identity") + geom_text(aes(label=round(summed_contig_length,2)), vjust=-1) +
-    labs( x = taxonomic_plot_string, y = "Percent of all contig lengths", title = sprintf("%s contig length", taxonomic_plot_string)) + 
+  plot2 <- ggplot(summed_sample_df, aes(reorder(get(taxonomic_variable_string), percent_largest_contig), percent_largest_contig, fill = get(taxonomic_variable_string))) +
+    geom_bar(stat="identity") + geom_text(aes(label=round(largest_contig,2)), vjust=-1) +
+    labs( x = taxonomic_plot_string, y = sprintf("Percent of the largest contig across all %s", taxonomic_variable_string), title = sprintf("%s largest contig length", taxonomic_plot_string)) + 
     ylim(0, 100) + ggplot_theme_no_legend + scale_color_manual(values = taxonomic_color_vector)
-  plot3 <- ggplot(summed_sample_df, aes(reorder(get(taxonomic_variable_string), percent_reference_covered_by_blasts), percent_reference_covered_by_blasts, fill = get(taxonomic_variable_string))) +
+  plot3 <- ggplot(summed_sample_df, aes(reorder(get(taxonomic_variable_string), percent_blast_length), percent_blast_length, fill = get(taxonomic_variable_string))) +
+    geom_bar(stat="identity") + geom_text(aes(label=round(summed_blast_length,2)), vjust=-1) +
+    labs( x = taxonomic_plot_string, y = "Percent of all aligned contig lengths", title = sprintf("%s aligned contig length", taxonomic_plot_string)) + 
+    ylim(0, 100) + ggplot_theme_no_legend + scale_color_manual(values = taxonomic_color_vector)
+  plot4 <- ggplot(summed_sample_df, aes(reorder(get(taxonomic_variable_string), percent_reference_covered_by_blasts), percent_reference_covered_by_blasts, fill = get(taxonomic_variable_string))) +
     geom_bar(stat="identity") + geom_text(aes(label=round(percent_reference_covered_by_blasts,2)), vjust=-1) +
-    labs( x = taxonomic_plot_string, y = "Percent of reference genome length", title = sprintf("%s contig aligned length\n compared to reference length", taxonomic_plot_string)) + 
+    labs( x = taxonomic_plot_string, y = "Percent of reference genome length", title = sprintf("%s aligned contig length\n compared to reference length", taxonomic_plot_string)) + 
     ylim(0, 100) + ggplot_theme_no_legend + scale_color_manual(values = taxonomic_color_vector)
-  return_list = list(plot1, plot2, plot3)
+  plot5 <- ggplot(summed_sample_df, aes(reorder(get(taxonomic_variable_string), percent_reference_covered_by_blasts), lg50_percent, fill = get(taxonomic_variable_string))) +
+    geom_bar(stat="identity") + geom_text(aes(label=lg50_count), vjust=-1) +
+    labs( x = taxonomic_plot_string, y = "Percent of contigs needed to cover 50% of genome", title = sprintf("%s LG50", taxonomic_plot_string)) + 
+    ylim(0, 100) + ggplot_theme_no_legend + scale_color_manual(values = taxonomic_color_vector)
+  return_list = list(plot1, plot2, plot3, plot4, plot5)
   return(return_list)
 }
 taxonomic_proportion_of_contig_length_plot <- function(sample_df, taxonomic_plot_string, taxonomic_variable_string, taxonomic_color_vector) {
@@ -377,6 +417,15 @@ for (current_sample in unique_samples) {
       filter(sample == current_sample)
     if (nrow(sample_df) > 0) {
       summed_sample_df <- summarize_sample_metrics(sample_df, taxonomic_variable_string_list[i])
+      lg50_sample_df <- lg50_contigs_over_reference(sample_df, taxonomic_variable_string_list[i])
+      if (nrow(lg50_sample_df) > 0) {
+        summed_sample_df <- left_join(summed_sample_df, lg50_sample_df)
+        summed_sample_df <- mutate(summed_sample_df, 
+                                   lg50_count = ifelse(is.na(lg50_count), 0, lg50_count),
+                                   lg50_percent = ifelse(is.na(lg50_percent), 0, lg50_percent))
+      } else {
+        summed_sample_df <- mutate(summed_sample_df, lg50_count = 0, lg50_percent = 0)
+      }
       
       grid_list <- c(grid_list, list(kraken_ggtree_plot(current_sample, kraken_db_types[i])))
       grid_list <- c(grid_list, metric_bar_plots_list(summed_sample_df, ncbi_annotation_string_list[i], taxonomic_variable_string_list[i], taxonomic_color_list[[i]]))
@@ -389,8 +438,8 @@ for (current_sample in unique_samples) {
       }
       
       variable_height = variable_height + 8
-      lay_start <- (nrow(grid_layout)*5)+1
-      new_lay <- c(lay_start, lay_start, lay_start+1, lay_start+2, lay_start+3, lay_start+4, lay_start+4)
+      lay_start <- (nrow(grid_layout)*7)+1
+      new_lay <- c(lay_start, lay_start, lay_start+1, lay_start+2, lay_start+3, lay_start+4, lay_start+5, lay_start+6, lay_start+6)
       if (nrow(grid_layout) == 0) {
         grid_layout <- rbind(new_lay)
       } else {
