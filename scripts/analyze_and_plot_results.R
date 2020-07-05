@@ -272,12 +272,17 @@ kraken_ggtree_plot <- function(sample_string, db_type) {
   json <- fromJSON(file = sprintf("%s.%s.%s%s", project, sample_string, db_type, kraken_jtree_suffix))
   width <- json$metadata$max_depth + 1
   tree <- read.jtree(sprintf("%s.%s.%s%s", project, sample_string, db_type, kraken_jtree_suffix))
-  tree1 <- ggtree(tree, branch.length='none', aes(color=percent_fragments_covered), size = 1) + 
-    geom_label(aes(x=branch, label=label), vjust=-1) + geom_label(aes(x=branch, label=percent_fragments_covered)) +
-    geom_tiplab(size=5, color="black") + 
-    labs(title = "Percent coverage from kraken2 results", x = "Depth of identification") +
-    ylim(0, width/2) + xlim(0, width) + theme(legend.position="bottom") + ggtree_theme +
-    scale_color_continuous(low='red', high='royalblue1')
+  tree1 <- tryCatch({
+    ggtree(tree, branch.length='none', aes(color=percent_fragments_covered), size = 1) + 
+      geom_label(aes(x=branch, label=label), vjust=-1) + geom_label(aes(x=branch, label=percent_fragments_covered)) +
+      geom_tiplab(size=5, color="black") + 
+      labs(title = "Percent coverage from kraken2 results", x = "Depth of identification") +
+      ylim(0, width/2) + xlim(0, width) + theme(legend.position="bottom") + ggtree_theme +
+      scale_color_continuous(low='red', high='royalblue1')
+  }, error = function(e) {
+    df <- data.frame()
+    ggplot(df) + geom_blank()
+  })
   return(tree1)
 }
 metric_bar_plots_list <- function(summed_sample_df, taxonomic_plot_string, taxonomic_variable_string, taxonomic_color_vector) {
@@ -291,19 +296,27 @@ metric_bar_plots_list <- function(summed_sample_df, taxonomic_plot_string, taxon
     geom_bar(stat="identity") + geom_text(aes(label=round(largest_contig,2)), vjust=-1) +
     labs( x = taxonomic_plot_string, y = sprintf("Percent of the largest contig across all %s", taxonomic_variable_string), title = sprintf("%s largest contig length", taxonomic_plot_string)) + 
     ylim(0, 100) + ggplot_theme_no_legend + scale_color_manual(values = taxonomic_color_vector)
-  plot3 <- ggplot(summed_sample_df, aes(reorder(get(taxonomic_variable_string), percent_blast_length), percent_blast_length, fill = get(taxonomic_variable_string))) +
+  plot3 <- ggplot(summed_sample_df, aes(reorder(get(taxonomic_variable_string), percent_contig_length), percent_contig_length, fill = get(taxonomic_variable_string))) +
+    geom_bar(stat="identity") + geom_text(aes(label=round(summed_contig_length,2)), vjust=-1) +
+    labs( x = taxonomic_plot_string, y = "Percent of all contig lengths", title = sprintf("%s contig lengths", taxonomic_plot_string)) + 
+    ylim(0, 100) + ggplot_theme_no_legend + scale_color_manual(values = taxonomic_color_vector)
+  plot4 <- ggplot(summed_sample_df, aes(reorder(get(taxonomic_variable_string), percent_blast_length), percent_blast_length, fill = get(taxonomic_variable_string))) +
     geom_bar(stat="identity") + geom_text(aes(label=round(summed_blast_length,2)), vjust=-1) +
-    labs( x = taxonomic_plot_string, y = "Percent of all aligned contig lengths", title = sprintf("%s aligned contig length", taxonomic_plot_string)) + 
+    labs( x = taxonomic_plot_string, y = "Percent of all aligned contig lengths", title = sprintf("%s aligned contig lengths", taxonomic_plot_string)) + 
     ylim(0, 100) + ggplot_theme_no_legend + scale_color_manual(values = taxonomic_color_vector)
-  plot4 <- ggplot(summed_sample_df, aes(reorder(get(taxonomic_variable_string), percent_reference_covered_by_blasts), percent_reference_covered_by_blasts, fill = get(taxonomic_variable_string))) +
+  plot5 <- ggplot(summed_sample_df, aes(reorder(get(taxonomic_variable_string), percent_reference_covered_by_contigs), percent_reference_covered_by_contigs, fill = get(taxonomic_variable_string))) +
+    geom_bar(stat="identity") + geom_text(aes(label=round(percent_reference_covered_by_contigs,2)), vjust=-1) +
+    labs( x = taxonomic_plot_string, y = "Percent of reference genome length", title = sprintf("%s contig lengths\n compared to reference length", taxonomic_plot_string)) + 
+    ylim(0, 100) + ggplot_theme_no_legend + scale_color_manual(values = taxonomic_color_vector)
+  plot6 <- ggplot(summed_sample_df, aes(reorder(get(taxonomic_variable_string), percent_reference_covered_by_blasts), percent_reference_covered_by_blasts, fill = get(taxonomic_variable_string))) +
     geom_bar(stat="identity") + geom_text(aes(label=round(percent_reference_covered_by_blasts,2)), vjust=-1) +
-    labs( x = taxonomic_plot_string, y = "Percent of reference genome length", title = sprintf("%s aligned contig length\n compared to reference length", taxonomic_plot_string)) + 
+    labs( x = taxonomic_plot_string, y = "Percent of reference genome length", title = sprintf("%s aligned contig lengths\n compared to reference length", taxonomic_plot_string)) + 
     ylim(0, 100) + ggplot_theme_no_legend + scale_color_manual(values = taxonomic_color_vector)
-  plot5 <- ggplot(summed_sample_df, aes(reorder(get(taxonomic_variable_string), percent_reference_covered_by_blasts), lg50_percent, fill = get(taxonomic_variable_string))) +
+  plot7 <- ggplot(summed_sample_df, aes(reorder(get(taxonomic_variable_string), percent_reference_covered_by_blasts), lg50_percent, fill = get(taxonomic_variable_string))) +
     geom_bar(stat="identity") + geom_text(aes(label=lg50_count), vjust=-1) +
     labs( x = taxonomic_plot_string, y = "Percent of contigs needed to cover 50% of genome", title = sprintf("%s LG50", taxonomic_plot_string)) + 
     ylim(0, 100) + ggplot_theme_no_legend + scale_color_manual(values = taxonomic_color_vector)
-  return_list = list(plot1, plot2, plot3, plot4, plot5)
+  return_list = list(plot1, plot2, plot3, plot4, plot5, plot6, plot7)
   return(return_list)
 }
 taxonomic_proportion_of_contig_length_plot <- function(sample_df, taxonomic_plot_string, taxonomic_variable_string, taxonomic_color_vector) {
@@ -351,7 +364,7 @@ export_with_ncbi_annotations <- function(summed_df, ncbi_annotation_string, taxo
 
 # Nucleotide, plasmid, and viral BLAST results ------------------------------------------------
 taxonomic_variable_string_list <- c("Genus", "Plasmid", "Phage")
-ncbi_annotation_string_list <- c("Microbial", "Plasmid", "Viral")
+ncbi_annotation_string_list <- c("Microbe", "Plasmid", "Viral")
 
 # Load and preprocess all BLAST result dataframes
 # Plot contig alignment bar plots, taxonomy heatmaps, 
@@ -438,8 +451,8 @@ for (current_sample in unique_samples) {
       }
       
       variable_height = variable_height + 8
-      lay_start <- (nrow(grid_layout)*7)+1
-      new_lay <- c(lay_start, lay_start, lay_start+1, lay_start+2, lay_start+3, lay_start+4, lay_start+5, lay_start+6, lay_start+6)
+      lay_start <- (nrow(grid_layout)*9)+1
+      new_lay <- c(lay_start, lay_start, lay_start+1, lay_start+2, lay_start+3, lay_start+4, lay_start+5, lay_start+6, lay_start+7, lay_start+8, lay_start+8)
       if (nrow(grid_layout) == 0) {
         grid_layout <- rbind(new_lay)
       } else {
@@ -448,7 +461,7 @@ for (current_sample in unique_samples) {
     }
   }
   
-  pdf(sprintf("%s.%s.fig_kraken_blast_results.pdf", project, current_sample), width = 30, height = variable_height)
+  pdf(sprintf("%s.%s.fig_kraken_blast_results.pdf", project, current_sample), width = 50, height = variable_height)
   grid.arrange(grobs = grid_list, layout_matrix = grid_layout)
   dev.off()
   cat(sprintf("\t%s - %s\n", count, current_sample))
