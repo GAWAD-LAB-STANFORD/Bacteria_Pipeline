@@ -79,7 +79,7 @@ fi
 echo -e "START: $(date)\nBacteria Pipeline\nErr out dir: $STD_ERR_OUT_DIR\nFastq dir: $FASTQ_DIR\nResults dir: $RESULTS_DIR\nProject: $PROJECT\nContig len min: $CONTIG_LENGTH_MINIMUM"
 cd $RESULTS_DIR
 
-ml perl R/3.6.1
+ml perl R/4.0.2
 
 # Demultiplexing option
 if [ ! -z $RUN_DIR ]; then
