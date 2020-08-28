@@ -460,11 +460,14 @@ for (current_sample in unique_samples) {
       }
     }
   }
-  
-  pdf(sprintf("%s.%s.fig_kraken_blast_results.pdf", project, current_sample), width = 50, height = variable_height)
-  grid.arrange(grobs = grid_list, layout_matrix = grid_layout)
-  dev.off()
-  cat(sprintf("\t%s - %s\n", count, current_sample))
+  if (length(grid_list) == 0) {
+    cat(sprintf("\t%s - %s - WARNING: no data found\n", count, current_sample))
+  } else {
+    pdf(sprintf("%s.%s.fig_kraken_blast_results.pdf", project, current_sample), width = 50, height = variable_height)
+    grid.arrange(grobs = grid_list, layout_matrix = grid_layout)
+    dev.off()
+    cat(sprintf("\t%s - %s\n", count, current_sample))
+  }
   count = count + 1
 }
 cat("\tDone\n")
