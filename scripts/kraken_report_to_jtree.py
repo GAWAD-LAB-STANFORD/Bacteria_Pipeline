@@ -26,7 +26,7 @@ for sample in samples:
     for row in reversed(sample_df.index):
         increment += 1
         new_spaces = sample_df['sciname'][row].count(' ')
-        new_newick = '%s:%s{%s}' % (sample_df['sciname'][row].strip(), str(new_spaces), str(increment))
+        new_newick = '%s:%s{%s},' % (sample_df['sciname'][row].strip(), str(new_spaces), str(increment))
         new_dict = {
             'edge_num': int(increment),
             'percent_fragments_covered': float(sample_df['percent_fragments_covered'][row]),
@@ -41,7 +41,7 @@ for sample in samples:
         if len(saved_newicks) > 0:
             if len(saved_newicks.loc[saved_newicks.iloc[:,1] == new_spaces]) > 0:
                 previous_newicks = ",".join(saved_newicks.loc[saved_newicks.iloc[:, 1] == new_spaces][0])
-                new_newick = '{},{}'.format(new_newick, previous_newicks)
+                new_newick = '{}{}'.format(new_newick, previous_newicks)
                 saved_newicks = saved_newicks[saved_newicks.iloc[:, 1] != new_spaces]
         if len(current_newick) < 1:
             current_newick = new_newick
