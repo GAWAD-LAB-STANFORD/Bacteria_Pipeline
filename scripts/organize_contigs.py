@@ -25,6 +25,7 @@ for contig in contigs:
             record.id = "{}.{}".format(sample, record.id)
             long_records.append(record)
     print("\t{} long contigs found for sample {}".format(long_contig_count, sample))
+
 print("{} total long contigs found across all samples".format(len(long_records)))
 
 file_count = 0
@@ -36,5 +37,10 @@ else:
         file_count += 1
         SeqIO.write(long_records[end_index-records_per_file:end_index],
             "{}{:.0f}.fasta".format(organized_contigs_prefix, file_count), "fasta")
+    if len(long_records) % records_per_file > 0:
+        file_count += 1
+        SeqIO.write(long_records[end_index:len(long_records)],
+            "{}{:.0f}.fasta".format(organized_contigs_prefix, file_count), "fasta")
+
 print("Split into {} files with {} records each".format(file_count, records_per_file))
         
