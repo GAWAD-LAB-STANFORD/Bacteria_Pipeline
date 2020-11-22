@@ -205,8 +205,9 @@ for DB_TYPE in ${KRAKEN_DB_TYPES_ARRAY[@]}; do
         SAMPLE=$(echo $i | sed "s/_${DB_TYPE}_kraken_report.tsv//")
         cat $i | sed 's/^ \+/'${SAMPLE}'\t/' | awk '$2>=1.00' >> ${PROJECT}.${DB_TYPE}.kraken_reports.tsv
     done
+    SAMPLES_STRING=$( IFS=$':'; echo "${SAMPLE_ARRAY[*]}" )
     python3 ${SCRIPT_DIR}/kraken_report_to_jtree.py ${PROJECT}.${DB_TYPE}.kraken_reports.tsv \
-        $PROJECT .${DB_TYPE}.kraken_jtree.json
+        $PROJECT .${DB_TYPE}.kraken_jtree.json $SAMPLES_STRING
 done
 KRAKEN_REPORT_FILENAMES=( $(ls *_kraken_report.tsv) )
 echo "Merged kraken reports"
