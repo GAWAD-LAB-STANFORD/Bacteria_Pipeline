@@ -11,7 +11,9 @@ contig_file_suffix = sys.argv[1]
 record_length_minimum = int(sys.argv[2])
 records_per_file = int(sys.argv[3])
 organized_contigs_prefix = sys.argv[4]
-print("Finding contigs of at least {} bases long".format(record_length_minimum))
+pipeline_status_filename = sys.argv[5]
+
+pipeline_status_output = "Finding contigs of at least {} bases long\n".format(record_length_minimum)
 
 contigs = glob.glob("*{}".format(contig_file_suffix))
 long_records = []
@@ -24,9 +26,9 @@ for contig in contigs:
             long_contig_count += 1
             record.id = "{}.{}".format(sample, record.id)
             long_records.append(record)
-    print("\t{} long contigs found for sample {}".format(long_contig_count, sample))
+    pipeline_status_output += "\t{} long contigs found for sample {}\n".format(long_contig_count, sample))
 
-print("{} total long contigs found across all samples".format(len(long_records)))
+pipeline_status_output += "{} total long contigs found across all samples\n".format(len(long_records)))
 
 file_count = 0
 if len(long_records) <= records_per_file:
@@ -42,5 +44,8 @@ else:
         SeqIO.write(long_records[end_index:len(long_records)],
             "{}{:.0f}.fasta".format(organized_contigs_prefix, file_count), "fasta")
 
-print("Split into {} files with {} records each".format(file_count, records_per_file))
+pipeline_status_output += "Split into {} files with {} records each\n".format(file_count, records_per_file))
+file1 = open(pipeline_status_filename, "a")
+file1.write(pipeline_status_output) 
+file1.close()
         

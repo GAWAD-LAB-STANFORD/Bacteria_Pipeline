@@ -7,8 +7,9 @@ import re
 db_type = sys.argv[1]
 blast_results_prefix = sys.argv[2]
 parsed_blast_results_filename = sys.argv[3]
+pipeline_status_filename = sys.argv[4]
 blastn_jsons = glob.glob("{}*.json".format(blast_results_prefix))
-print("{} blast json result files found with {} prefix".format(len(blastn_jsons), blast_results_prefix))
+pipeline_status_output = "{} blast json result files found with {} prefix\n".format(len(blastn_jsons), blast_results_prefix))
 all_top_blast_hits_list_list = []
 
 # for each blast result file, consolidate the top results
@@ -58,3 +59,7 @@ if len(all_top_blast_hits_list_list) > 0:
                                         columns=['sample', 'hit_rank', 'contig', 'contig_length', 
                                         'species', 'hit_taxid', 'accession', 'top_hsp_align_len', 'reference_len'])     
     blast_results_df.to_csv(parsed_blast_results_filename, header = True, index = False, sep="\t")
+
+file1 = open(pipeline_status_filename, "a")
+file1.write(pipeline_status_output) 
+file1.close()
