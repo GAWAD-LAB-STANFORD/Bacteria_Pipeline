@@ -75,6 +75,9 @@ while [ "$1" != "" ]; do
                                 ;;
         --only_identify )       ONLY_IDENTIFY=1
                                 ;;
+        --identify )            shift
+                                IDENTIFY=$1
+                                ;;
         --contig_len_min )      shift
                                 CONTIG_LENGTH_MINIMUM=$1
                                 ;;
@@ -169,6 +172,11 @@ elif [ $ONLY_IDENTIFY -eq 1 ]; then
 fi
 if [ $STEP -eq 0 ] && [ -z $RUN_DIR ]; then
     STEP=1
+fi
+if [ ! -z $IDENTIFY ]; then
+    OPTIONS+=( "--identify $IDENTIFY" )
+else
+    IDENTIFY=$PROJECT
 fi
 if [ $CONTIG_LENGTH_MINIMUM -ne 5000 ]; then
     OPTIONS+=( "--contig_len_min $CONTIG_LENGTH_MINIMUM" )
@@ -307,24 +315,17 @@ if [ $STEP -eq 2 ]; then
 
     echo "### Organzing contigs ### - START: $(date)" >> $PIPELINE_STATUS
     python3 ${SCRIPT_DIR}/organize_contigs.py \
-        "_contigs.fasta" $CONTIG_LENGTH_MINIMUM $CONTIGS_PER_BLAST_JOB "long_contigs_" $PIPELINE_STATUS
-    if [ $(ls long_contigs_* | wc -l) -eq 0 ]; then
+        "_contigs.fasta" $CONTIG_LENGTH_MINIMUM $CONTIGS_PER_BLAST_JOB "${IDENTIFY}_long_contigs_" $PIPELINE_STATUS
+    if [ $(ls ${IDENTIFY}_long_contigs_* | wc -l) -eq 0 ]; then
         echo "No contigs longer than $CONTIG_LENGTH_MINIMUM. Exiting with code 1" >> $PIPELINE_STATUS
         echo "END: $(date)" >> $PIPELINE_STATUS
         exit 1
     fi
     echo "### Organzing contigs ### - END: $(date)" >> $PIPELINE_STATUS
 
-
-    echo "### BLAST aligning contigs to nucleotide database ### - START: $(date)" >> $PIPELINE_STATUS
-    JOB_COUNT=$(ls long_contigs_* | wc -l)
-    echo -e "Blast jobs to run: $JOB_COUNT"
-    sbatch --wait -e $STD_ERR_OUT_DIR/%A_%a_%x.err -o $STD_ERR_OUT_DIR/%A_%a_%x.out \
-        --array=1-${JOB_COUNT} ${SCRIPT_DIR}/2_blast_contigs.sh \
-        $RESULTS_DIR $TOOLS_DIR $BLAST_DB_TYPES $NCBI_DB_DIR_PREFIX
         
     echo "### BLAST aligning contigs ### - START: $(date)" >> $PIPELINE_STATUS
-    LONG_CONTIG_ARRAY=( $(ls long_contigs_*) )
+    LONG_CONTIG_ARRAY=( $(ls ${IDENTIFY}_long_contigs_*) )
     JOB_COUNT=${#LONG_CONTIG_ARRAY[@]}
     echo "BLAST jobs to run: $JOB_COUNT" >> $PIPELINE_STATUS
     TEMP_ARRAY_INCREMENT=1000
@@ -335,17 +336,16 @@ if [ $STEP -eq 2 ]; then
         echo "Submitting $TEMP_JOB_COUNT jobs for samples $TEMP_ARRAY_START to $(($TEMP_ARRAY_START + ${#TEMP_LONG_CONTIG_ARRAY[@]} - 1))" >> $PIPELINE_STATUS
         TEMP_LONG_CONTIGS_STRING=$( IFS=$':'; echo "${TEMP_LONG_CONTIG_ARRAY[*]}" )
         DEPENDENCIES+=( $(sbatch --parsable -e $STD_ERR_OUT_DIR/%A_%a_%x.err -o $STD_ERR_OUT_DIR/%A_%a_%x.out \
-            --array=1-${TEMP_JOB_COUNT} ${SCRIPT_DIR}/1_process_sample.sh \
-            $FASTQ_DIR $RESULTS_DIR $R1_SUFFIX $R2_SUFFIX $REF_FASTA \
-            $KRAKEN_DB_TYPES $KRAKEN_DB_DIR_PREFIX $TOOLS_DIR $TEMP_LONG_CONTIGS_STRING) )
+            --array=1-${TEMP_JOB_COUNT} ${SCRIPT_DIR}/2_blast_contigs.sh \
+            $RESULTS_DIR $TOOLS_DIR $BLAST_DB_TYPES $NCBI_DB_DIR_PREFIX $IDENTIFY $TEMP_LONG_CONTIGS_STRING) )
         TEMP_ARRAY_START=$(($TEMP_ARRAY_START + $TEMP_ARRAY_INCREMENT))
     done
     sbatch --dependency=afterany:$( IFS=$':'; echo "${DEPENDENCIES[*]}" ) -J $PROJECT \
         -e ${STD_ERR_OUT_DIR}/%A_submit_all_%x.err -o ${STD_ERR_OUT_DIR}/%A_submit_all_%x.out \
         ${PIPELINE_DIR}/submit_all.sh --step3 ${OPTIONS[@]}
 elif [ $STEP -eq 3 ]; then
-    LONG_CONTIG_ARRAY=( $(ls long_contigs_* | sed "s/$CONTIG/long_contigs_/" | sed "s/.fasta//") )
-    BLAST_RESULTS_COUNT=$(ls blast_results_* | wc -l)
+    LONG_CONTIG_ARRAY=( $(ls ${IDENTIFY}_long_contigs_* | sed "s/$CONTIG/${IDENTIFY}_long_contigs_/" | sed "s/.fasta//") )
+    BLAST_RESULTS_COUNT=$(ls ${IDENTIFY}_blast_results_* | wc -l)
     if [ $BLAST_RESULTS_COUNT -eq 0 ]; then
         echo "No BLAST results found. Exiting with code 1" >> $PIPELINE_STATUS
         exit 1 >> $PIPELINE_STATUS
@@ -360,7 +360,7 @@ elif [ $STEP -eq 3 ]; then
     BLAST_DB_TYPES_ARRAY=( $(echo $BLAST_DB_TYPES | sed 's/-/ /g') )
     for DB_TYPE in ${BLAST_DB_TYPES_ARRAY[@]}; do
         python3 ${SCRIPT_DIR}/parse_blast_results.py $DB_TYPE \
-            blast_results_${DB_TYPE}_ ${PROJECT}.${DB_TYPE}.blast_results.tsv $PIPELINE_STATUS
+            ${IDENTIFY}_blast_results_${DB_TYPE}_ ${IDENTIFY}.${DB_TYPE}.blast_results.tsv $PIPELINE_STATUS
     done
     echo "### Parsing BLAST results ### - END: $(date)" >> $PIPELINE_STATUS
     
@@ -369,7 +369,7 @@ elif [ $STEP -eq 3 ]; then
     for DB_TYPE in ${KRAKEN_DB_TYPES_ARRAY[@]}; do
         SAMPLES_STRING=$( IFS=$':'; echo "${SAMPLE_ARRAY[*]}" )
         python3 ${SCRIPT_DIR}/kraken_report_to_jtree.py ${PROJECT}.${DB_TYPE}.kraken_reports.tsv \
-            $PROJECT .${DB_TYPE}.kraken_jtree.json $SAMPLES_STRING
+            $IDENTIFY .${DB_TYPE}.kraken_jtree.json $SAMPLES_STRING
     done
     echo "### Converting Kraken reports to TSV ### - END: $(date)" >> $PIPELINE_STATUS
     
@@ -377,7 +377,8 @@ elif [ $STEP -eq 3 ]; then
     ml R/4.0.2
     echo "### Processing contamination, Kraken results, BLAST results, and making final figures ### - START: $(date)" >> $PIPELINE_STATUS
     Rscript ${SCRIPT_DIR}/analyze_and_plot_results.R \
-        --project $PROJECT --sample_read_count_filename ${PROJECT}.sample_read_counts.tsv \
+        --project $PROJECT --identify $IDENTIFY \
+        --sample_read_count_filename ${PROJECT}.sample_read_counts.tsv \
         --summed_read_targets_filename ${PROJECT}.summed_read_targets.tsv \
         --contig_read_targets_filename ${PROJECT}.contig_read_targets.tsv \
         --contig_data_filename ${PROJECT}.contig_data.tsv \

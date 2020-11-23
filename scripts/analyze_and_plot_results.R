@@ -13,6 +13,8 @@ suppressPackageStartupMessages({
 option_list = list(
   make_option(c("--project"), type="character", default=NULL,
               help="REQUIRED", metavar="character"),
+  make_option(c("--identify"), type="character", default=NULL,
+              help="REQUIRED", metavar="character"),
   make_option(c("--sample_read_count_filename"), type="character", default=NULL,
               help="REQUIRED", metavar="character"),
   make_option(c("--summed_read_targets_filename"), type="character", default=NULL,
@@ -37,8 +39,9 @@ option_list = list(
 
 opt <- parse_args(OptionParser(option_list=option_list))
 
-if (is.null(opt$project) || is.null(opt$sample_read_count_filename) || is.null(opt$summed_read_targets_filename) ||
-    is.null(opt$contig_read_targets_filename) || is.null(opt$contig_data_filename) || is.null(opt$kraken_db_types) ||
+if (is.null(opt$project) || is.null(opt$identify) || is.null(opt$sample_read_count_filename) || 
+    is.null(opt$summed_read_targets_filename) || is.null(opt$contig_read_targets_filename) || 
+    is.null(opt$contig_data_filename) || is.null(opt$kraken_db_types) ||
     is.null(opt$kraken_jtree_suffix) || is.null(opt$blast_db_types) || is.null(opt$blast_results_suffix)) {
   stop("You must specify all required options. Use --help to get help.")
 }
@@ -85,7 +88,7 @@ plot1 <- ggplot(sample_read_counts_df, aes(x = 1, y = read_count)) +
   geom_boxplot() + geom_jitter(aes(color = sample), height = 0) + 
   labs(x = "", y = "Read count", title  = "Sample read counts") +
   ggplot_theme + xlim(c(0,2))
-pdf(sprintf("%s.sample_read_counts.pdf", project), width = 15, height = 8.5)
+pdf(sprintf("%s.sample_read_counts.pdf", opt$project), width = 15, height = 8.5)
 grid.arrange(tableGrob(sample_read_counts_df[,c("sample", "read_count")], rows = NULL, theme = grid_table_theme), plot1, ncol = 2)
 dev.off()
 
@@ -93,7 +96,7 @@ expected_coverage_df <- data.frame(genome_size = 0:10) %>%
   mutate(mean_cov = (median(sample_read_counts_df$read_count) * 140) / (genome_size * 1e6))
 plot1 <- ggplot(expected_coverage_df, aes(x = genome_size, y = mean_cov)) + geom_line() + ggplot_theme +
   labs(x = "Genome size (MB)", y = "Mean coverage depth", title  = "Expected mean coverage depth given sample genome sizes")
-ggsave(sprintf("%s.fig_expected_mean_coverage.pdf", project), plot = plot1, width = 11, height = 8.5)
+ggsave(sprintf("%s.fig_expected_mean_coverage.pdf", opt$project), plot = plot1, width = 11, height = 8.5)
 cat("Plotted sample read counts for all samples\n")
 rm(sample_read_counts_df, expected_coverage_df, plot1)
 
@@ -113,7 +116,7 @@ summed_read_targets_df <- summed_read_targets_df %>%
 plot1 <- ggplot(summed_read_targets_df, aes(sample, read_count, fill = reorder(alignment, read_count))) + 
   geom_bar(stat = "identity", position = position_dodge()) + geom_text(aes(label = round(percent_read_count, 2)), vjust=-1, position = position_dodge(0.9)) +
   labs(title = "Human contamination by read count", x = "Sample", y = "Read count", fill = "Read categories") + ggplot_theme
-ggsave(sprintf("%s.fig_human_contamination.pdf", project), plot = plot1, width = 11, height = 8.5)
+ggsave(sprintf("%s.fig_human_contamination.pdf", opt$project), plot = plot1, width = 11, height = 8.5)
 cat("Plotted human contamination for all samples\n")
 rm(summed_read_targets_df, plot1)
 
@@ -159,7 +162,7 @@ cum_sum_contig_length_plot <- ggplot(mutate(contig_data_df, trunc_contig_graph_c
 cum_sum_contig_cov_plot <- ggplot(mutate(contig_data_df, trunc_contig_graph_cov = ifelse(contig_graph_cov > 100, 100, contig_graph_cov)), 
                                   aes(x = contig_rank, y = trunc_contig_graph_cov, color = sample)) + 
   geom_point() + facet_grid(. ~ sample) + labs(x = "Contig rank", y = "SPAdes graph coverage") + ggplot_theme_no_legend
-pdf(sprintf("%s.fig_contig_rank_length_coverage.pdf", project), width = 11, height = 8.5)
+pdf(sprintf("%s.fig_contig_rank_length_coverage.pdf", opt$identify), width = 11, height = 8.5)
 grid.arrange(cum_sum_contig_length_plot, cum_sum_contig_cov_plot, nrow = 2)
 dev.off()
 cat("Plotted contig data for all samples\n")
@@ -293,9 +296,9 @@ lg50_contigs_over_reference <- function(sample_df, taxonomic_variable_string) {
   return(sample_lg50_df)
 }
 kraken_ggtree_plot <- function(sample_string, db_type) {
-  json <- fromJSON(file = sprintf("%s.%s.%s%s", project, sample_string, db_type, opt$kraken_jtree_suffix))
+  json <- fromJSON(file = sprintf("%s.%s.%s%s", opt$identify, sample_string, db_type, opt$kraken_jtree_suffix))
   width <- json$metadata$max_depth + 1
-  tree <- read.jtree(sprintf("%s.%s.%s%s", project, sample_string, db_type, opt$kraken_jtree_suffix))
+  tree <- read.jtree(sprintf("%s.%s.%s%s", opt$identify, sample_string, db_type, opt$kraken_jtree_suffix))
   tree1 <- tryCatch({
     ggtree(tree, branch.length='none', aes(color=percent_fragments_covered), size = 1) + 
       geom_label(aes(x=branch, label=label), vjust=-1) + geom_label(aes(x=branch, label=percent_fragments_covered)) +
@@ -378,9 +381,9 @@ export_with_ncbi_annotations <- function(summed_df, ncbi_annotation_string, taxo
     summed_df <- plyr::join(summed_df, annotation_df, by = c(taxonomic_variable_string), type = "left", match = "first")
   }
   if (ncbi_annotation_string == "bacteria") {
-    write.table(summed_df, sprintf("%s.summarized_%s_%s.tsv", project, blast_db_string, taxonomic_variable_string), sep = "\t", quote = FALSE, row.names = FALSE, col.names = TRUE)
+    write.table(summed_df, sprintf("%s.summarized_%s_%s.tsv", opt$identify, blast_db_string, taxonomic_variable_string), sep = "\t", quote = FALSE, row.names = FALSE, col.names = TRUE)
   } else {
-    write.table(summed_df, sprintf("%s.summarized_%s.tsv", project, blast_db_string), sep = "\t", quote = FALSE, row.names = FALSE, col.names = TRUE)
+    write.table(summed_df, sprintf("%s.summarized_%s.tsv", opt$identify, blast_db_string), sep = "\t", quote = FALSE, row.names = FALSE, col.names = TRUE)
   }
   cat(sprintf("Summarized and annotated %s BLAST results for all samples\n", blast_db_string))
 }
@@ -398,7 +401,7 @@ alignments <- list()
 heatmaps <- list()
 taxonomic_color_list <- list()
 for (i in 1:length(blast_db_types)) {
-  filename <- sprintf("%s.%s%s", project, blast_db_types[i], opt$blast_results_suffix)
+  filename <- sprintf("%s.%s%s", opt$identify, blast_db_types[i], opt$blast_results_suffix)
   if (file.exists(filename)) {
     df <- read.table(filename, sep="\t", header = TRUE, stringsAsFactors = FALSE, comment.char = "")
     all_alignments_df <- preprocess_blast_results(df, contig_data_df)
@@ -424,12 +427,12 @@ if (length(blast_results_df_list) < 1) {
   stop()
 }
 
-pdf(sprintf("%s.fig_contig_alignments_to_blast_hits.pdf", project), width = 8.5, height = 11)
+pdf(sprintf("%s.fig_contig_alignments_to_blast_hits.pdf", opt$identify), width = 8.5, height = 11)
 grid.arrange(grobs = alignments, ncol = 1)
 dev.off()
 cat("Plotted contig alignments to BLAST hits for all samples\n")
 
-pdf(sprintf("%s.fig_blast_results_heatmaps.pdf", project), width = 8.5, height = 11)
+pdf(sprintf("%s.fig_blast_results_heatmaps.pdf", opt$identify), width = 8.5, height = 11)
 grid.arrange(grobs = heatmaps, ncol = 1)
 dev.off()
 cat("Plotted heatmaps of BLAST results for all samples\n")
@@ -487,7 +490,7 @@ for (current_sample in unique_samples) {
   if (length(grid_list) == 0) {
     cat(sprintf("\t%s - %s - WARNING: no data found\n", count, current_sample))
   } else {
-    pdf(sprintf("%s.%s.fig_kraken_blast_results.pdf", project, current_sample), width = 50, height = variable_height)
+    pdf(sprintf("%s.%s.fig_kraken_blast_results.pdf", opt$identify, current_sample), width = 50, height = variable_height)
     grid.arrange(grobs = grid_list, layout_matrix = grid_layout)
     dev.off()
     cat(sprintf("\t%s - %s\n", count, current_sample))
