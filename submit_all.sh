@@ -11,14 +11,16 @@ HELP="\
 Purpose: \n\t\
     This pipeline is built to identify bacterial species from pair-end fastq.gz files and remove human contamination \n\n\
 Required arguments: -p/--project <arg> and either -f/--fastq_dir <arg> or -r/--results_dir <arg> \n\
-Optional arguments: -b/--run_dir <arg>, --sample_sheet <arg>, --R1_suffix <arg>, --R2_suffix <arg>, --err_out_dir <arg>, --contig_len_min <arg>, --slurm <arg> \n\
+Optional arguments: -b/--run_dir <arg>, --sample_sheet <arg>, --R1_suffix <arg>, --R2_suffix <arg>, --err_out_dir <arg>, \n\t\
+    --skip_trimming, --skip_identify, --only_identify, --contig_len_min <arg>, --contig_align_min <arg>, --slurm <arg> \n\
 Defaults: \n\t\
     If no fastq_dir specified, uses results_dir \n\t\
     If no results_dir specified, makes new directory in fastq_dir \n\t\
     sample_sheet: SampleSheet.csv \n\t\
     R1_suffix: _L001_R1_001.fastq.gz or _R1_001.fastq.gz \n\t\
     R2_suffix: _L001_R2_001.fastq.gz or _R1_001.fastq.gz \n\t\
-    min_contig_len: 5000 \n\n\
+    contig_len_min: 5000 \n\t\
+    contig_align_min: 0.9 \n\n\
 Run after demultiplexing: \n\t\
     sh ${PIPELINE_DIR}/submit_all.sh --fastq_dir /oak/stanford/groups/cgawad/MRD_project/ --project MRD_project \n\n\
 Run with demultiplexing: \n\t\
@@ -151,6 +153,9 @@ fi
 if [ ! -z $R2_SUFFIX ]; then
     OPTIONS+=( "--R2_suffix $R2_SUFFIX" )
 fi
+if [ $SKIP_TRIMMOMATIC -eq 1 ]; then
+    OPTIONS+=( "--skip_trimming" )
+fi
 if [ $SKIP_IDENTIFY -eq 1 ] && [ $ONLY_IDENTIFY -eq 1 ]; then
     echo "Variables not supplied correctly. Please specify either --skip_identify or --only_identify, not both. Exiting with code 1"
     exit 1
@@ -179,6 +184,9 @@ cd $RESULTS_DIR
 if [ "$TEMP_PIPELINE_DIR" = "$PIPELINE_DIR" ]; then
     echo -e "\nSTART: $(date)\nWGS WES Pipeline\nErr out dir: $STD_ERR_OUT_DIR\nResults dir: $RESULTS_DIR\nProject: $PROJECT" >> $PIPELINE_STATUS
     # Optional variable definitions
+    if [ $SKIP_TRIMMOMATIC -eq 1 ]; then
+        echo "Skip trimming - will not run trimmomatic" >> $PIPELINE_STATUS
+    fi
     if [ $CONTIG_LENGTH_MINIMUM -eq 5000 ]; then
         echo "Contig length minimum: 5000 (default)" >> $PIPELINE_STATUS
     else
@@ -252,7 +260,7 @@ elif [ $STEP -eq 1 ]; then
         TEMP_SAMPLES_STRING=$( IFS=$':'; echo "${TEMP_SAMPLE_ARRAY[*]}" )
         DEPENDENCIES+=( $(sbatch --parsable -e $STD_ERR_OUT_DIR/%A_%a_%x.err -o $STD_ERR_OUT_DIR/%A_%a_%x.out \
             --array=1-${TEMP_JOB_COUNT} ${SCRIPT_DIR}/1_process_sample.sh \
-            $FASTQ_DIR $RESULTS_DIR $R1_SUFFIX $R2_SUFFIX $REF_FASTA \
+            $FASTQ_DIR $RESULTS_DIR $R1_SUFFIX $R2_SUFFIX $SKIP_TRIMMOMATIC $REF_FASTA \
             $KRAKEN_DB_TYPES $KRAKEN_DB_DIR_PREFIX $TOOLS_DIR $TEMP_SAMPLES_STRING) )
         TEMP_ARRAY_START=$(($TEMP_ARRAY_START + $TEMP_ARRAY_INCREMENT))
     done
@@ -369,7 +377,7 @@ elif [ $STEP -eq 3 ]; then
     ml R/4.0.2
     echo "### Processing contamination, Kraken results, BLAST results, and making final figures ### - START: $(date)" >> $PIPELINE_STATUS
     Rscript ${SCRIPT_DIR}/analyze_and_plot_results.R \
-        --project $PROJECT --sample_read_count_filename $SAMPLE_READ_COUNTS \
+        --project $PROJECT --sample_read_count_filename ${PROJECT}.sample_read_counts.tsv \
         --summed_read_targets_filename ${PROJECT}.summed_read_targets.tsv \
         --contig_read_targets_filename ${PROJECT}.contig_read_targets.tsv \
         --contig_data_filename ${PROJECT}.contig_data.tsv \
