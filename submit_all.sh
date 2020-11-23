@@ -173,7 +173,7 @@ fi
 if [ $CONTIG_LENGTH_MINIMUM -ne 5000 ]; then
     OPTIONS+=( "--contig_len_min $CONTIG_LENGTH_MINIMUM" )
 fi
-if [ $CONTIG_ALIGN_MINIMUM -ne 0.9 ]; then
+if [ "$CONTIG_ALIGN_MINIMUM" = "0.9" ]; then
     OPTIONS+=( "--contig_align_min $CONTIG_ALIGN_MINIMUM" )
 fi
 
@@ -192,7 +192,7 @@ if [ "$TEMP_PIPELINE_DIR" = "$PIPELINE_DIR" ]; then
     else
         echo "Contig length minimum: $CONTIG_LENGTH_MINIMUM" >> $PIPELINE_STATUS
     fi
-    if [ $CONTIG_ALIGN_MINIMUM -eq 0.9 ]; then
+    if [ "$CONTIG_ALIGN_MINIMUM" = "0.9" ]; then
         echo "Contig align minimum: 0.9 (default)" >> $PIPELINE_STATUS
     else
         echo "Contig align minimum: $CONTIG_ALIGN_MINIMUM" >> $PIPELINE_STATUS
