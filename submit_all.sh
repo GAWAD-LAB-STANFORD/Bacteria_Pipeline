@@ -387,7 +387,7 @@ elif [ $STEP -eq 3 ]; then
         --ncbi_annotations_dir $NCBI_ANNOTATIONS_DIR --contig_alignment_fraction_min $CONTIG_ALIGN_MINIMUM
     echo "### Processing contamination, Kraken results, BLAST results, and making final figures ### - END: $(date)" >> $PIPELINE_STATUS
     
-    rm ${PROJECT}.*.kraken_jtree.json
-    rm blast_results_*.json long_contigs_*
+    rm ${IDENTIFY}.*.kraken_jtree.json
+    rm ${IDENTIFY}_blast_results_*.json long_contigs_*
     echo "END: $(date)" >> $PIPELINE_STATUS
 fi
