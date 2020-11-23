@@ -370,7 +370,7 @@ elif [ $STEP -eq 3 ]; then
         SAMPLES_STRING=$( IFS=$':'; echo "${SAMPLE_ARRAY[*]}" )
         python3 ${SCRIPT_DIR}/kraken_report_to_jtree.py ${PROJECT}.${DB_TYPE}.kraken_reports.tsv \
             $PROJECT .${DB_TYPE}.kraken_jtree.json $SAMPLES_STRING
-    fi
+    done
     echo "### Converting Kraken reports to TSV ### - END: $(date)" >> $PIPELINE_STATUS
     
 
