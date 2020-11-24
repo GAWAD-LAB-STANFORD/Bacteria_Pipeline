@@ -73,7 +73,7 @@ echo "Merged kraken reports" >> $PIPELINE_STATUS
 echo -e "sample\tfasta_header" > ${PROJECT}.contig_data.tsv
 CONTIGS_FILENAMES=( $(ls *_contigs.fasta) )
 for i in ${CONTIGS_FILENAMES[@]}; do 
-    grep ">" $i | xargs -i echo -e $(echo $i | sed "s/_contigs.fasta//")"\t"{} >> ${PROJECT}.contig_data.tsv; 
+    grep ">" $i | xargs -i echo -e $(echo $i | sed "s/_contigs.fasta//")"\t"{} >> ${PROJECT}.contig_data.tsv
 done
 echo "Merged contigs" >> $PIPELINE_STATUS
 
@@ -87,8 +87,7 @@ head -n 1 ${CONTIG_READ_TARGETS_FILENAMES[0]} > ${PROJECT}.contig_read_targets.t
 for i in ${CONTIG_READ_TARGETS_FILENAMES[@]}; do tail -n +2 $i >> ${PROJECT}.contig_read_targets.tsv; done
 echo "Merged contig read targets" >> $PIPELINE_STATUS
 
-rm ${READ_COUNT_FILENAMES[@]}
-rm ${KRAKEN_REPORT_FILENAMES[@]} ${CONTIGS_FILENAMES[@]} 
+rm ${READ_COUNT_FILENAMES[@]} ${KRAKEN_REPORT_FILENAMES[@]}
 rm ${SUMMED_READ_TARGETS_FILENAMES[@]} ${CONTIG_READ_TARGETS_FILENAMES[@]}
 rm ${HUMAN_ALIGNMENT_METRICS_FILENAMES[@]} ${CONTIG_ALIGNMENT_METRICS_FILENAMES[@]}
 echo "Deleted intermediate files" >> $PIPELINE_STATUS
