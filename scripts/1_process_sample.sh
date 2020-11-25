@@ -39,7 +39,7 @@ if [ $SKIP_TRIMMOMATIC -eq 0 ]; then
     
     echo "### Trimming fastqs ### - START: $(date)"
     java -jar ${TOOLS_DIR}/Trimmomatic-0.35/trimmomatic-0.35.jar PE -phred33 -trimlog \
-        ${SAMPLE}_${SPLIT_NUM}_trimmomatic_log.txt ${UNTRIMMED_R1_FASTQ} ${UNTRIMMED_R2_FASTQ} \
+        ${SAMPLE}_trimmomatic_log.txt ${UNTRIMMED_R1_FASTQ} ${UNTRIMMED_R2_FASTQ} \
         ${R1_FASTQ} ${UNPAIRED_R1_FASTQ} \
         ${R2_FASTQ} ${UNPAIRED_R2_FASTQ} \
         ILLUMINACLIP:${TOOLS_DIR}/Trimmomatic-0.35/adapters/TruSeq3-PE-2.fa:2:30:10:2:keepBothReads \
