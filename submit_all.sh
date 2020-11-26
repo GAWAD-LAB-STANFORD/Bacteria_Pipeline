@@ -276,12 +276,12 @@ elif [ $STEP -eq 1 ]; then
         -e ${STD_ERR_OUT_DIR}/%A_submit_all_%x.err -o ${STD_ERR_OUT_DIR}/%A_submit_all_%x.out \
         ${PIPELINE_DIR}/submit_all.sh --step2 ${OPTIONS[@]}
 elif [ $STEP -eq 2 ] && [ $ONLY_IDENTIFY -eq 0 ]; then
+    SAMPLE_COUNT=1
     for SAMPLE in ${SAMPLE_ARRAY[@]}; do
         if [ ! -f ${SAMPLE}_contigs.fasta ]; then
-            echo "${SAMPLE}_contigs.fasta file not found. Exiting with code 1" >> $PIPELINE_STATUS
-            echo "END: $(date)" >> $PIPELINE_STATUS
-            exit 1
+            echo "${SAMPLE_COUNT} - ${SAMPLE}_contigs.fasta file not found" >> $PIPELINE_STATUS
         fi
+        SAMPLE_COUNT=$((SAMPLE_COUNT+1))
     done
     echo "### De novo assembling contigs and detecting contamination ### - END: $(date)" >> $PIPELINE_STATUS
     
