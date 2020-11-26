@@ -14,7 +14,7 @@ NCBI_DB_DIR_PREFIX=$4
 IDENTIFY=$5
 LONG_CONTIG_ARRAY=( $(echo $6 | sed 's/:/ /g') )
 CONTIG=${LONG_CONTIG_ARRAY[$(( $SLURM_ARRAY_TASK_ID - 1 ))]}
-CONTIG_NUM=$(sed "s/$CONTIG/${IDENTIFY}_long_contigs_/" | sed "s/.fasta//")
+CONTIG_NUM=$(echo $CONTIG | sed "s/${IDENTIFY}_long_contigs_//" | sed "s/.fasta//")
 
 echo -e "START: $(date)\nBacteria Pipeline\nResults dir: $RESULTS_DIR\nSlurm ID: $SLURM_ARRAY_TASK_ID\nContig: $CONTIG"
 cd $RESULTS_DIR
