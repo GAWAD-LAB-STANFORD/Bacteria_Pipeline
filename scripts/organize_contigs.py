@@ -26,9 +26,9 @@ for contig in contigs:
             long_contig_count += 1
             record.id = "{}.{}".format(sample, record.id)
             long_records.append(record)
-    pipeline_status_output += "\t{} long contigs found for sample {}\n".format(long_contig_count, sample))
+    pipeline_status_output += "\t{} long contigs found for sample {}\n".format(long_contig_count, sample)
 
-pipeline_status_output += "{} total long contigs found across all samples\n".format(len(long_records)))
+pipeline_status_output += "{} total long contigs found across all samples\n".format(len(long_records))
 
 file_count = 0
 if len(long_records) <= records_per_file:
@@ -44,7 +44,7 @@ else:
         SeqIO.write(long_records[end_index:len(long_records)],
             "{}{:.0f}.fasta".format(organized_contigs_prefix, file_count), "fasta")
 
-pipeline_status_output += "Split into {} files with {} records each\n".format(file_count, records_per_file))
+pipeline_status_output += "Split into {} files with {} records each\n".format(file_count, records_per_file)
 file1 = open(pipeline_status_filename, "a")
 file1.write(pipeline_status_output) 
 file1.close()
