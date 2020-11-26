@@ -32,10 +32,10 @@ export PATH=${TOOLS_DIR}/kraken2-2.0.8-beta:$PATH
 if [ $SKIP_TRIMMOMATIC -eq 0 ]; then
     UNTRIMMED_R1_FASTQ=$R1_FASTQ
     UNTRIMMED_R2_FASTQ=$R2_FASTQ
-    R1_FASTQ=$(echo $UNTRIMMED_R1_FASTQ | sed "s/_R1_/_R1_trimmed_/")
-    R2_FASTQ=$(echo $UNTRIMMED_R2_FASTQ | sed "s/_R2_/_R2_trimmed_/")
-    UNPAIRED_R1_FASTQ=$(echo $UNTRIMMED_R1_FASTQ | sed "s/_R1_/_R1_trimmed_unpaired_/")
-    UNPAIRED_R2_FASTQ=$(echo $UNTRIMMED_R2_FASTQ | sed "s/_R2_/_R2_trimmed_unpaired_/")
+    R1_FASTQ=$(echo ${SAMPLE}${R1_SUFFIX} | sed "s/_R1_/_R1_trimmed_/")
+    R2_FASTQ=$(echo ${SAMPLE}${R2_SUFFIX} | sed "s/_R2_/_R2_trimmed_/")
+    UNPAIRED_R1_FASTQ=$(echo ${SAMPLE}${R1_SUFFIX} | sed "s/_R1_/_R1_trimmed_unpaired_/")
+    UNPAIRED_R2_FASTQ=$(echo ${SAMPLE}${R2_SUFFIX} | sed "s/_R2_/_R2_trimmed_unpaired_/")
     
     echo "### Trimming fastqs ### - START: $(date)"
     java -jar ${TOOLS_DIR}/Trimmomatic-0.35/trimmomatic-0.35.jar PE -phred33 -trimlog \
