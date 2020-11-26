@@ -309,6 +309,12 @@ fi
 
 
 if [ $STEP -eq 2 ]; then
+    if [ $ONLY_IDENTIFY -eq 1 ];
+        sbatch -J $PROJECT ${SLURM_OPTIONS[@]} \
+            -e ${STD_ERR_OUT_DIR}/%A_submit_all_%x.err -o ${STD_ERR_OUT_DIR}/%A_submit_all_%x.out \
+            ${PIPELINE_DIR}/submit_all.sh ${OPTIONS[@]}
+        exit 0
+    fi
     ml python/3.6.1 biology py-biopython/1.70_py27
     ml python/3.6.1 py-pandas/0.23.0_py36 py-numpy/1.14.3_py36
 
