@@ -258,7 +258,7 @@ if [ $STEP -eq 0 ]; then
 elif [ $STEP -eq 1 ]; then
     echo "### De novo assembling contigs and detecting contamination ### - START: $(date)" >> $PIPELINE_STATUS
     JOB_COUNT=${#SAMPLE_ARRAY[@]}
-    echo "Assemble jobs to run: $JOB_COUNT" >> $PIPELINE_STATUS
+    echo "Process sample jobs to run: $JOB_COUNT" >> $PIPELINE_STATUS
     TEMP_ARRAY_INCREMENT=1000
     TEMP_ARRAY_START=1
     while [ $TEMP_ARRAY_START -le ${#SAMPLE_ARRAY[@]} ]; do
@@ -279,7 +279,7 @@ elif [ $STEP -eq 2 ] && [ $ONLY_IDENTIFY -eq 0 ]; then
     SAMPLE_COUNT=1
     for SAMPLE in ${SAMPLE_ARRAY[@]}; do
         if [ ! -f ${SAMPLE}_contigs.fasta ]; then
-            echo "${SAMPLE_COUNT} - ${SAMPLE}_contigs.fasta file not found" >> $PIPELINE_STATUS
+            echo "Job number ${SAMPLE_COUNT} - ${SAMPLE}_contigs.fasta file not found" >> $PIPELINE_STATUS
         fi
         SAMPLE_COUNT=$((SAMPLE_COUNT+1))
     done
@@ -344,13 +344,25 @@ if [ $STEP -eq 2 ]; then
         -e ${STD_ERR_OUT_DIR}/%A_submit_all_%x.err -o ${STD_ERR_OUT_DIR}/%A_submit_all_%x.out \
         ${PIPELINE_DIR}/submit_all.sh --step3 ${OPTIONS[@]}
 elif [ $STEP -eq 3 ]; then
-    LONG_CONTIG_ARRAY=( $(ls ${IDENTIFY}_long_contigs_* | sed "s/$CONTIG/${IDENTIFY}_long_contigs_/" | sed "s/.fasta//") )
+    BLAST_DB_TYPES_ARRAY=( $(echo $BLAST_DB_TYPES | sed 's/-/ /g') )
     BLAST_RESULTS_COUNT=$(ls ${IDENTIFY}_blast_results_* | wc -l)
+    CONTIG_NUM_ARRAY=( $(ls ${IDENTIFY}_long_contigs_* | sed "s/${IDENTIFY}_long_contigs_//" | sed "s/.fasta//") )
+    MAX_RESULTS=$(echo ${#CONTIG_NUM_ARRAY[@]} ${#BLAST_DB_TYPES_ARRAY[@]} | awk '{ print $1 * $2 }')
+    BLAST_COUNT=1
+    for CONTIG_NUM in ${CONTIG_NUM_ARRAY[@]}; do
+        for DB_TYPE in ${BLAST_DB_TYPES_ARRAY[@]}
+            if [ ! -f ${IDENTIFY}_blast_results_${DB_TYPE}_${CONTIG_NUM}.json ]; then
+                echo "Job number ${BLAST_COUNT} - ${IDENTIFY}_blast_results_${DB_TYPE}_${CONTIG_NUM}.json not found" >> $PIPELINE_STATUS
+            fi
+        done
+        BLAST_COUNT=$((BLAST_COUNT+1))
+    done 
     if [ $BLAST_RESULTS_COUNT -eq 0 ]; then
         echo "No BLAST results found. Exiting with code 1" >> $PIPELINE_STATUS
-        exit 1 >> $PIPELINE_STATUS
+        echo "END: $(date)" >> $PIPELINE_STATUS
+        exit 1
     else
-        echo "$BLAST_RESULTS_COUNT BLAST results out of a possible ${#LONG_CONTIG_ARRAY[@]} maximum" >> $PIPELINE_STATUS
+        echo "$BLAST_RESULTS_COUNT BLAST results out of a possible $MAX_RESULTS maximum" >> $PIPELINE_STATUS
     fi
     echo "### BLAST aligning contigs ### - END: $(date)" >> $PIPELINE_STATUS
     
