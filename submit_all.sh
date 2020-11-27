@@ -279,7 +279,7 @@ elif [ $STEP -eq 2 ] && [ $ONLY_IDENTIFY -eq 0 ]; then
     SAMPLE_COUNT=1
     for SAMPLE in ${SAMPLE_ARRAY[@]}; do
         if [ ! -f ${SAMPLE}_contigs.fasta ]; then
-            echo "Job number ${SAMPLE_COUNT} - ${SAMPLE}_contigs.fasta file not found" >> $PIPELINE_STATUS
+            echo -e "\tSample number $SAMPLE_COUNT - ${SAMPLE}_contigs.fasta file not found" >> $PIPELINE_STATUS
         fi
         SAMPLE_COUNT=$((SAMPLE_COUNT+1))
     done
@@ -348,14 +348,14 @@ elif [ $STEP -eq 3 ]; then
     BLAST_RESULTS_COUNT=$(ls ${IDENTIFY}_blast_results_* | wc -l)
     CONTIG_NUM_ARRAY=( $(ls ${IDENTIFY}_long_contigs_* | sed "s/${IDENTIFY}_long_contigs_//" | sed "s/.fasta//") )
     MAX_RESULTS=$(echo ${#CONTIG_NUM_ARRAY[@]} ${#BLAST_DB_TYPES_ARRAY[@]} | awk '{ print $1 * $2 }')
-    BLAST_COUNT=1
+    CONTIG_COUNT=1
     for CONTIG_NUM in ${CONTIG_NUM_ARRAY[@]}; do
         for DB_TYPE in ${BLAST_DB_TYPES_ARRAY[@]}; do
             if [ ! -f ${IDENTIFY}_blast_results_${DB_TYPE}_${CONTIG_NUM}.json ]; then
-                echo "Job number ${BLAST_COUNT} - ${IDENTIFY}_blast_results_${DB_TYPE}_${CONTIG_NUM}.json not found" >> $PIPELINE_STATUS
+                echo -e "\tContig number $CONTIG_COUNT - ${IDENTIFY}_blast_results_${DB_TYPE}_${CONTIG_NUM}.json not found" >> $PIPELINE_STATUS
             fi
         done
-        BLAST_COUNT=$((BLAST_COUNT+1))
+        CONTIG_COUNT=$((CONTIG_COUNT+1))
     done 
     if [ $BLAST_RESULTS_COUNT -eq 0 ]; then
         echo "No BLAST results found. Exiting with code 1" >> $PIPELINE_STATUS
