@@ -350,7 +350,7 @@ elif [ $STEP -eq 3 ]; then
     MAX_RESULTS=$(echo ${#CONTIG_NUM_ARRAY[@]} ${#BLAST_DB_TYPES_ARRAY[@]} | awk '{ print $1 * $2 }')
     BLAST_COUNT=1
     for CONTIG_NUM in ${CONTIG_NUM_ARRAY[@]}; do
-        for DB_TYPE in ${BLAST_DB_TYPES_ARRAY[@]}
+        for DB_TYPE in ${BLAST_DB_TYPES_ARRAY[@]}; do
             if [ ! -f ${IDENTIFY}_blast_results_${DB_TYPE}_${CONTIG_NUM}.json ]; then
                 echo "Job number ${BLAST_COUNT} - ${IDENTIFY}_blast_results_${DB_TYPE}_${CONTIG_NUM}.json not found" >> $PIPELINE_STATUS
             fi
