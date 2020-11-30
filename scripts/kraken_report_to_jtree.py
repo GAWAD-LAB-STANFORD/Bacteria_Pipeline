@@ -13,7 +13,6 @@ kraken_df = pd.read_csv(input_file_name, sep="\t")
 # samples = kraken_df['sample'].unique().tolist()
 
 for sample in samples:
-    print(sample)
     if sample.count("_") == 6:
         short_sample = sample.split("_")[5]
     else:
