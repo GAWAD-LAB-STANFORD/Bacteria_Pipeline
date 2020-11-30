@@ -384,7 +384,7 @@ elif [ $STEP -eq 3 ]; then
     echo "### BLAST aligning contigs ### - END: $(date)" >> $PIPELINE_STATUS
     
     
-    ml python/3.6.1
+    ml python/3.6.1 py-pandas/0.23.0_py36 py-numpy/1.14.3_py36
     echo "### Parsing BLAST results ### - START: $(date)" >> $PIPELINE_STATUS
     BLAST_DB_TYPES_ARRAY=( $(echo $BLAST_DB_TYPES | sed 's/-/ /g') )
     for DB_TYPE in ${BLAST_DB_TYPES_ARRAY[@]}; do
@@ -396,8 +396,9 @@ elif [ $STEP -eq 3 ]; then
     
     echo "### Converting Kraken reports to TSV ### - START: $(date)" >> $PIPELINE_STATUS
     KRAKEN_DB_TYPE_ARRAY=( $(echo $KRAKEN_DB_TYPES | sed 's/-/ /g') )
+    SAMPLES_STRING=$( IFS=$':'; echo "${SAMPLE_ARRAY[*]}" )
+    echo "Samples string: $SAMPLES_STRING"
     for DB_TYPE in ${KRAKEN_DB_TYPE_ARRAY[@]}; do
-        SAMPLES_STRING=$( IFS=$':'; echo "${SAMPLE_ARRAY[*]}" )
         python3 ${SCRIPT_DIR}/kraken_report_to_jtree.py ${PROJECT}.${DB_TYPE}.kraken_reports.tsv \
             $IDENTIFY .${DB_TYPE}.kraken_jtree.json $SAMPLES_STRING
     done

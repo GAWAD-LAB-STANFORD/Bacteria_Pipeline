@@ -31,7 +31,7 @@ option_list = list(
               help="REQUIRED", metavar="character"),
   make_option(c("--blast_results_suffix"), type="character", default=NULL,
               help="REQUIRED", metavar="character"),
-  make_option(c("--ncbi_annotations_dir"), type="character", default=NULL,
+  make_option(c("--ncbi_annotations_dir"), type="character", default="0",
               help="optional [default = %default]", metavar="character"),
   make_option(c("--contig_alignment_fraction_min"), type="double", default=0.9,
               help="optional [default = %default]", metavar="double")
@@ -45,12 +45,13 @@ opt <- parse_args(OptionParser(option_list=option_list))
 #             contig_data_filename = "SC_Bacterial_PTA_Seq.contig_data.tsv",
 #             kraken_db_types = "microbial-plasmid-viral", kraken_jtree_suffix = ".kraken_jtree.json",
 #             blast_db_types = "nt-plasmid-viral", blast_results_suffix = ".blast_results.tsv",
-#             ncbi_annotations_dir = NULL, contig_alignment_fraction_min = 0.9)
+#             ncbi_annotations_dir = "0", contig_alignment_fraction_min = 0.9)
 
 if (is.null(opt$project) || is.null(opt$identify) || is.null(opt$sample_read_count_filename) || 
     is.null(opt$summed_read_targets_filename) || is.null(opt$contig_read_targets_filename) || 
     is.null(opt$contig_data_filename) || is.null(opt$kraken_db_types) ||
-    is.null(opt$kraken_jtree_suffix) || is.null(opt$blast_db_types) || is.null(opt$blast_results_suffix)) {
+    is.null(opt$kraken_jtree_suffix) || is.null(opt$blast_db_types) || is.null(opt$blast_results_suffix) ||
+    is.null(opt$ncbi_annotations_dir) || is.null(opt$contig_alignment_fraction_min)) {
   stop("You must specify all required options. Use --help to get help.")
 }
 
@@ -384,7 +385,7 @@ scaled_taxonomic_proportion_of_contig_length_plot <- function(sample_df, taxonom
 export_with_ncbi_annotations <- function(summed_df, ncbi_annotation_string, taxonomic_variable_string, blast_db_string) {
   ncbi_annotation_string <- tolower(ncbi_annotation_string)
   taxonomic_variable_string <- tolower(taxonomic_variable_string)
-  if (!is.na(opt$ncbi_annotations_dir)) {
+  if (opt$ncbi_annotations_dir != "0") {
     annotation_df <- read.table(sprintf("%s/%s_annotations.tsv", opt$ncbi_annotations_dir, ncbi_annotation_string), sep="\t", header = TRUE, quote="")
     summed_df <- plyr::join(summed_df, annotation_df, by = c(taxonomic_variable_string), type = "left", match = "first")
   }
