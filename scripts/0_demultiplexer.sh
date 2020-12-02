@@ -25,7 +25,7 @@ while [ "$1" != "" ]; do
     shift
 done
 
-echo -e "START: $(date)\nWGS WES Pipeline\nRun dir: $RUN_DIR\nSample sheet: $SAMPLE_SHEET\nFastq dir: $FASTQ_DIR"
+echo -e "START: $(date)\nBacteria Pipeline\nRun dir: $RUN_DIR\nSample sheet: $SAMPLE_SHEET\nFastq dir: $FASTQ_DIR"
 
 ml biology bcl2fastq
 bcl2fastq --runfolder-dir $RUN_DIR --sample-sheet $SAMPLE_SHEET --output-dir $FASTQ_DIR

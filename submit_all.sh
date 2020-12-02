@@ -12,7 +12,7 @@ Purpose: \n\t\
     This pipeline is built to identify bacterial species from pair-end fastq.gz files and remove human contamination \n\n\
 Required arguments: -p/--project <arg> and either -f/--fastq_dir <arg> or -r/--results_dir <arg> \n\
 Optional arguments: -b/--run_dir <arg>, --sample_sheet <arg>, --R1_suffix <arg>, --R2_suffix <arg>, --err_out_dir <arg>, \n\t\
-    --skip_trimming, --skip_identify, --filter_rhesus, --only_identify, --contig_len_min <arg>, --contig_align_min <arg>, --slurm <arg> \n\
+    --skip_trimming, --skip_identify, --only_identify, --contig_len_min <arg>, --contig_align_min <arg>, --slurm <arg> \n\
 Defaults: \n\t\
     If no fastq_dir specified, uses results_dir \n\t\
     If no results_dir specified, makes new directory in fastq_dir \n\t\
@@ -31,7 +31,6 @@ For more information, read the README.md"
 
 # Reads in command line option arguments and assigns them to variables
 SKIP_TRIMMOMATIC=0
-FILTER_RHESUS=0
 SKIP_IDENTIFY=0
 ONLY_IDENTIFY=0
 CONTIG_LENGTH_MINIMUM=5000
@@ -72,8 +71,6 @@ while [ "$1" != "" ]; do
                                 ;;
         --skip_trimming )       SKIP_TRIMMOMATIC=1
                                 ;;
-        --filter_rhesus )       FILTER_RHESUS=1
-                                ;;
         --skip_identify )       SKIP_IDENTIFY=1
                                 ;;
         --only_identify )       ONLY_IDENTIFY=1
@@ -104,7 +101,6 @@ done
 REFERENCE_DIR="/oak/stanford/groups/cgawad/Reference_Files/GATK_Resource_Bundle_hg38"
 TOOLS_DIR="/oak/stanford/groups/cgawad/Sequencing_Analysis_Tools"
 REF_FASTA="${REFERENCE_DIR}/Homo_sapiens_assembly38.fasta"
-RHESUS_FASTA="/oak/stanford/groups/cgawad/Reference_Files/Macaca_mulattta_Rhesus_monkey_hg38/Macaca_mulatta_Rhesus_monkey_hg38.fasta"
 SCRIPT_DIR="${PIPELINE_DIR}/scripts"
 KRAKEN_DB_TYPES="microbial-plasmid-viral"
 KRAKEN_DB_DIR_PREFIX="/oak/stanford/groups/cgawad/Reference_Files/Kraken2_Fatfree_Databases/kraken2-fatfree-"
@@ -163,9 +159,6 @@ fi
 if [ $SKIP_TRIMMOMATIC -eq 1 ]; then
     OPTIONS+=( "--skip_trimming" )
 fi
-if [ $FILTER_RHESUS -eq 1 ]; then
-    OPTIONS+=( "--filter_rhesus" )
-fi
 if [ $SKIP_IDENTIFY -eq 1 ] && [ $ONLY_IDENTIFY -eq 1 ]; then
     echo "Variables not supplied correctly. Please specify either --skip_identify or --only_identify, not both. Exiting with code 1"
     exit 1
@@ -197,13 +190,10 @@ TEMP_PIPELINE_DIR="$( cd "$( dirname "$0" )" && pwd )"
 PIPELINE_STATUS=${STD_ERR_OUT_DIR}/${PROJECT}_pipeline_status.txt
 cd $RESULTS_DIR
 if [ "$TEMP_PIPELINE_DIR" = "$PIPELINE_DIR" ]; then
-    echo -e "\nSTART: $(date)\nWGS WES Pipeline\nErr out dir: $STD_ERR_OUT_DIR\nResults dir: $RESULTS_DIR\nProject: $PROJECT" >> $PIPELINE_STATUS
+    echo -e "\nSTART: $(date)\nBacteria Pipeline\nErr out dir: $STD_ERR_OUT_DIR\nResults dir: $RESULTS_DIR\nProject: $PROJECT" >> $PIPELINE_STATUS
     # Optional variable definitions
     if [ $SKIP_TRIMMOMATIC -eq 1 ]; then
         echo "Skip trimming - will not run trimmomatic" >> $PIPELINE_STATUS
-    fi
-    if [ $FILTER_RHESUS -eq 1 ]; then
-        echo "Filter rhesus - will remove reads that align to macaca mulatta rhesus monkey" >> $PIPELINE_STATUS
     fi
     if [ $CONTIG_LENGTH_MINIMUM -eq 5000 ]; then
         echo "Contig length minimum: 5000 (default)" >> $PIPELINE_STATUS
@@ -268,13 +258,6 @@ if [ $STEP -eq 0 ]; then
 elif [ $STEP -eq 1 ]; then
     echo "### De novo assembling contigs and detecting contamination ### - START: $(date)" >> $PIPELINE_STATUS
     JOB_COUNT=${#SAMPLE_ARRAY[@]}
-    if [ $FILTER_RHESUS -eq 1 ]; then
-        REF_FASTA_STRING="${REF_FASTA}:${RHESUS_FASTA}"
-        REF_NAME_STRING="human:rhesus"
-    else
-        REF_FASTA_STRING="${REF_FASTA}"
-        REF_NAME_STRING="human"
-    fi
     echo "Process sample jobs to run: $JOB_COUNT" >> $PIPELINE_STATUS
     TEMP_ARRAY_INCREMENT=1000
     TEMP_ARRAY_START=1
@@ -285,7 +268,7 @@ elif [ $STEP -eq 1 ]; then
         TEMP_SAMPLES_STRING=$( IFS=$':'; echo "${TEMP_SAMPLE_ARRAY[*]}" )
         DEPENDENCIES+=( $(sbatch --parsable -e $STD_ERR_OUT_DIR/%A_%a_%x.err -o $STD_ERR_OUT_DIR/%A_%a_%x.out \
             --array=1-${TEMP_JOB_COUNT} ${SCRIPT_DIR}/1_process_sample.sh \
-            $FASTQ_DIR $RESULTS_DIR $R1_SUFFIX $R2_SUFFIX $SKIP_TRIMMOMATIC $REF_FASTA_STRING $REF_NAME_STRING \
+            $FASTQ_DIR $RESULTS_DIR $R1_SUFFIX $R2_SUFFIX $SKIP_TRIMMOMATIC $REF_FASTA \
             $KRAKEN_DB_TYPES $KRAKEN_DB_DIR_PREFIX $TOOLS_DIR $TEMP_SAMPLES_STRING) )
         TEMP_ARRAY_START=$(($TEMP_ARRAY_START + $TEMP_ARRAY_INCREMENT))
     done
