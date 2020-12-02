@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 #SBATCH --job-name=1_process_sample
-#SBATCH --mem=64GB
+#SBATCH --mem=64G
 #SBATCH --cpus-per-task=4
 #SBATCH --time=2-00:00:00
 #SBATCH --partition=cgawad

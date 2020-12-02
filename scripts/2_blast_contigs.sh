@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 #SBATCH --job-name=2_blast_contigs
-#SBATCH --mem=64GB
+#SBATCH --mem=64G
 #SBATCH --cpus-per-task=4
 #SBATCH --time=12:00:00
 #SBATCH --partition=cgawad
