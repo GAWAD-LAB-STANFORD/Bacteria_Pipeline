@@ -130,7 +130,7 @@ if [ ! -f ${SAMPLE}_no_human_vs_kraken.tsv ]; then
 fi
 if [ $SKIP_TRIMMOMATIC -eq 0 ]; then
     rm ${SAMPLE}_trimmomatic_log.txt
-    # rm $R1_FASTQ $R2_FASTQ
+    rm $R1_FASTQ $R2_FASTQ
     rm $UNPAIRED_R1_FASTQ $UNPAIRED_R2_FASTQ
 fi
 rm -r contigs_${SAMPLE} 

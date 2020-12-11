@@ -335,6 +335,9 @@ if [ $STEP -eq 2 ]; then
         TEMP_JOB_COUNT=${#TEMP_LONG_CONTIG_ARRAY[@]}
         echo "Submitting $TEMP_JOB_COUNT jobs for samples $TEMP_ARRAY_START to $(($TEMP_ARRAY_START + ${#TEMP_LONG_CONTIG_ARRAY[@]} - 1))" >> $PIPELINE_STATUS
         TEMP_LONG_CONTIGS_STRING=$( IFS=$':'; echo "${TEMP_LONG_CONTIG_ARRAY[*]}" )
+        echo "sbatch --parsable -e $STD_ERR_OUT_DIR/%A_%a_%x.err -o $STD_ERR_OUT_DIR/%A_%a_%x.out \
+            --array=1-${TEMP_JOB_COUNT} ${SCRIPT_DIR}/2_blast_contigs.sh \
+            $RESULTS_DIR $TOOLS_DIR $BLAST_DB_TYPES $NCBI_DB_DIR_PREFIX $IDENTIFY $TEMP_LONG_CONTIGS_STRING"
         DEPENDENCIES+=( $(sbatch --parsable -e $STD_ERR_OUT_DIR/%A_%a_%x.err -o $STD_ERR_OUT_DIR/%A_%a_%x.out \
             --array=1-${TEMP_JOB_COUNT} ${SCRIPT_DIR}/2_blast_contigs.sh \
             $RESULTS_DIR $TOOLS_DIR $BLAST_DB_TYPES $NCBI_DB_DIR_PREFIX $IDENTIFY $TEMP_LONG_CONTIGS_STRING) )
@@ -352,11 +355,11 @@ elif [ $STEP -eq 3 ]; then
     for CONTIG_NUM in ${CONTIG_NUM_ARRAY[@]}; do
         for DB_TYPE in ${BLAST_DB_TYPES_ARRAY[@]}; do
             if [ ! -f ${IDENTIFY}_blast_results_${DB_TYPE}_${CONTIG_NUM}.json ]; then
-                echo -e "\tContig number $CONTIG_COUNT - ${IDENTIFY}_blast_results_${DB_TYPE}_${CONTIG_NUM}.json not found" >> $PIPELINE_STATUS
+                echo -e "\tLong contig file number $CONTIG_COUNT - ${IDENTIFY}_blast_results_${DB_TYPE}_${CONTIG_NUM}.json not found" >> $PIPELINE_STATUS
             fi
         done
         CONTIG_COUNT=$((CONTIG_COUNT+1))
-    done 
+    done
     if [ $BLAST_RESULTS_COUNT -eq 0 ]; then
         echo "No BLAST results found. Exiting with code 1" >> $PIPELINE_STATUS
         echo "END: $(date)" >> $PIPELINE_STATUS
@@ -401,7 +404,8 @@ elif [ $STEP -eq 3 ]; then
         --ncbi_annotations_dir $NCBI_ANNOTATIONS_DIR --contig_alignment_fraction_min $CONTIG_ALIGN_MINIMUM
     echo "### Processing contamination, Kraken results, BLAST results, and making final figures ### - END: $(date)" >> $PIPELINE_STATUS
     
-    rm ${IDENTIFY}.*.kraken_jtree.json
-    rm ${IDENTIFY}_blast_results_*.json long_contigs_*
+    rm long_contigs_*
+    rm ${IDENTIFY}.*.kraken_jtree.json 
+    rm ${IDENTIFY}_blast_results_*.json
     echo "END: $(date)" >> $PIPELINE_STATUS
 fi
