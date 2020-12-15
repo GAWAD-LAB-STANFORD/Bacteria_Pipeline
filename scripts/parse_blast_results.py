@@ -27,17 +27,13 @@ for blastn_json in blastn_jsons:
             for hit_count in range(len(hits)):
                 hit =  hits[hit_count]
                 if db_type == "plasmid":
-                    before, keyword, after = hit['description'][0]['title'].partition("plasmid ")
-                    plasmid = after.split(" ")[0][:-1]
-                    source = " ".join(before.split(" ")[1:-1])
-                    new_addition = [sample, hit_count + 1, query_contig_name, query_contig_length, source, plasmid, 
-                                    hit['description'][0]['accession'], hit['hsps'][0]['align_len'], hit['len']]
+                    new_addition = [sample, hit_count + 1, query_contig_name, query_contig_length,
+                                    hit['description'][0]['title'], hit['description'][0]['accession'], 
+                                    hit['hsps'][0]['align_len'], hit['len']]
                 elif db_type == "viral":
-                    before, keyword, after = hit['description'][0]['title'].partition("phage ")
-                    phage = after.split(" ")[0][:-1]
-                    source = " ".join(before.split(" ")[1:-1])
-                    new_addition = [sample, hit_count + 1, query_contig_name, query_contig_length, source, phage, 
-                                    hit['description'][0]['accession'], hit['hsps'][0]['align_len'], hit['len']]
+                    new_addition = [sample, hit_count + 1, query_contig_name, query_contig_length, 
+                                    hit['description'][0]['title'], hit['description'][0]['accession'], 
+                                    hit['hsps'][0]['align_len'], hit['len']]
                 else:
                     new_addition = [sample, hit_count + 1, query_contig_name, query_contig_length, 
                                     hit['description'][0]['sciname'], hit['description'][0]['taxid'],
@@ -49,11 +45,11 @@ if len(all_top_blast_hits_list_list) > 0:
     if db_type == "plasmid":
         blast_results_df = pd.DataFrame(all_top_blast_hits_list_list, 
                                     columns=['sample', 'hit_rank', 'contig', 'contig_length', 
-                                    'source', 'plasmid', 'accession', 'top_hsp_align_len', 'reference_len'])
+                                    'plasmid', 'accession', 'top_hsp_align_len', 'reference_len'])
     elif db_type == "viral":
         blast_results_df = pd.DataFrame(all_top_blast_hits_list_list, 
                                     columns=['sample', 'hit_rank', 'contig', 'contig_length', 
-                                    'source', 'phage', 'accession', 'top_hsp_align_len', 'reference_len'])
+                                    'virus', 'accession', 'top_hsp_align_len', 'reference_len'])
     else:
         blast_results_df = pd.DataFrame(all_top_blast_hits_list_list, 
                                         columns=['sample', 'hit_rank', 'contig', 'contig_length', 

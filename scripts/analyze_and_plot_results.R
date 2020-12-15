@@ -399,7 +399,7 @@ export_with_ncbi_annotations <- function(summed_df, ncbi_annotation_string, taxo
 
 
 # Nucleotide, plasmid, and viral BLAST results ------------------------------------------------
-taxonomic_variable_string_list <- c("Genus", "Plasmid", "Phage")
+taxonomic_variable_string_list <- c("Genus", "Plasmid", "Virus")
 ncbi_annotation_string_list <- c("Microbe", "Plasmid", "Viral")
 
 # Load and preprocess all BLAST result dataframes
