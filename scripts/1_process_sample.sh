@@ -67,17 +67,19 @@ gatk --java-options "-XX:+UseParallelGC -XX:ParallelGCThreads=4 -Xmx64g" Collect
     -R $REF_FASTA -I ${SAMPLE}_human_aligned.bam -O ${SAMPLE}_human_alignment_metrics.tsv
 echo "### Collecting human alignment metrics ### - END: $(date)"
 
-echo "### Getting meta data for human matches from BAM ### - START: $(date)"
-samtools view  ${SAMPLE}_human_aligned.bam $(samtools view -H ${SAMPLE}_human_aligned.bam | grep -P "@SQ.+SN:chr" | \
-    cut -f 2 | sed 's/^SN://')| cut -f 1 | sort -u > ${SAMPLE}_any_mapping_to_human_query_names.txt
-# samtools view ${SAMPLE}_human_aligned.bam $(samtools view -H ${SAMPLE}_human_aligned.bam | grep -P "@SQ.+SN:chr..?\t" | \
-#     cut -f 2 | sed 's/^SN://') | awk '$7=="="' | cut -f 1 | sort -u > ${SAMPLE}_both_mapping_to_human_query_names.txt
-echo "### Getting meta data for human matches from BAM ### - END: $(date)"
+# echo "### Getting meta data for human matches from BAM ### - START: $(date)"
+# samtools view  ${SAMPLE}_human_aligned.bam $(samtools view -H ${SAMPLE}_human_aligned.bam | grep -P "@SQ.+SN:chr" | \
+#     cut -f 2 | sed 's/^SN://')| cut -f 1 | sort -u > ${SAMPLE}_any_mapping_to_human_query_names.txt
+# # samtools view ${SAMPLE}_human_aligned.bam $(samtools view -H ${SAMPLE}_human_aligned.bam | grep -P "@SQ.+SN:chr..?\t" | \
+# #     cut -f 2 | sed 's/^SN://') | awk '$7=="="' | cut -f 1 | sort -u > ${SAMPLE}_both_mapping_to_human_query_names.txt
+# echo "### Getting meta data for human matches from BAM ### - END: $(date)"
 
 echo "### Filtering BAM for reads that don't match human ### - START: $(date)"
-gatk --java-options "-XX:+UseParallelGC -XX:ParallelGCThreads=4 -Xmx64g" FilterSamReads \
-    --FILTER excludeReadList -I ${SAMPLE}_human_aligned.bam -O ${SAMPLE}_no_human.bam \
-    -RLF ${SAMPLE}_any_mapping_to_human_query_names.txt --VALIDATION_STRINGENCY SILENT
+# gatk --java-options "-XX:+UseParallelGC -XX:ParallelGCThreads=4 -Xmx64g" FilterSamReads \
+#     --FILTER excludeReadList -I ${SAMPLE}_human_aligned.bam -O ${SAMPLE}_no_human.bam \
+#     -RLF ${SAMPLE}_any_mapping_to_human_query_names.txt --VALIDATION_STRINGENCY SILENT
+samtools view -b -f 4 ${SAMPLE}_human_aligned.bam > ${SAMPLE}_no_human.bam
+samtools index ${SAMPLE}_no_human.bam
 gatk --java-options "-XX:+UseParallelGC -XX:ParallelGCThreads=4 -Xmx64g" SamToFastq -I ${SAMPLE}_no_human.bam \
     -F ${SAMPLE}_no_human${R1_SUFFIX} -F2 ${SAMPLE}_no_human${R2_SUFFIX} --VALIDATION_STRINGENCY SILENT
 echo "### Filtering BAM for reads that don't match human ### - END: $(date)"
@@ -140,6 +142,6 @@ rm ${SAMPLE}_R1.sai ${SAMPLE}_R2.sai
 rm ${SAMPLE}_human_aligned.bam* ${SAMPLE}_no_human.bam* ${SAMPLE}_contig_aligned.bam*
 rm ${SAMPLE}_temp_contig_read_targets.txt
 rm ${SAMPLE}_no_human${R1_SUFFIX} ${SAMPLE}_no_human${R2_SUFFIX}
-rm ${SAMPLE}_any_mapping_to_human_query_names.txt
+# rm ${SAMPLE}_any_mapping_to_human_query_names.txt
 rm ${SAMPLE}_no_human_vs_kraken.tsv
 echo -e "END: $(date)\nRuntime: $(($(date +%s)-$START_TIME)) seconds"
