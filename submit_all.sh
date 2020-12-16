@@ -187,7 +187,11 @@ fi
 
 
 TEMP_PIPELINE_DIR="$( cd "$( dirname "$0" )" && pwd )"
-PIPELINE_STATUS=${STD_ERR_OUT_DIR}/${PROJECT}_pipeline_status.txt
+if [ $ONLY_IDENTIFY -eq 1 ]; then
+    PIPELINE_STATUS=${STD_ERR_OUT_DIR}/${IDENTIFY}_pipeline_status.txt
+else
+    PIPELINE_STATUS=${STD_ERR_OUT_DIR}/${PROJECT}_pipeline_status.txt
+fi
 cd $RESULTS_DIR
 if [ "$TEMP_PIPELINE_DIR" = "$PIPELINE_DIR" ]; then
     echo -e "\nSTART: $(date)\nBacteria Pipeline\nErr out dir: $STD_ERR_OUT_DIR\nResults dir: $RESULTS_DIR\nProject: $PROJECT" >> $PIPELINE_STATUS
@@ -215,7 +219,7 @@ if [ "$TEMP_PIPELINE_DIR" = "$PIPELINE_DIR" ]; then
 fi
 
 
-if [ ! -z $SLURM_OPTIONS ]; then
+if [ ! -z $SLURM_OPTIONS ] || ([ $ONLY_IDENTIFY -eq 1 ] && [ "$TEMP_PIPELINE_DIR" = "$PIPELINE_DIR" ]); then
     echo "Slurm option used - entire pipeline run will be queued with user parameters" >> $PIPELINE_STATUS
     sbatch -J $PROJECT ${SLURM_OPTIONS[@]} \
         -e ${STD_ERR_OUT_DIR}/%A_submit_all_%x.err -o ${STD_ERR_OUT_DIR}/%A_submit_all_%x.out \
@@ -283,6 +287,16 @@ elif [ $STEP -eq 2 ] && [ $ONLY_IDENTIFY -eq 0 ]; then
         fi
         SAMPLE_COUNT=$((SAMPLE_COUNT+1))
     done
+    CONTIG_COUNT=$(ls *_contigs.fasta | wc -l)
+    if [ $CONTIG_COUNT -eq 0 ]; then
+        echo "No contigs found. Exiting with code 1" >> $PIPELINE_STATUS
+        echo "END: $(date)" >> $PIPELINE_STATUS
+        exit 1
+    else
+        echo "$CONTIG_COUNT contigs out of a possible ${#SAMPLE_ARRAY[@]} maximum" >> $PIPELINE_STATUS
+        rm ${STD_ERR_OUT_DIR}/*1_process_sample.out ${STD_ERR_OUT_DIR}/*1_process_sample.out
+    fi
+    echo "### De novo assembling contigs ### - END: $(date)" >> $PIPELINE_STATUS
     echo "### De novo assembling contigs and detecting contamination ### - END: $(date)" >> $PIPELINE_STATUS
     
     
