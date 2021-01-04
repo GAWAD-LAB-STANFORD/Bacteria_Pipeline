@@ -4,6 +4,7 @@ import glob
 import sys
 import re
 
+
 db_type = sys.argv[1]
 blast_results_prefix = sys.argv[2]
 parsed_blast_results_filename = sys.argv[3]
@@ -11,6 +12,7 @@ pipeline_status_filename = sys.argv[4]
 blastn_jsons = glob.glob("{}*.json".format(blast_results_prefix))
 pipeline_status_output = "{} blast json result files found with {} prefix\n".format(len(blastn_jsons), blast_results_prefix)
 all_top_blast_hits_list_list = []
+
 
 # for each blast result file, consolidate the top results
 for blastn_json in blastn_jsons:
@@ -27,34 +29,41 @@ for blastn_json in blastn_jsons:
             for hit_count in range(len(hits)):
                 hit =  hits[hit_count]
                 if db_type == "plasmid":
+                    before, keyword, after = hit['description'][0]['title'].partition("plasmid ")
+                    plasmid = after.split(" ")[0][:-1]
+                    source = " ".join(before.split(" ")[1:-1])
                     new_addition = [sample, hit_count + 1, query_contig_name, query_contig_length,
-                                    hit['description'][0]['title'], hit['description'][0]['accession'], 
-                                    hit['hsps'][0]['align_len'], hit['len']]
+                                    hit['description'][0]['title'], hit['description'][0]['accession'],
+                                    plasmid, source, hit['hsps'][0]['align_len'], hit['len']]
                 elif db_type == "viral":
+                    before, keyword, after = hit['description'][0]['title'].partition("phage ")
+                    phage = after.split(" ")[0][:-1]
+                    source = " ".join(before.split(" ")[1:-1])
                     new_addition = [sample, hit_count + 1, query_contig_name, query_contig_length, 
-                                    hit['description'][0]['title'], hit['description'][0]['accession'], 
-                                    hit['hsps'][0]['align_len'], hit['len']]
+                                    hit['description'][0]['title'], hit['description'][0]['accession'],
+                                    phage, source, hit['hsps'][0]['align_len'], hit['len']]
                 else:
                     new_addition = [sample, hit_count + 1, query_contig_name, query_contig_length, 
                                     hit['description'][0]['sciname'], hit['description'][0]['taxid'],
                                     hit['description'][0]['accession'], hit['hsps'][0]['align_len'], hit['len']]
-                if '' not in new_addition:
-                    all_top_blast_hits_list_list.append(new_addition)
+                all_top_blast_hits_list_list.append(new_addition)
+
 
 if len(all_top_blast_hits_list_list) > 0:
     if db_type == "plasmid":
         blast_results_df = pd.DataFrame(all_top_blast_hits_list_list, 
-                                    columns=['sample', 'hit_rank', 'contig', 'contig_length', 
-                                    'plasmid', 'accession', 'top_hsp_align_len', 'reference_len'])
+                                    columns=['sample', 'hit_rank', 'contig', 'contig_length', 'full_name',
+                                    'accession', 'plasmid', 'source', 'top_hsp_align_len', 'reference_len'])
     elif db_type == "viral":
         blast_results_df = pd.DataFrame(all_top_blast_hits_list_list, 
-                                    columns=['sample', 'hit_rank', 'contig', 'contig_length', 
-                                    'virus', 'accession', 'top_hsp_align_len', 'reference_len'])
+                                    columns=['sample', 'hit_rank', 'contig', 'contig_length', 'full_name',
+                                    'accession', 'virus', 'source', 'top_hsp_align_len', 'reference_len'])
     else:
         blast_results_df = pd.DataFrame(all_top_blast_hits_list_list, 
                                         columns=['sample', 'hit_rank', 'contig', 'contig_length', 
                                         'species', 'hit_taxid', 'accession', 'top_hsp_align_len', 'reference_len'])     
     blast_results_df.to_csv(parsed_blast_results_filename, header = True, index = False, sep="\t")
+
 
 file1 = open(pipeline_status_filename, "a")
 file1.write(pipeline_status_output) 
