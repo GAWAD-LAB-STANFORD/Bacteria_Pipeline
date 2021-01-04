@@ -294,9 +294,8 @@ elif [ $STEP -eq 2 ] && [ $ONLY_IDENTIFY -eq 0 ]; then
         exit 1
     else
         echo "$CONTIG_COUNT contigs out of a possible ${#SAMPLE_ARRAY[@]} maximum" >> $PIPELINE_STATUS
-        rm ${STD_ERR_OUT_DIR}/*1_process_sample.out ${STD_ERR_OUT_DIR}/*1_process_sample.out
+        rm ${STD_ERR_OUT_DIR}/*1_process_sample.out ${STD_ERR_OUT_DIR}/*1_process_sample.err
     fi
-    echo "### De novo assembling contigs ### - END: $(date)" >> $PIPELINE_STATUS
     echo "### De novo assembling contigs and detecting contamination ### - END: $(date)" >> $PIPELINE_STATUS
     
     
@@ -380,6 +379,7 @@ elif [ $STEP -eq 3 ]; then
         exit 1
     else
         echo "$BLAST_RESULTS_COUNT BLAST results out of a possible $MAX_RESULTS maximum" >> $PIPELINE_STATUS
+        rm ${STD_ERR_OUT_DIR}/*2_blast_contigs.out ${STD_ERR_OUT_DIR}/*2_blast_contigs.err
     fi
     echo "### BLAST aligning contigs ### - END: $(date)" >> $PIPELINE_STATUS
     
