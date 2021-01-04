@@ -4,14 +4,15 @@ import datetime
 import json
 import sys
 
+
 input_file_name = sys.argv[1]
 project = sys.argv[2]
 output_suffix = sys.argv[3]
 samples = sys.argv[4].split(":")
 
+
 kraken_df = pd.read_csv(input_file_name, sep="\t")
 # samples = kraken_df['sample'].unique().tolist()
-
 for sample in samples:
     if sample.count("_") == 6:
         short_sample = sample.split("_")[5]
