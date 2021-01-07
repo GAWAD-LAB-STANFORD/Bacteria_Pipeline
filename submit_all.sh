@@ -396,11 +396,9 @@ elif [ $STEP -eq 3 ]; then
     
     echo "### Converting Kraken reports to TSV ### - START: $(date)" >> $PIPELINE_STATUS
     KRAKEN_DB_TYPE_ARRAY=( $(echo $KRAKEN_DB_TYPES | sed 's/-/ /g') )
-    SAMPLES_STRING=$( IFS=$':'; echo "${SAMPLE_ARRAY[*]}" )
     echo "Samples string: $SAMPLES_STRING"
     for DB_TYPE in ${KRAKEN_DB_TYPE_ARRAY[@]}; do
-        python3 ${SCRIPT_DIR}/kraken_report_to_jtree.py ${PROJECT}.${DB_TYPE}.kraken_reports.tsv \
-            $IDENTIFY .${DB_TYPE}.kraken_jtree.json $SAMPLES_STRING
+        python3 ${SCRIPT_DIR}/kraken_report_to_jtree.py -p $PROJECT -k $DB_TYPE
     done
     echo "### Converting Kraken reports to TSV ### - END: $(date)" >> $PIPELINE_STATUS
     
@@ -415,10 +413,11 @@ elif [ $STEP -eq 3 ]; then
         --contig_data_filename ${PROJECT}.contig_data.tsv \
         --kraken_db_types $KRAKEN_DB_TYPES --kraken_jtree_suffix ".kraken_jtree.json" \
         --blast_db_types $BLAST_DB_TYPES --blast_results_suffix ".blast_results.tsv" \
-        --ncbi_annotations_dir $NCBI_ANNOTATIONS_DIR --contig_alignment_fraction_min $CONTIG_ALIGN_MINIMUM
+        --contig_alignment_fraction_min $CONTIG_ALIGN_MINIMUM \
+        --ncbi_annotations_dir $NCBI_ANNOTATIONS_DIR
     echo "### Processing contamination, Kraken results, BLAST results, and making final figures ### - END: $(date)" >> $PIPELINE_STATUS
     
-    rm long_contigs_*
+    rm ${IDENTIFY}_long_contigs_
     rm ${IDENTIFY}.*.kraken_jtree.json 
     rm ${IDENTIFY}_blast_results_*.json
     echo "END: $(date)" >> $PIPELINE_STATUS
