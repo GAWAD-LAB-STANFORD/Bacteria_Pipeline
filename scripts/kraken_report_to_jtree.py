@@ -5,6 +5,7 @@ import argparse
 import glob
 import json
 import sys
+import re
 
 
 parser = argparse.ArgumentParser(
@@ -50,7 +51,7 @@ for sample in samples:
     for row in reversed(sample_df.index):
         increment += 1
         new_spaces = sample_df['sciname'][row].count(' ')
-        new_newick = '%s:%s{%s}' % (sample_df['sciname'][row].strip(), str(new_spaces), str(increment))
+        new_newick = '%s:%s{%s}' % (re.sub(r'[^A-Za-z0-9 ]+', '', sample_df['sciname'][row].strip()), str(new_spaces), str(increment))
         new_dict = {
             'edge_num': int(increment),
             'percent_fragments_covered': float(sample_df['percent_fragments_covered'][row]),
