@@ -1,5 +1,6 @@
 suppressPackageStartupMessages({
   library(tidyverse)
+  options(dplyr.summarise.inform = FALSE)
   library(gridExtra)
   library(ggpubr)
   library(reshape2)
@@ -305,21 +306,23 @@ lg50_contigs_over_reference <- function(sample_df, taxonomic_variable_string) {
   return(sample_lg50_df)
 }
 kraken_ggtree_plot <- function(sample_string, db_type) {
-  json <- fromJSON(file = sprintf("%s.%s.%s%s", opt$identify, sample_string, db_type, opt$kraken_jtree_suffix))
-  width <- json$metadata$max_depth + 1
-  tree <- read.jtree(sprintf("%s.%s.%s%s", opt$identify, sample_string, db_type, opt$kraken_jtree_suffix))
-  tree1 <- tryCatch({
-    ggtree(tree, branch.length='none', aes(color=percent_fragments_covered), size = 1) + 
+  tryCatch({
+    json <- fromJSON(file = sprintf("%s.%s.%s%s", opt$identify, sample_string, db_type, opt$kraken_jtree_suffix))
+    width <- json$metadata$max_depth + 1
+    tree <- read.jtree(sprintf("%s.%s.%s%s", opt$identify, sample_string, db_type, opt$kraken_jtree_suffix))
+    tree1 <- ggtree(tree, branch.length='none', aes(color=percent_fragments_covered), size = 1) + 
       geom_label(aes(x=branch, label=label), vjust=-1) + geom_label(aes(x=branch, label=percent_fragments_covered)) +
       geom_tiplab(size=5, color="black") + 
       labs(title = "Percent coverage from kraken2 results", x = "Depth of identification") +
       ylim(0, width/2) + xlim(0, width) + theme(legend.position="bottom") + ggtree_theme +
       scale_color_continuous(low='red', high='royalblue1')
+    return(tree1)
   }, error = function(e) {
+    cat(sprintf("\t\tProblem reading %s.%s.%s%s\n", opt$identify, sample_string, db_type, opt$kraken_jtree_suffix))
     df <- data.frame()
-    ggplot(df) + geom_blank()
+    tree1 <- ggplot(df) + geom_blank()
+    return(tree1)
   })
-  return(tree1)
 }
 metric_bar_plots_list <- function(summed_sample_df, taxonomic_plot_string, taxonomic_variable_string, taxonomic_color_vector) {
   taxonomic_variable_string <- tolower(taxonomic_variable_string)
