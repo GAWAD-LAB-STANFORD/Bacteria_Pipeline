@@ -126,10 +126,6 @@ for DB_TYPE in ${KRAKEN_DB_TYPES_ARRAY[@]}; do
 done
 echo "### Running kraken2 on non-human matches ### - END: $(date)"
 
-if [ ! -f ${SAMPLE}_no_human_vs_kraken.tsv ]; then
-    echo "Final file ${SAMPLE}_no_human_vs_kraken.tsv not found. Exiting with code 1"
-    exit 1
-fi
 if [ $SKIP_TRIMMOMATIC -eq 0 ]; then
     rm ${SAMPLE}_trimmomatic_log.txt
     rm $R1_FASTQ $R2_FASTQ
@@ -144,4 +140,8 @@ rm ${SAMPLE}_temp_contig_read_targets.txt
 rm ${SAMPLE}_no_human${R1_SUFFIX} ${SAMPLE}_no_human${R2_SUFFIX}
 # rm ${SAMPLE}_any_mapping_to_human_query_names.txt
 rm ${SAMPLE}_no_human_vs_kraken.tsv
+if [ ! -f ${SAMPLE}_contigs.fasta ]; then
+    echo "Final file ${SAMPLE}_contigs.fasta not found. Exiting with code 1"
+    exit 1
+fi
 echo -e "END: $(date)\nRuntime: $(($(date +%s)-$START_TIME)) seconds"
