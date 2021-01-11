@@ -197,30 +197,30 @@ if [ "$TEMP_PIPELINE_DIR" = "$PIPELINE_DIR" ]; then
     echo -e "\nSTART: $(date)\nBacteria Pipeline\nErr out dir: $STD_ERR_OUT_DIR\nResults dir: $RESULTS_DIR\nProject: $PROJECT" >> $PIPELINE_STATUS
     # Optional variable definitions
     if [ $SKIP_TRIMMOMATIC -eq 1 ]; then
-        echo "Skip trimming - will not run trimmomatic" >> $PIPELINE_STATUS
+        echo "Option: Skip trimming - will not run trimmomatic" >> $PIPELINE_STATUS
     fi
     if [ $CONTIG_LENGTH_MINIMUM -eq 5000 ]; then
-        echo "Contig length minimum: 5000 (default)" >> $PIPELINE_STATUS
+        echo "Default: Contig length minimum: 5000" >> $PIPELINE_STATUS
     else
-        echo "Contig length minimum: $CONTIG_LENGTH_MINIMUM" >> $PIPELINE_STATUS
+        echo "Option: Contig length minimum: $CONTIG_LENGTH_MINIMUM" >> $PIPELINE_STATUS
     fi
     if [ "$CONTIG_ALIGN_MINIMUM" = "0.9" ]; then
-        echo "Contig align minimum: 0.9 (default)" >> $PIPELINE_STATUS
+        echo "Default: Contig align minimum: 0.9" >> $PIPELINE_STATUS
     else
-        echo "Contig align minimum: $CONTIG_ALIGN_MINIMUM" >> $PIPELINE_STATUS
+        echo "Option: Contig align minimum: $CONTIG_ALIGN_MINIMUM" >> $PIPELINE_STATUS
     fi
     if [ $SKIP_IDENTIFY -eq 1 ]; then
-        echo "Skip identification of data - will only process the fastqs, build the contigs, and run Kraken2" >> $PIPELINE_STATUS
+        echo "Option: Skip identification of data - will only process the fastqs, build the contigs, and run Kraken2" >> $PIPELINE_STATUS
     fi
     if [ $ONLY_IDENTIFY -eq 1 ]; then
-        echo "Only identification of data - will only BLAST and filter from already built contigs" >> $PIPELINE_STATUS
+        echo "Option: Only identification of data - will only BLAST and filter from already built contigs" >> $PIPELINE_STATUS
     fi
     echo " " >> $PIPELINE_STATUS
 fi
 
 
 if [ ! -z $SLURM_OPTIONS ] || ([ $ONLY_IDENTIFY -eq 1 ] && [ "$TEMP_PIPELINE_DIR" = "$PIPELINE_DIR" ]); then
-    echo "Slurm option used - entire pipeline run will be queued with user parameters" >> $PIPELINE_STATUS
+    echo "Option: Slurm - entire pipeline run will be queued with user parameters" >> $PIPELINE_STATUS
     sbatch -J $PROJECT ${SLURM_OPTIONS[@]} \
         -e ${STD_ERR_OUT_DIR}/%A_submit_all_%x.err -o ${STD_ERR_OUT_DIR}/%A_submit_all_%x.out \
         ${PIPELINE_DIR}/submit_all.sh ${OPTIONS[@]}
