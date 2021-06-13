@@ -300,6 +300,7 @@ elif [ $STEP -eq 2 ] && [ $ONLY_IDENTIFY -eq 0 ]; then
     
     
     ml R/4.0.2
+    export R_LIBS="/home/groups/cgawad/R_libs"
     bash ${SCRIPT_DIR}/summarize_metrics.sh $PIPELINE_STATUS $PROJECT $KRAKEN_DB_TYPES $RUN_DIR $SAMPLE_SHEET
     
     
@@ -404,6 +405,7 @@ elif [ $STEP -eq 3 ]; then
     
 
     ml R/4.0.2
+    export R_LIBS="/home/groups/cgawad/R_libs"
     echo "### Processing contamination, Kraken results, BLAST results, and making final figures ### - START: $(date)" >> $PIPELINE_STATUS
     Rscript ${SCRIPT_DIR}/analyze_and_plot_results.R \
         --project $PROJECT --identify $IDENTIFY \
