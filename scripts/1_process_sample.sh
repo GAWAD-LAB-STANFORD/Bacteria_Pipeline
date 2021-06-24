@@ -16,14 +16,15 @@ REF_FASTA=$6
 KRAKEN_DB_TYPES_ARRAY=( $(echo $7 | sed 's/-/ /g') )
 KRAKEN_DB_DIR_PREFIX=$8
 TOOLS_DIR=$9
-SAMPLE_ARRAY=( $(echo ${10} | sed 's/:/ /g') )
+RNA_INPUT=$10
+SAMPLE_ARRAY=( $(echo ${11} | sed 's/:/ /g') )
 SAMPLE=${SAMPLE_ARRAY[$(( $SLURM_ARRAY_TASK_ID - 1 ))]}
 
 echo -e "START: $(date)\nBacteria Pipeline\nFastq dir: $FASTQ_DIR\nResults dir: $RESULTS_DIR\nSample: $SAMPLE"
 cd $RESULTS_DIR
 
 ml python/3.6.1 java 
-ml biology bwa samtools gatk
+ml biology bwa samtools gatk star/2.5.4b
 
 R1_FASTQ=${FASTQ_DIR}/${SAMPLE}${R1_SUFFIX}
 R2_FASTQ=${FASTQ_DIR}/${SAMPLE}${R2_SUFFIX}
@@ -54,13 +55,23 @@ echo -e "sample\tread_count" > ${SAMPLE}.read_counts.tsv
 echo -e "$SAMPLE\t$READ_COUNT" >> ${SAMPLE}.read_counts.tsv
 echo "### Counting fastq read counts ### - END: $(date)"
 
-echo "### Aligning sample to human ### - START: $(date)"
-bwa aln -t 4 $REF_FASTA $R1_FASTQ > ${SAMPLE}_R1.sai
-bwa aln -t 4 $REF_FASTA $R2_FASTQ > ${SAMPLE}_R2.sai
-bwa sampe -a 700 $REF_FASTA ${SAMPLE}_R1.sai ${SAMPLE}_R2.sai $R1_FASTQ $R2_FASTQ | \
-    samtools view -b - | samtools sort -o ${SAMPLE}_human_aligned.bam -
-samtools index ${SAMPLE}_human_aligned.bam
-echo "### Aligning sample to human ### - START: $(date)"
+if [ $RNA_INPUT -eq 1 ]; then
+    UNZIPPED_R1_FASTQ=$(echo $R1_FASTQ | sed "s/.gz//")
+    UNZIPPED_R2_FASTQ=$(echo $R2_FASTQ | sed "s/.gz//")
+    zcat $R1_FASTQ > $UNZIPPED_R1_FASTQ
+    zcat $R2_FASTQ > $UNZIPPED_R2_FASTQ
+    STAR --genomeDir /oak/stanford/groups/cgawad/Reference_Files/GATK_Resource_Bundle_hg38/hg38_STAR_index/ --runThreadN 4 --readFilesIn $UNZIPPED_R1_FASTQ $UNZIPPED_R2_FASTQ --outFileNamePrefix $SAMPLE --outSAMtype BAM SortedByCoordinate --outSAMunmapped Within --outSAMattributes Standard
+    rm $UNZIPPED_R1_FASTQ $UNZIPPED_R2_FASTQ
+    mv ${SAMPLE}Aligned.sortedByCoord.out.bam ${SAMPLE}_human_aligned.bam
+else
+    echo "### Aligning sample to human ### - START: $(date)"
+    bwa aln -t 4 $REF_FASTA $R1_FASTQ > ${SAMPLE}_R1.sai
+    bwa aln -t 4 $REF_FASTA $R2_FASTQ > ${SAMPLE}_R2.sai
+    bwa sampe -a 700 $REF_FASTA ${SAMPLE}_R1.sai ${SAMPLE}_R2.sai $R1_FASTQ $R2_FASTQ | \
+        samtools view -b - | samtools sort -o ${SAMPLE}_human_aligned.bam -
+    samtools index ${SAMPLE}_human_aligned.bam
+    echo "### Aligning sample to human ### - START: $(date)"
+fi
 
 echo "### Collecting human alignment metrics ### - START: $(date)"
 gatk --java-options "-XX:+UseParallelGC -XX:ParallelGCThreads=4 -Xmx64g" CollectAlignmentSummaryMetrics \

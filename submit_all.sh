@@ -12,7 +12,7 @@ Purpose: \n\t\
     This pipeline is built to identify bacterial species from pair-end fastq.gz files and remove human contamination \n\n\
 Required arguments: -p/--project <arg> and either -f/--fastq_dir <arg> or -r/--results_dir <arg> \n\
 Optional arguments: -b/--run_dir <arg>, --sample_sheet <arg>, --R1_suffix <arg>, --R2_suffix <arg>, --err_out_dir <arg>, \n\t\
-    --skip_trimming, --skip_identify, --only_identify, --contig_len_min <arg>, --contig_align_min <arg>, --slurm <arg> \n\
+    --skip_trimming, --rna, --skip_identify, --only_identify, --contig_len_min <arg>, --contig_align_min <arg>, --slurm <arg> \n\
 Defaults: \n\t\
     If no fastq_dir specified, uses results_dir \n\t\
     If no results_dir specified, makes new directory in fastq_dir \n\t\
@@ -31,6 +31,7 @@ For more information, read the README.md"
 
 # Reads in command line option arguments and assigns them to variables
 SKIP_TRIMMOMATIC=0
+RNA_INPUT=0
 SKIP_IDENTIFY=0
 ONLY_IDENTIFY=0
 CONTIG_LENGTH_MINIMUM=5000
@@ -70,6 +71,8 @@ while [ "$1" != "" ]; do
                                 PIPELINE_DIR=$1
                                 ;;
         --skip_trimming )       SKIP_TRIMMOMATIC=1
+                                ;;
+        --rna )                 RNA_INPUT=1
                                 ;;
         --skip_identify )       SKIP_IDENTIFY=1
                                 ;;
@@ -159,6 +162,9 @@ fi
 if [ $SKIP_TRIMMOMATIC -eq 1 ]; then
     OPTIONS+=( "--skip_trimming" )
 fi
+if [ $RNA_INPUT -eq 1 ]; then
+    OPTIONS+=( "--rna" )
+fi
 if [ $SKIP_IDENTIFY -eq 1 ] && [ $ONLY_IDENTIFY -eq 1 ]; then
     echo "Variables not supplied correctly. Please specify either --skip_identify or --only_identify, not both. Exiting with code 1"
     exit 1
@@ -198,6 +204,9 @@ if [ "$TEMP_PIPELINE_DIR" = "$PIPELINE_DIR" ]; then
     # Optional variable definitions
     if [ $SKIP_TRIMMOMATIC -eq 1 ]; then
         echo "Option: Skip trimming - will not run trimmomatic" >> $PIPELINE_STATUS
+    fi
+    if [ $RNA_INPUT -eq 1 ]; then
+        echo "Option: Expecting RNA input and will align using STAR instead of BWA" >> $PIPELINE_STATUS
     fi
     if [ $CONTIG_LENGTH_MINIMUM -eq 5000 ]; then
         echo "Default: Contig length minimum: 5000" >> $PIPELINE_STATUS
@@ -273,7 +282,7 @@ elif [ $STEP -eq 1 ]; then
         DEPENDENCIES+=( $(sbatch --parsable -e $STD_ERR_OUT_DIR/%A_%a_%x.err -o $STD_ERR_OUT_DIR/%A_%a_%x.out \
             --array=1-${TEMP_JOB_COUNT} ${SCRIPT_DIR}/1_process_sample.sh \
             $FASTQ_DIR $RESULTS_DIR $R1_SUFFIX $R2_SUFFIX $SKIP_TRIMMOMATIC $REF_FASTA \
-            $KRAKEN_DB_TYPES $KRAKEN_DB_DIR_PREFIX $TOOLS_DIR $TEMP_SAMPLES_STRING) )
+            $KRAKEN_DB_TYPES $KRAKEN_DB_DIR_PREFIX $TOOLS_DIR $RNA_INPUT $TEMP_SAMPLES_STRING) )
         TEMP_ARRAY_START=$(($TEMP_ARRAY_START + $TEMP_ARRAY_INCREMENT))
     done
     sbatch --dependency=afterany:$( IFS=$':'; echo "${DEPENDENCIES[*]}" ) -J $PROJECT \

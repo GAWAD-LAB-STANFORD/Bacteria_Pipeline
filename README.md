@@ -30,11 +30,12 @@
         - If you do not specify a fastq directory, the program will assume the fastq.gz files are in the results directory you specified, and will end the program if no fastq.gz files are found
         - If you do not specify a results directory, the program will make a new folder with the current date in the name within the fastq directory 
     - Specify the project name for the final resulting VCF that will be made using *-p* or *--project*
-- Optional arguments: -b/--run_dir >arg<, --sample_sheet >arg<, --R1_suffix >arg<, --R2_suffix >arg<, --err_out_dir >arg<, --skip_trimming, --skip_identify, --only_identify, --contig_len_min >arg<, --contig_align_min >arg<, --slurm
+- Optional arguments: -b/--run_dir >arg<, --sample_sheet >arg<, --R1_suffix >arg<, --R2_suffix >arg<, --err_out_dir >arg<, --skip_trimming, --rna, --skip_identify, --only_identify, --contig_len_min >arg<, --contig_align_min >arg<, --slurm
     - You can have the script demultiplex your BCL files into fastq.gz files by specifying a run folder using *-b* or *--run_dir*. The program will look for a sample sheet called SampleSheet.csv in the first level within the run_dir or you can specify a different sample sheet with *--sample_sheet*. The program will make the fastq directory if it does not exist and tell you the sizes of undeteremined vs fully demultiplexed reads
     - If your read 1 and read 2 fastq.gz files differentiate themselves by some pattern other than _L001_R1_001.fastq.gz and _L001_R2_001.fastq.gz or _R1_001.fastq.gz and _R2_001.fastq.gz, use *--R1_suffix* and *--R2_suffix* options to let the pipeline know
     - You can specify a directory to output the standard error and out print statements of all jobs to using *--err_out_dir*
     - If you don't want trimmomatic to run, add the *--skip_trimming* option
+    - If you want to process RNA instead of DNA data, add the *--rna* option and the program will align the sequences using STAR instead of BWA
     - If you only want to process the fastqs, build the contigs, and run Kraken2, add the *--skip_identify* option and only the first phase of the pipeline will be run
     - If you want to BLAST your data, filter the results, and make the final figures using already existing contig files, you can use the *--only_identify*
     - You can change the default minimum length for contigs that are kept from 5000 to a chosen number using *--contig_len_min*
