@@ -16,7 +16,7 @@ REF_FASTA=$6
 KRAKEN_DB_TYPES_ARRAY=( $(echo $7 | sed 's/-/ /g') )
 KRAKEN_DB_DIR_PREFIX=$8
 TOOLS_DIR=$9
-RNA_INPUT=$10
+RNA_INPUT=${10}
 SAMPLE_ARRAY=( $(echo ${11} | sed 's/:/ /g') )
 SAMPLE=${SAMPLE_ARRAY[$(( $SLURM_ARRAY_TASK_ID - 1 ))]}
 
@@ -56,6 +56,7 @@ echo -e "$SAMPLE\t$READ_COUNT" >> ${SAMPLE}.read_counts.tsv
 echo "### Counting fastq read counts ### - END: $(date)"
 
 if [ $RNA_INPUT -eq 1 ]; then
+    echo "### Aligning RNA fastqs to human ### - START: $(date)"
     UNZIPPED_R1_FASTQ=$(echo $R1_FASTQ | sed "s/.gz//")
     UNZIPPED_R2_FASTQ=$(echo $R2_FASTQ | sed "s/.gz//")
     zcat $R1_FASTQ > $UNZIPPED_R1_FASTQ
@@ -63,14 +64,15 @@ if [ $RNA_INPUT -eq 1 ]; then
     STAR --genomeDir /oak/stanford/groups/cgawad/Reference_Files/GATK_Resource_Bundle_hg38/hg38_STAR_index/ --runThreadN 4 --readFilesIn $UNZIPPED_R1_FASTQ $UNZIPPED_R2_FASTQ --outFileNamePrefix $SAMPLE --outSAMtype BAM SortedByCoordinate --outSAMunmapped Within --outSAMattributes Standard
     rm $UNZIPPED_R1_FASTQ $UNZIPPED_R2_FASTQ
     mv ${SAMPLE}Aligned.sortedByCoord.out.bam ${SAMPLE}_human_aligned.bam
+    echo "### Aligning RNA fastqs to human ### - END: $(date)"
 else
-    echo "### Aligning sample to human ### - START: $(date)"
+    echo "### Aligning DNA fastqs to human ### - START: $(date)"
     bwa aln -t 4 $REF_FASTA $R1_FASTQ > ${SAMPLE}_R1.sai
     bwa aln -t 4 $REF_FASTA $R2_FASTQ > ${SAMPLE}_R2.sai
     bwa sampe -a 700 $REF_FASTA ${SAMPLE}_R1.sai ${SAMPLE}_R2.sai $R1_FASTQ $R2_FASTQ | \
         samtools view -b - | samtools sort -o ${SAMPLE}_human_aligned.bam -
     samtools index ${SAMPLE}_human_aligned.bam
-    echo "### Aligning sample to human ### - START: $(date)"
+    echo "### Aligning DNA fastqs to human ### - END: $(date)"
 fi
 
 echo "### Collecting human alignment metrics ### - START: $(date)"
