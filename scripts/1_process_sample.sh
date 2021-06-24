@@ -57,8 +57,8 @@ echo "### Counting fastq read counts ### - END: $(date)"
 
 if [ $RNA_INPUT -eq 1 ]; then
     echo "### Aligning RNA fastqs to human ### - START: $(date)"
-    UNZIPPED_R1_FASTQ=$(echo $R1_FASTQ | sed "s/.gz//")
-    UNZIPPED_R2_FASTQ=$(echo $R2_FASTQ | sed "s/.gz//")
+    UNZIPPED_R1_FASTQ=$(basename $R1_FASTQ | sed "s/.gz//")
+    UNZIPPED_R2_FASTQ=$(basename $R2_FASTQ | sed "s/.gz//")
     zcat $R1_FASTQ > $UNZIPPED_R1_FASTQ
     zcat $R2_FASTQ > $UNZIPPED_R2_FASTQ
     STAR --genomeDir /oak/stanford/groups/cgawad/Reference_Files/GATK_Resource_Bundle_hg38/hg38_STAR_index/ --runThreadN 4 --readFilesIn $UNZIPPED_R1_FASTQ $UNZIPPED_R2_FASTQ --outFileNamePrefix $SAMPLE --outSAMtype BAM SortedByCoordinate --outSAMunmapped Within --outSAMattributes Standard
