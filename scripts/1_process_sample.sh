@@ -29,6 +29,7 @@ ml biology bwa samtools gatk star/2.5.4b
 R1_FASTQ=${FASTQ_DIR}/${SAMPLE}${R1_SUFFIX}
 R2_FASTQ=${FASTQ_DIR}/${SAMPLE}${R2_SUFFIX}
 export PATH=${TOOLS_DIR}/kraken2-2.0.8-beta:$PATH
+export PATH=${TOOLS_DIR}/SPAdes-3.14.0-Linux/bin:$PATH
 
 if [ $SKIP_TRIMMOMATIC -eq 0 ]; then
     UNTRIMMED_R1_FASTQ=$R1_FASTQ
@@ -72,6 +73,7 @@ else
     bwa sampe -a 700 $REF_FASTA ${SAMPLE}_R1.sai ${SAMPLE}_R2.sai $R1_FASTQ $R2_FASTQ | \
         samtools view -b - | samtools sort -o ${SAMPLE}_human_aligned.bam -
     samtools index ${SAMPLE}_human_aligned.bam
+    rm ${SAMPLE}_R1.sai ${SAMPLE}_R2.sai
     echo "### Aligning DNA fastqs to human ### - END: $(date)"
 fi
 
@@ -144,15 +146,14 @@ if [ $SKIP_TRIMMOMATIC -eq 0 ]; then
     rm $R1_FASTQ $R2_FASTQ
     rm $UNPAIRED_R1_FASTQ $UNPAIRED_R2_FASTQ
 fi
-rm -r contigs_${SAMPLE} 
-rm ${SAMPLE}_contigs.fasta.amb ${SAMPLE}_contigs.fasta.ann ${SAMPLE}_contigs.fasta.bwt
-rm ${SAMPLE}_contigs.fasta.pac ${SAMPLE}_contigs.fasta.sa
-rm ${SAMPLE}_R1.sai ${SAMPLE}_R2.sai
-rm ${SAMPLE}_human_aligned.bam* ${SAMPLE}_no_human.bam* ${SAMPLE}_contig_aligned.bam*
-rm ${SAMPLE}_temp_contig_read_targets.txt
-rm ${SAMPLE}_no_human${R1_SUFFIX} ${SAMPLE}_no_human${R2_SUFFIX}
+# rm -r contigs_${SAMPLE} 
+# rm ${SAMPLE}_contigs.fasta.amb ${SAMPLE}_contigs.fasta.ann ${SAMPLE}_contigs.fasta.bwt
+# rm ${SAMPLE}_contigs.fasta.pac ${SAMPLE}_contigs.fasta.sa
+# rm ${SAMPLE}_human_aligned.bam* ${SAMPLE}_no_human.bam* ${SAMPLE}_contig_aligned.bam*
+# rm ${SAMPLE}_temp_contig_read_targets.txt
+# rm ${SAMPLE}_no_human${R1_SUFFIX} ${SAMPLE}_no_human${R2_SUFFIX}
 # rm ${SAMPLE}_any_mapping_to_human_query_names.txt
-rm ${SAMPLE}_no_human_vs_kraken.tsv
+# rm ${SAMPLE}_no_human_vs_kraken.tsv
 if [ ! -f ${SAMPLE}_contigs.fasta ]; then
     echo "Final file ${SAMPLE}_contigs.fasta not found. Exiting with code 1"
     exit 1
