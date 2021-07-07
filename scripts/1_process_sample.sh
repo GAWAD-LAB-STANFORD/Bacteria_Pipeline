@@ -62,7 +62,11 @@ if [ $RNA_INPUT -eq 1 ]; then
     UNZIPPED_R2_FASTQ=$(basename $R2_FASTQ | sed "s/.gz//")
     zcat $R1_FASTQ > $UNZIPPED_R1_FASTQ
     zcat $R2_FASTQ > $UNZIPPED_R2_FASTQ
-    STAR --genomeDir /oak/stanford/groups/cgawad/Reference_Files/GATK_Resource_Bundle_hg38/hg38_STAR_index/ --runThreadN 4 --readFilesIn $UNZIPPED_R1_FASTQ $UNZIPPED_R2_FASTQ --outFileNamePrefix $SAMPLE --outSAMtype BAM SortedByCoordinate --outSAMunmapped Within --outSAMattributes Standard
+    STAR --genomeDir \
+        /oak/stanford/groups/cgawad/Reference_Files/GATK_Resource_Bundle_hg38/hg38_STAR_index/ \
+        --runThreadN 4 --readFilesIn $UNZIPPED_R1_FASTQ $UNZIPPED_R2_FASTQ \
+        --outFileNamePrefix $SAMPLE --outSAMtype BAM SortedByCoordinate \
+        --outSAMunmapped Within --outSAMattributes Standard
     rm $UNZIPPED_R1_FASTQ $UNZIPPED_R2_FASTQ
     mv ${SAMPLE}Aligned.sortedByCoord.out.bam ${SAMPLE}_human_aligned.bam
     echo "### Aligning RNA fastqs to human ### - END: $(date)"
@@ -146,14 +150,14 @@ if [ $SKIP_TRIMMOMATIC -eq 0 ]; then
     rm $R1_FASTQ $R2_FASTQ
     rm $UNPAIRED_R1_FASTQ $UNPAIRED_R2_FASTQ
 fi
-# rm -r contigs_${SAMPLE} 
-# rm ${SAMPLE}_contigs.fasta.amb ${SAMPLE}_contigs.fasta.ann ${SAMPLE}_contigs.fasta.bwt
-# rm ${SAMPLE}_contigs.fasta.pac ${SAMPLE}_contigs.fasta.sa
-# rm ${SAMPLE}_human_aligned.bam* ${SAMPLE}_no_human.bam* ${SAMPLE}_contig_aligned.bam*
-# rm ${SAMPLE}_temp_contig_read_targets.txt
-# rm ${SAMPLE}_no_human${R1_SUFFIX} ${SAMPLE}_no_human${R2_SUFFIX}
-# rm ${SAMPLE}_any_mapping_to_human_query_names.txt
-# rm ${SAMPLE}_no_human_vs_kraken.tsv
+rm -r contigs_${SAMPLE} 
+rm ${SAMPLE}_contigs.fasta.amb ${SAMPLE}_contigs.fasta.ann ${SAMPLE}_contigs.fasta.bwt
+rm ${SAMPLE}_contigs.fasta.pac ${SAMPLE}_contigs.fasta.sa
+rm ${SAMPLE}_human_aligned.bam* ${SAMPLE}_no_human.bam* ${SAMPLE}_contig_aligned.bam*
+rm ${SAMPLE}_temp_contig_read_targets.txt
+rm ${SAMPLE}_no_human${R1_SUFFIX} ${SAMPLE}_no_human${R2_SUFFIX}
+rm ${SAMPLE}_any_mapping_to_human_query_names.txt
+rm ${SAMPLE}_no_human_vs_kraken.tsv
 if [ ! -f ${SAMPLE}_contigs.fasta ]; then
     echo "Final file ${SAMPLE}_contigs.fasta not found. Exiting with code 1"
     exit 1
