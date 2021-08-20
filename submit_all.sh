@@ -414,7 +414,7 @@ elif [ $STEP -eq 3 ]; then
     
 
     ml R/4.0.2
-    export R_LIBS="/home/groups/cgawad/R_libs"
+    export R_LIBS="/home/groups/cgawad/R_LIBS"
     echo "### Processing contamination, Kraken results, BLAST results, and making final figures ### - START: $(date)" >> $PIPELINE_STATUS
     Rscript ${SCRIPT_DIR}/analyze_and_plot_results.R \
         --project $PROJECT --identify $IDENTIFY \
