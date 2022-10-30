@@ -3,7 +3,7 @@
 #SBATCH --job-name=2_blast_contigs
 #SBATCH --mem=64G
 #SBATCH --cpus-per-task=4
-#SBATCH --time=12:00:00
+#SBATCH --time=3-00:00:00
 #SBATCH --partition=cgawad
 
 START_TIME=$(date +%s)
