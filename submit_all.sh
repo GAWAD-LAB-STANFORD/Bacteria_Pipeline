@@ -200,7 +200,7 @@ else
 fi
 cd $RESULTS_DIR
 if [ "$TEMP_PIPELINE_DIR" = "$PIPELINE_DIR" ]; then
-    echo -e "\nSTART: $(date)\nBacteria Pipeline\nErr out dir: $STD_ERR_OUT_DIR\nResults dir: $RESULTS_DIR\nProject: $PROJECT" >> $PIPELINE_STATUS
+    echo -e "\nSTART: $(date)\nBacteria Pipeline\nErr out dir: $STD_ERR_OUT_DIR\nResults dir: $RESULTS_DIR\nFastq dir: $FASTQ_DIR\nProject: $PROJECT" >> $PIPELINE_STATUS
     # Optional variable definitions
     if [ $SKIP_TRIMMOMATIC -eq 1 ]; then
         echo "Option: Skip trimming - will not run trimmomatic" >> $PIPELINE_STATUS
