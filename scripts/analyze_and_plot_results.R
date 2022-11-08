@@ -75,7 +75,7 @@ for (i in 1:length(kraken_db_types)) {
   }
 }
 if (opt$add_genus) {
-  kraken_db_types <- c("microbial", kraken_db_types)
+  kraken_db_types <- c("genus", kraken_db_types)
   blast_db_types <- c("nt", blast_db_types)
   taxonomic_variable_string_list <- c("Genus", taxonomic_variable_string_list)
   ncbi_annotation_string_list <- c("Microbe", ncbi_annotation_string_list)
@@ -262,6 +262,10 @@ taxonomic_color_vector <- function(sample_df, taxonomic_variable_string) {
 }
 summarize_sample_metrics <- function(sample_df, taxonomic_variable_string) {
   taxonomic_variable_string <- tolower(taxonomic_variable_string)
+  if (taxonomic_variable_string == "species") {
+    sample_df <- sample_df %>%
+      mutate(species = ifelse(is.na(word(species, 1, 2)), species, word(species, 1, 2)))
+  }
   summed_sample_df <- sample_df %>%
     mutate(reverse_ranking = (max(contig_rank) + 1) - contig_rank) %>%
     mutate(total_largest_contig = max(contig_length),
@@ -475,7 +479,7 @@ rm(alignments, heatmaps)
 #   kraken phylogenetic tree plot
 #   plots for summarized metrics of nucleotide Genus, plasmid Plasmids, and viral Phages
 # Consolidate summarized metric data into a list of dataframes
-summarized_df_list <- list(data.frame(), data.frame(), data.frame())
+summarized_df_list <- list(data.frame(), data.frame(), data.frame(), data.frame())
 summarized_nucleotide_species_df <- data.frame()
 cat(sprintf("Plotting kraken and BLAST results for %s samples\n", length(unique_samples)))
 count <- 1
