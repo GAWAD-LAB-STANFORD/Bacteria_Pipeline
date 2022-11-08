@@ -35,7 +35,9 @@ option_list = list(
   make_option(c("--ncbi_annotations_dir"), type="character", default="0",
               help="optional [default = %default]", metavar="character"),
   make_option(c("--contig_alignment_fraction_min"), type="double", default=0.9,
-              help="optional [default = %default]", metavar="double")
+              help="optional [default = %default]", metavar="double"),
+  make_option(c("--add_genus"), action = "store_true", default = FALSE,
+              help="optional [default = %default]")
 ); 
 
 opt <- parse_args(OptionParser(option_list=option_list))
@@ -58,6 +60,24 @@ if (is.null(opt$project) || is.null(opt$identify) || is.null(opt$sample_read_cou
 
 kraken_db_types <- unlist(strsplit(as.character(opt$kraken_db_types), "-"))
 blast_db_types <- unlist(strsplit(as.character(opt$blast_db_types), "-"))
+taxonomic_variable_string_list <- c()
+ncbi_annotation_string_list <- c()
+for (i in 1:length(kraken_db_types)) {
+  if (kraken_db_types[i] == "genus") {
+    taxonomic_variable_string_list <- c(taxonomic_variable_string_list, "Genus")
+    ncbi_annotation_string_list <- c(ncbi_annotation_string_list, "Microbe")
+  } else if (kraken_db_types[i] == "microbial") {
+    taxonomic_variable_string_list <- c(taxonomic_variable_string_list, "Species")
+    ncbi_annotation_string_list <- c(ncbi_annotation_string_list, "Microbe")
+  } else if (kraken_db_types[i] == "plasmid") {
+    taxonomic_variable_string_list <- c(taxonomic_variable_string_list, "Plasmid")
+    ncbi_annotation_string_list <- c(ncbi_annotation_string_list, "Plasmid")
+  } else if (kraken_db_types[i] == "viral") {
+    taxonomic_variable_string_list <- c(taxonomic_variable_string_list, "Virus")
+    ncbi_annotation_string_list <- c(ncbi_annotation_string_list, "Viral")
+  }
+}
+
 
 # Common themes and functions ------------------------------------------------------
 ggplot_theme <- theme(axis.line.y = element_line(size=.1,color = "black"), axis.text.x = element_text(angle = 45, hjust = 1, size=10, lineheight=0.2, color="black"),
@@ -402,9 +422,6 @@ export_with_ncbi_annotations <- function(summed_df, ncbi_annotation_string, taxo
 
 
 # Nucleotide, plasmid, and viral BLAST results ------------------------------------------------
-taxonomic_variable_string_list <- c("Species", "Plasmid", "Virus")
-ncbi_annotation_string_list <- c("Microbe", "Plasmid", "Viral")
-
 # Load and preprocess all BLAST result dataframes
 # Plot contig alignment bar plots, taxonomy heatmaps, 
 # and get list of colors corresponding to taxonomy variables for plot colors later

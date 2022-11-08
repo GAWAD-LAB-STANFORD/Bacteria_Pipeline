@@ -49,6 +49,10 @@ for sample in samples:
     increment = 0
     unique_depths = []
     for row in reversed(sample_df.index):
+        if len(sample_df['sciname'][row].strip().split()) > 2:
+            continue
+        if args.kraken == "genus" and len(sample_df['sciname'][row].strip().split()) > 1:
+            continue
         increment += 1
         new_spaces = sample_df['sciname'][row].count(' ')
         new_newick = '%s:%s{%s}' % (re.sub(r'[^A-Za-z0-9 ]+', '', sample_df['sciname'][row].strip()), str(new_spaces), str(increment))

@@ -12,7 +12,7 @@ Purpose: \n\t\
     This pipeline is built to identify bacterial species from pair-end fastq.gz files and remove human contamination \n\n\
 Required arguments: -p/--project <arg> and either -f/--fastq_dir <arg> or -r/--results_dir <arg> \n\
 Optional arguments: -b/--run_dir <arg>, --sample_sheet <arg>, --R1_suffix <arg>, --R2_suffix <arg>, --err_out_dir <arg>, \n\t\
-    --skip_trimming, --rna, --skip_identify, --only_identify, --contig_len_min <arg>, --contig_align_min <arg>, --slurm <arg> \n\
+    --skip_trimming, --rna, --skip_identify, --only_identify, --contig_len_min <arg>, --contig_align_min <arg>, --add_genus, --slurm <arg> \n\
 Defaults: \n\t\
     If no fastq_dir specified, uses results_dir \n\t\
     If no results_dir specified, makes new directory in fastq_dir \n\t\
@@ -36,8 +36,10 @@ SKIP_IDENTIFY=0
 ONLY_IDENTIFY=0
 CONTIG_LENGTH_MINIMUM=5000
 CONTIG_ALIGN_MINIMUM=0.9
+ADD_GENUS=0
 STEP=0
 DEPENDENCIES=()
+FIGURE_OPTIONS=()
 while [ "$1" != "" ]; do
     case $1 in
         -h | --help )           echo -e $HELP
@@ -86,6 +88,9 @@ while [ "$1" != "" ]; do
                                 ;;
         --contig_align_min )    shift
                                 CONTIG_ALIGN_MIN=$1
+                                ;;
+        --add_genus )           shift
+                                ADD_GENUS=1
                                 ;;
         --step1 )               STEP=1
                                 ;;
@@ -190,6 +195,9 @@ fi
 if [ "$CONTIG_ALIGN_MINIMUM" = "0.9" ]; then
     OPTIONS+=( "--contig_align_min $CONTIG_ALIGN_MINIMUM" )
 fi
+if [ $ADD_GENUS -eq 1 ]; then
+    FIGURE_OPTIONS+=( "--add_genus" )
+fi
 
 
 TEMP_PIPELINE_DIR="$( cd "$( dirname "$0" )" && pwd )"
@@ -223,6 +231,9 @@ if [ "$TEMP_PIPELINE_DIR" = "$PIPELINE_DIR" ]; then
     fi
     if [ $ONLY_IDENTIFY -eq 1 ]; then
         echo "Option: Only identification of data - will only BLAST and filter from already built contigs" >> $PIPELINE_STATUS
+    fi
+    if [ $ADD_GENUS -eq 1 ]; then
+        echo "Option: Adding genus to figures" >> $PIPELINE_STATUS
     fi
     echo " " >> $PIPELINE_STATUS
 fi
@@ -405,7 +416,12 @@ elif [ $STEP -eq 3 ]; then
     
     
     echo "### Converting Kraken reports to TSV ### - START: $(date)" >> $PIPELINE_STATUS
-    KRAKEN_DB_TYPE_ARRAY=( $(echo $KRAKEN_DB_TYPES | sed 's/-/ /g') )
+    if [ $ADD_GENUS -eq 1 ]; then
+        KRAKEN_DB_TYPE_ARRAY=( "genus" $(echo $KRAKEN_DB_TYPES | sed 's/-/ /g') )
+        KRAKEN_DB_TYPES=$( IFS=$'-'; echo "${KRAKEN_DB_TYPE_ARRAY[*]}" )
+    else
+        KRAKEN_DB_TYPE_ARRAY=( $(echo $KRAKEN_DB_TYPES | sed 's/-/ /g') )
+    fi
     echo "Samples string: $SAMPLES_STRING"
     for DB_TYPE in ${KRAKEN_DB_TYPE_ARRAY[@]}; do
         python3 ${SCRIPT_DIR}/kraken_report_to_jtree.py -p $PROJECT -k $DB_TYPE
@@ -425,7 +441,7 @@ elif [ $STEP -eq 3 ]; then
         --kraken_db_types $KRAKEN_DB_TYPES --kraken_jtree_suffix ".kraken_jtree.json" \
         --blast_db_types $BLAST_DB_TYPES --blast_results_suffix ".blast_results.tsv" \
         --contig_alignment_fraction_min $CONTIG_ALIGN_MINIMUM \
-        --ncbi_annotations_dir $NCBI_ANNOTATIONS_DIR
+        --ncbi_annotations_dir $NCBI_ANNOTATIONS_DIR ${FIGURE_OPTIONS[@]}
     echo "### Processing contamination, Kraken results, BLAST results, and making final figures ### - END: $(date)" >> $PIPELINE_STATUS
     
     rm ${IDENTIFY}_long_contigs_
