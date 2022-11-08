@@ -63,10 +63,7 @@ blast_db_types <- unlist(strsplit(as.character(opt$blast_db_types), "-"))
 taxonomic_variable_string_list <- c()
 ncbi_annotation_string_list <- c()
 for (i in 1:length(kraken_db_types)) {
-  if (kraken_db_types[i] == "genus") {
-    taxonomic_variable_string_list <- c(taxonomic_variable_string_list, "Genus")
-    ncbi_annotation_string_list <- c(ncbi_annotation_string_list, "Microbe")
-  } else if (kraken_db_types[i] == "microbial") {
+  if (kraken_db_types[i] == "microbial") {
     taxonomic_variable_string_list <- c(taxonomic_variable_string_list, "Species")
     ncbi_annotation_string_list <- c(ncbi_annotation_string_list, "Microbe")
   } else if (kraken_db_types[i] == "plasmid") {
@@ -76,6 +73,12 @@ for (i in 1:length(kraken_db_types)) {
     taxonomic_variable_string_list <- c(taxonomic_variable_string_list, "Virus")
     ncbi_annotation_string_list <- c(ncbi_annotation_string_list, "Viral")
   }
+}
+if (opt$add_genus) {
+  kraken_db_types <- c("microbial", kraken_db_types)
+  blast_db_types <- c("nt", blast_db_types)
+  taxonomic_variable_string_list <- c("Genus", taxonomic_variable_string_list)
+  ncbi_annotation_string_list <- c("Microbe", ncbi_annotation_string_list)
 }
 
 

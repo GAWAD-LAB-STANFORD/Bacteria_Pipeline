@@ -17,6 +17,7 @@ parser.add_argument('-o', '--suffix', help="Suffix for output", default="")
 parser.add_argument('-i', '--input', help="Input kraken reports file", default="")
 parser.add_argument('-s', '--samples', help="String of sample names", default="")
 parser.add_argument('-c', '--contig', help="Contig suffix", default="_contigs.fasta")
+parser.add_argument('-g', '--add_genus', help="Add genus", action="store_true", default=False)
 args = parser.parse_args()
 
 
@@ -26,6 +27,8 @@ if len(args.identify) == 0:
     args.identify = args.project
 if len(args.suffix) == 0:
     args.suffix = ".{}.kraken_jtree.json".format(args.kraken)
+    if args.add_genus:
+        args.suffix = ".genus.kraken_jtree.json"
 if len(args.samples) > 0:
     samples = args.samples.split(":")
 if len(args.samples) == 0:
@@ -51,7 +54,7 @@ for sample in samples:
     for row in reversed(sample_df.index):
         if len(sample_df['sciname'][row].strip().split()) > 2:
             continue
-        if args.kraken == "genus" and len(sample_df['sciname'][row].strip().split()) > 1:
+        if args.add_genus and len(sample_df['sciname'][row].strip().split()) > 1:
             continue
         increment += 1
         new_spaces = sample_df['sciname'][row].count(' ')
