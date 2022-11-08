@@ -400,6 +400,14 @@ taxonomic_proportion_of_contig_length_plot <- function(sample_df, taxonomic_plot
 }
 scaled_taxonomic_proportion_of_contig_length_plot <- function(sample_df, taxonomic_plot_string, taxonomic_variable_string, taxonomic_color_vector) {
   taxonomic_variable_string <- tolower(taxonomic_variable_string)
+  if (taxonomic_variable_string == "species") {
+    sample_df <- sample_df %>%
+      mutate(species = ifelse(is.na(word(species, 1, 2)), species, word(species, 1, 2))) %>%
+      group_by(species) %>%
+      summarize(sum_contig_length = sum(contig_length)) %>%
+      ungroup() %>%
+      rename(contig_length = sum_contig_length)
+  }
   cumprop_df <- do.call(rbind, lapply(1:nrow(sample_df), function(.row_num) {
     sample_df[1:.row_num,] %>% group_by(.dots = taxonomic_variable_string) %>% 
       summarize(cum_taxonomy_contig_length = sum(contig_length)) %>% 
