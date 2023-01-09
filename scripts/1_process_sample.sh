@@ -23,7 +23,7 @@ SAMPLE=${SAMPLE_ARRAY[$(( $SLURM_ARRAY_TASK_ID - 1 ))]}
 echo -e "START: $(date)\nBacteria Pipeline\nFastq dir: $FASTQ_DIR\nResults dir: $RESULTS_DIR\nSample: $SAMPLE"
 cd $RESULTS_DIR
 
-ml python/3.6.1 java 
+ml python/3.6.1 java/11.0.11 
 ml biology bwa samtools gatk star/2.5.4b
 
 R1_FASTQ=${FASTQ_DIR}/${SAMPLE}${R1_SUFFIX}
