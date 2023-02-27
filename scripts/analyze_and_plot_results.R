@@ -41,11 +41,11 @@ option_list = list(
 ); 
 
 opt <- parse_args(OptionParser(option_list=option_list))
-# opt <- list(project = "SC_Bacterial_PTA_Seq", identify = "SC_Bacterial_PTA_Seq", 
-#             sample_read_count_filename = "SC_Bacterial_PTA_Seq.sample_read_counts.tsv",
-#             summed_read_targets_filename = "SC_Bacterial_PTA_Seq.summed_read_targets.tsv",
-#             contig_read_targets_filename = "SC_Bacterial_PTA_Seq.contig_read_targets.tsv",
-#             contig_data_filename = "SC_Bacterial_PTA_Seq.contig_data.tsv",
+# opt <- list(project = "SC_Bacterial_PTA_Comparison_sub1.5M", identify = "SC_Bacterial_PTA_Comparison_sub1.5M", 
+#             sample_read_count_filename = "SC_Bacterial_PTA_Comparison_sub1.5M.sample_read_counts.tsv",
+#             summed_read_targets_filename = "SC_Bacterial_PTA_Comparison_sub1.5M.summed_read_targets.tsv",
+#             contig_read_targets_filename = "SC_Bacterial_PTA_Comparison_sub1.5M.contig_read_targets.tsv",
+#             contig_data_filename = "SC_Bacterial_PTA_Comparison_sub1.5M.contig_data.tsv",
 #             kraken_db_types = "microbial-plasmid-viral", kraken_jtree_suffix = ".kraken_jtree.json",
 #             blast_db_types = "nt-plasmid-viral", blast_results_suffix = ".blast_results.tsv",
 #             ncbi_annotations_dir = "0", contig_alignment_fraction_min = 0.9)
@@ -115,12 +115,12 @@ parse_long_sample_name <- function(df, filename = NULL) {
 
 
 # Sample read counts ------------------------------------------------------
-sample_read_counts_df <- read.table(opt$sample_read_count_filename, sep="\t", stringsAsFactors = FALSE, header = TRUE)
+sample_read_counts_df <- read_tsv(opt$sample_read_count_filename)
 sample_read_counts_df <- parse_long_sample_name(sample_read_counts_df, opt$sample_read_count_filename)
 plot1 <- ggplot(sample_read_counts_df, aes(x = 1, y = read_count)) + 
   geom_boxplot() + geom_jitter(aes(color = sample), height = 0) + 
   labs(x = "", y = "Read count", title  = "Sample read counts") +
-  ggplot_theme + xlim(c(0,2))
+  ggplot_theme_no_legend + xlim(c(0,2))
 pdf(sprintf("%s.sample_read_counts.pdf", opt$project), width = 15, height = 8.5)
 grid.arrange(tableGrob(sample_read_counts_df[,c("sample", "read_count")], rows = NULL, theme = grid_table_theme), plot1, ncol = 2)
 dev.off()
@@ -135,7 +135,7 @@ rm(sample_read_counts_df, expected_coverage_df, plot1)
 
 
 # Summed read targets ------------------------------------------------------------
-summed_read_targets_df <- read.table(opt$summed_read_targets_filename, sep = "\t", header = TRUE, stringsAsFactors = FALSE)
+summed_read_targets_df <- read_tsv(opt$summed_read_targets_filename)
 summed_read_targets_df <- parse_long_sample_name(summed_read_targets_df, opt$summed_read_targets_filename)
 summed_read_targets_df <- summed_read_targets_df %>%
   select(sample, human_aligned, contig_aligned, unaligned) %>%
@@ -155,7 +155,7 @@ rm(summed_read_targets_df, plot1)
 
 
 # Contig read targets ------------------------------------------------------------
-contig_read_targets_df <- read.table(opt$contig_read_targets_filename, sep = "\t", header = TRUE, stringsAsFactors = FALSE)
+contig_read_targets_df <- read_tsv(opt$contig_read_targets_filename)
 if (! "read_count" %in% colnames(contig_read_targets_df)) { 
   contig_read_targets_df <- contig_read_targets_df %>%
     group_by(sample, target) %>% 
@@ -167,7 +167,7 @@ if (! "read_count" %in% colnames(contig_read_targets_df)) {
 
 
 # Contig data -------------------------------------------------------------
-contig_data_df <- read.table(opt$contig_data_filename, sep = "\t", stringsAsFactors = FALSE, header = TRUE)
+contig_data_df <- read_tsv(opt$contig_data_filename)
 if ("fasta_header" %in% colnames(contig_data_df)) {
   contig_data_df <- parse_long_sample_name(contig_data_df)
   contig_data_df <- contig_data_df %>%
@@ -309,6 +309,10 @@ summarize_sample_metrics <- function(sample_df, taxonomic_variable_string) {
 lg50_contigs_over_reference <- function(sample_df, taxonomic_variable_string) {
   taxonomic_variable_string <- tolower(taxonomic_variable_string)
   sample_lg50_df <- data.frame()
+  if (taxonomic_variable_string == "species") {
+    sample_df <- sample_df %>%
+      mutate(species = ifelse(is.na(word(species, 1, 2)), species, word(species, 1, 2)))
+  }
   for (temp_taxonomic_string in unique(pull(sample_df, !!sym(taxonomic_variable_string)))) {
     contig_count <- 0
     summed_contig_length <- 0
@@ -424,7 +428,7 @@ export_with_ncbi_annotations <- function(summed_df, ncbi_annotation_string, taxo
   ncbi_annotation_string <- tolower(ncbi_annotation_string)
   taxonomic_variable_string <- tolower(taxonomic_variable_string)
   if (opt$ncbi_annotations_dir != "0") {
-    annotation_df <- read.table(sprintf("%s/%s_annotations.tsv", opt$ncbi_annotations_dir, ncbi_annotation_string), sep="\t", header = TRUE, quote="")
+    annotation_df <- read_tsv(sprintf("%s/%s_annotations.tsv", opt$ncbi_annotations_dir, ncbi_annotation_string))
     summed_df <- plyr::join(summed_df, annotation_df, by = c(taxonomic_variable_string), type = "left", match = "first")
   }
   if (ncbi_annotation_string == "bacteria") {
@@ -447,7 +451,7 @@ taxonomic_color_list <- list()
 for (i in 1:length(blast_db_types)) {
   filename <- sprintf("%s.%s%s", opt$identify, blast_db_types[i], opt$blast_results_suffix)
   if (file.exists(filename)) {
-    df <- read.table(filename, sep="\t", header = TRUE, stringsAsFactors = FALSE, comment.char = "")
+    df <- read_tsv(filename)
     all_alignments_df <- preprocess_blast_results(df, contig_data_df)
     df <- filter(all_alignments_df, tophit_aln_query_fraction >= opt$contig_alignment_fraction_min)
     if (nrow(df) > 0) {
