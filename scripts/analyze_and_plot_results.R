@@ -264,6 +264,7 @@ summarize_sample_metrics <- function(sample_df, taxonomic_variable_string) {
   taxonomic_variable_string <- tolower(taxonomic_variable_string)
   if (taxonomic_variable_string == "species") {
     sample_df <- sample_df %>%
+      mutate(species = str_remove(species, " sp.")) %>%
       mutate(species = ifelse(is.na(word(species, 1, 2)), species, word(species, 1, 2)))
   }
   summed_sample_df <- sample_df %>%
@@ -311,6 +312,7 @@ lg50_contigs_over_reference <- function(sample_df, taxonomic_variable_string) {
   sample_lg50_df <- data.frame()
   if (taxonomic_variable_string == "species") {
     sample_df <- sample_df %>%
+      mutate(species = str_remove(species, " sp.")) %>%
       mutate(species = ifelse(is.na(word(species, 1, 2)), species, word(species, 1, 2)))
   }
   for (temp_taxonomic_string in unique(pull(sample_df, !!sym(taxonomic_variable_string)))) {
@@ -406,11 +408,13 @@ scaled_taxonomic_proportion_of_contig_length_plot <- function(sample_df, taxonom
   taxonomic_variable_string <- tolower(taxonomic_variable_string)
   if (taxonomic_variable_string == "species") {
     sample_df <- sample_df %>%
+      mutate(species = str_remove(species, " sp.")) %>%
       mutate(species = ifelse(is.na(word(species, 1, 2)), species, word(species, 1, 2))) %>%
       group_by(species) %>%
       summarize(sum_contig_length = sum(contig_length)) %>%
       ungroup() %>%
-      rename(contig_length = sum_contig_length)
+      rename(contig_length = sum_contig_length) %>%
+      arrange(desc(contig_length))
   }
   cumprop_df <- do.call(rbind, lapply(1:nrow(sample_df), function(.row_num) {
     sample_df[1:.row_num,] %>% group_by(.dots = taxonomic_variable_string) %>% 
