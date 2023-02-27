@@ -273,9 +273,15 @@ fi
 if [ $STEP -eq 0 ]; then
     echo "### Demultiplexing ### - START: $(date)" >> $PIPELINE_STATUS
     echo -e "Run dir: $RUN_DIR\nSample sheet: $SAMPLE_SHEET" >> $PIPELINE_STATUS
+    echo -e "\nsbatch --parsable -e ${STD_ERR_OUT_DIR}/%A_%x.err -o ${STD_ERR_OUT_DIR}/%A_%x.out \
+        ${SCRIPT_DIR}/0_demultiplexer.sh --run_dir $RUN_DIR --sample_sheet $SAMPLE_SHEET --fastq_dir $FASTQ_DIR \
+        --pipeline_status $PIPELINE_STATUS\n" >> $PIPELINE_STATUS
     DEPENDENCIES+=( $(sbatch --parsable -e ${STD_ERR_OUT_DIR}/%A_%x.err -o ${STD_ERR_OUT_DIR}/%A_%x.out \
         ${SCRIPT_DIR}/0_demultiplexer.sh --run_dir $RUN_DIR --sample_sheet $SAMPLE_SHEET --fastq_dir $FASTQ_DIR \
         --pipeline_status $PIPELINE_STATUS) )
+    echo -e "\nsbatch --dependency=afterok:${DEPENDENCIES[0]} -J $PROJECT \
+        -e ${STD_ERR_OUT_DIR}/%A_submit_all_%x.err -o ${STD_ERR_OUT_DIR}/%A_submit_all_%x.out \
+        ${PIPELINE_DIR}/submit_all.sh --step1 ${OPTIONS[@]}\n" >> $PIPELINE_STATUS
     sbatch --dependency=afterok:${DEPENDENCIES[0]} -J $PROJECT \
         -e ${STD_ERR_OUT_DIR}/%A_submit_all_%x.err -o ${STD_ERR_OUT_DIR}/%A_submit_all_%x.out \
         ${PIPELINE_DIR}/submit_all.sh --step1 ${OPTIONS[@]}
@@ -290,12 +296,19 @@ elif [ $STEP -eq 1 ]; then
         TEMP_JOB_COUNT=${#TEMP_SAMPLE_ARRAY[@]}
         echo "Submitting $TEMP_JOB_COUNT jobs for samples $TEMP_ARRAY_START to $(($TEMP_ARRAY_START + ${#TEMP_SAMPLE_ARRAY[@]} - 1))" >> $PIPELINE_STATUS
         TEMP_SAMPLES_STRING=$( IFS=$':'; echo "${TEMP_SAMPLE_ARRAY[*]}" )
+        echo -e "\nsbatch --parsable -e $STD_ERR_OUT_DIR/%A_%a_%x.err -o $STD_ERR_OUT_DIR/%A_%a_%x.out \
+            --array=1-${TEMP_JOB_COUNT} ${SCRIPT_DIR}/1_process_sample.sh \
+            $FASTQ_DIR $RESULTS_DIR $R1_SUFFIX $R2_SUFFIX $SKIP_TRIMMOMATIC $REF_FASTA \
+            $KRAKEN_DB_TYPES $KRAKEN_DB_DIR_PREFIX $TOOLS_DIR $RNA_INPUT $TEMP_SAMPLES_STRING\n" >> $PIPELINE_STATUS
         DEPENDENCIES+=( $(sbatch --parsable -e $STD_ERR_OUT_DIR/%A_%a_%x.err -o $STD_ERR_OUT_DIR/%A_%a_%x.out \
             --array=1-${TEMP_JOB_COUNT} ${SCRIPT_DIR}/1_process_sample.sh \
             $FASTQ_DIR $RESULTS_DIR $R1_SUFFIX $R2_SUFFIX $SKIP_TRIMMOMATIC $REF_FASTA \
             $KRAKEN_DB_TYPES $KRAKEN_DB_DIR_PREFIX $TOOLS_DIR $RNA_INPUT $TEMP_SAMPLES_STRING) )
         TEMP_ARRAY_START=$(($TEMP_ARRAY_START + $TEMP_ARRAY_INCREMENT))
     done
+    echo -e "\nsbatch --dependency=afterany:$( IFS=$':'; echo "${DEPENDENCIES[*]}" ) -J $PROJECT \
+        -e ${STD_ERR_OUT_DIR}/%A_submit_all_%x.err -o ${STD_ERR_OUT_DIR}/%A_submit_all_%x.out \
+        ${PIPELINE_DIR}/submit_all.sh --step2 ${OPTIONS[@]}\n" >> $PIPELINE_STATUS
     sbatch --dependency=afterany:$( IFS=$':'; echo "${DEPENDENCIES[*]}" ) -J $PROJECT \
         -e ${STD_ERR_OUT_DIR}/%A_submit_all_%x.err -o ${STD_ERR_OUT_DIR}/%A_submit_all_%x.out \
         ${PIPELINE_DIR}/submit_all.sh --step2 ${OPTIONS[@]}
@@ -343,8 +356,7 @@ fi
 
 
 if [ $STEP -eq 2 ]; then
-    ml python/3.6.1 biology py-biopython/1.70_py27
-    ml python/3.6.1 py-pandas/0.23.0_py36 py-numpy/1.14.3_py36
+    ml python/3.6.1 biology py-biopython/1.79_py39
 
 
     echo "### Organzing contigs ### - START: $(date)" >> $PIPELINE_STATUS
@@ -369,14 +381,17 @@ if [ $STEP -eq 2 ]; then
         TEMP_JOB_COUNT=${#TEMP_LONG_CONTIG_ARRAY[@]}
         echo "Submitting $TEMP_JOB_COUNT jobs for samples $TEMP_ARRAY_START to $(($TEMP_ARRAY_START + ${#TEMP_LONG_CONTIG_ARRAY[@]} - 1))" >> $PIPELINE_STATUS
         TEMP_LONG_CONTIGS_STRING=$( IFS=$':'; echo "${TEMP_LONG_CONTIG_ARRAY[*]}" )
-        echo "sbatch --parsable -e $STD_ERR_OUT_DIR/%A_%a_%x.err -o $STD_ERR_OUT_DIR/%A_%a_%x.out \
+        echo -e "\nsbatch --parsable -e $STD_ERR_OUT_DIR/%A_%a_%x.err -o $STD_ERR_OUT_DIR/%A_%a_%x.out \
             --array=1-${TEMP_JOB_COUNT} ${SCRIPT_DIR}/2_blast_contigs.sh \
-            $RESULTS_DIR $TOOLS_DIR $BLAST_DB_TYPES $NCBI_DB_DIR_PREFIX $IDENTIFY $TEMP_LONG_CONTIGS_STRING"
+            $RESULTS_DIR $TOOLS_DIR $BLAST_DB_TYPES $NCBI_DB_DIR_PREFIX $IDENTIFY $TEMP_LONG_CONTIGS_STRING\n" >> $PIPELINE_STATUS
         DEPENDENCIES+=( $(sbatch --parsable -e $STD_ERR_OUT_DIR/%A_%a_%x.err -o $STD_ERR_OUT_DIR/%A_%a_%x.out \
             --array=1-${TEMP_JOB_COUNT} ${SCRIPT_DIR}/2_blast_contigs.sh \
             $RESULTS_DIR $TOOLS_DIR $BLAST_DB_TYPES $NCBI_DB_DIR_PREFIX $IDENTIFY $TEMP_LONG_CONTIGS_STRING) )
         TEMP_ARRAY_START=$(($TEMP_ARRAY_START + $TEMP_ARRAY_INCREMENT))
     done
+    echo -e "\nsbatch --dependency=afterany:$( IFS=$':'; echo "${DEPENDENCIES[*]}" ) -J $PROJECT \
+        -e ${STD_ERR_OUT_DIR}/%A_submit_all_%x.err -o ${STD_ERR_OUT_DIR}/%A_submit_all_%x.out \
+        ${PIPELINE_DIR}/submit_all.sh --step3 ${OPTIONS[@]}\n" >> $PIPELINE_STATUS
     sbatch --dependency=afterany:$( IFS=$':'; echo "${DEPENDENCIES[*]}" ) -J $PROJECT \
         -e ${STD_ERR_OUT_DIR}/%A_submit_all_%x.err -o ${STD_ERR_OUT_DIR}/%A_submit_all_%x.out \
         ${PIPELINE_DIR}/submit_all.sh --step3 ${OPTIONS[@]}
@@ -409,6 +424,8 @@ elif [ $STEP -eq 3 ]; then
     echo "### Parsing BLAST results ### - START: $(date)" >> $PIPELINE_STATUS
     BLAST_DB_TYPES_ARRAY=( $(echo $BLAST_DB_TYPES | sed 's/-/ /g') )
     for DB_TYPE in ${BLAST_DB_TYPES_ARRAY[@]}; do
+        echo -e "\npython3 ${SCRIPT_DIR}/parse_blast_results.py $DB_TYPE \
+            ${IDENTIFY}_blast_results_${DB_TYPE}_ ${IDENTIFY}.${DB_TYPE}.blast_results.tsv $PIPELINE_STATUS\n" >> $PIPELINE_STATUS
         python3 ${SCRIPT_DIR}/parse_blast_results.py $DB_TYPE \
             ${IDENTIFY}_blast_results_${DB_TYPE}_ ${IDENTIFY}.${DB_TYPE}.blast_results.tsv $PIPELINE_STATUS
     done
@@ -419,9 +436,11 @@ elif [ $STEP -eq 3 ]; then
     KRAKEN_DB_TYPE_ARRAY=( $(echo $KRAKEN_DB_TYPES | sed 's/-/ /g') )
     echo "Samples string: $SAMPLES_STRING"
     for DB_TYPE in ${KRAKEN_DB_TYPE_ARRAY[@]}; do
+        echo -e "\npython3 ${SCRIPT_DIR}/kraken_report_to_jtree.py -p $PROJECT -k $DB_TYPE\n" >> $PIPELINE_STATUS
         python3 ${SCRIPT_DIR}/kraken_report_to_jtree.py -p $PROJECT -k $DB_TYPE
     done
     if [ $ADD_GENUS -eq 1 ]; then
+        echo -e "\npython3 ${SCRIPT_DIR}/kraken_report_to_jtree.py -p $PROJECT -k microbial\n" >> $PIPELINE_STATUS
         python3 ${SCRIPT_DIR}/kraken_report_to_jtree.py -p $PROJECT -k "microbial"
     fi
     echo "### Converting Kraken reports to TSV ### - END: $(date)" >> $PIPELINE_STATUS
@@ -430,6 +449,16 @@ elif [ $STEP -eq 3 ]; then
     ml R/4.2.0
     export R_LIBS="/home/groups/cgawad/R_LIBS"
     echo "### Processing contamination, Kraken results, BLAST results, and making final figures ### - START: $(date)" >> $PIPELINE_STATUS
+    echo -e "\nRscript ${SCRIPT_DIR}/analyze_and_plot_results.R \
+        --project $PROJECT --identify $IDENTIFY \
+        --sample_read_count_filename ${PROJECT}.sample_read_counts.tsv \
+        --summed_read_targets_filename ${PROJECT}.summed_read_targets.tsv \
+        --contig_read_targets_filename ${PROJECT}.contig_read_targets.tsv \
+        --contig_data_filename ${PROJECT}.contig_data.tsv \
+        --kraken_db_types $KRAKEN_DB_TYPES --kraken_jtree_suffix .kraken_jtree.json \
+        --blast_db_types $BLAST_DB_TYPES --blast_results_suffix .blast_results.tsv \
+        --contig_alignment_fraction_min $CONTIG_ALIGN_MINIMUM \
+        --ncbi_annotations_dir $NCBI_ANNOTATIONS_DIR ${FIGURE_OPTIONS[@]}\n" >> $PIPELINE_STATUS
     Rscript ${SCRIPT_DIR}/analyze_and_plot_results.R \
         --project $PROJECT --identify $IDENTIFY \
         --sample_read_count_filename ${PROJECT}.sample_read_counts.tsv \
