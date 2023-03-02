@@ -107,7 +107,7 @@ parse_long_sample_name <- function(df, filename = NULL) {
       separate(sample, sep = "_", c("project", "cell_type", "tissue_origin", "sequencing_type", "TBID", "sample", "sample_number")) %>%
       mutate(sample_number = str_remove(sample_number, "S")) 
     if (!is.null(filename)) {
-      write.table(df, filename, sep = "\t", quote = FALSE, row.names = FALSE, col.names = TRUE)
+      write_tsv(df, filename)
     }
   }
   return(df)
@@ -158,8 +158,10 @@ rm(summed_read_targets_df, plot1)
 contig_read_targets_df <- read_tsv(opt$contig_read_targets_filename)
 if (! "read_count" %in% colnames(contig_read_targets_df)) { 
   contig_read_targets_df <- contig_read_targets_df %>%
-    rename(remove = "...1", read_count = "1")
+    rename(remove = "...1", read_count = "1") %>%
+    select(-remove)
   contig_read_targets_df <- parse_long_sample_name(contig_read_targets_df, opt$contig_read_targets_filename)
+  write_tsv(contig_read_targets_df, opt$contig_read_targets_filename)
   cat("Summarized read targets for all samples\n")
 }
 
@@ -181,7 +183,7 @@ if ("fasta_header" %in% colnames(contig_data_df)) {
   if ("project" %in% colnames(contig_data_df)) {
     contig_data_df <- select(contig_data_df, -project, -cell_type, -tissue_origin, -sequencing_type, -TBID, -sample_number)
   }
-  write.table(contig_data_df, opt$contig_data_filename, sep = "\t", quote = FALSE, row.names = FALSE, col.names = TRUE)
+  write_tsv(contig_data_df, opt$contig_data_filename)
   cat("Summarized contig data for all samples\n")
 }
 
@@ -434,9 +436,9 @@ export_with_ncbi_annotations <- function(summed_df, ncbi_annotation_string, taxo
     summed_df <- plyr::join(summed_df, annotation_df, by = c(taxonomic_variable_string), type = "left", match = "first")
   }
   if (ncbi_annotation_string == "bacteria") {
-    write.table(summed_df, sprintf("%s.summarized_%s_%s.tsv", opt$identify, blast_db_string, taxonomic_variable_string), sep = "\t", quote = FALSE, row.names = FALSE, col.names = TRUE)
+    write_tsv(summed_df, sprintf("%s.summarized_%s_%s.tsv", opt$identify, blast_db_string, taxonomic_variable_string))
   } else {
-    write.table(summed_df, sprintf("%s.summarized_%s.tsv", opt$identify, blast_db_string), sep = "\t", quote = FALSE, row.names = FALSE, col.names = TRUE)
+    write_tsv(summed_df, sprintf("%s.summarized_%s.tsv", opt$identify, blast_db_string))
   }
   cat(sprintf("Summarized and annotated %s BLAST results for all samples\n", blast_db_string))
 }
