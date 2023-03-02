@@ -158,9 +158,7 @@ rm(summed_read_targets_df, plot1)
 contig_read_targets_df <- read_tsv(opt$contig_read_targets_filename)
 if (! "read_count" %in% colnames(contig_read_targets_df)) { 
   contig_read_targets_df <- contig_read_targets_df %>%
-    group_by(sample, target) %>% 
-    summarize(read_count = n()) %>%
-    ungroup()
+    rename(remove = "...1", read_count = "1")
   contig_read_targets_df <- parse_long_sample_name(contig_read_targets_df, opt$contig_read_targets_filename)
   cat("Summarized read targets for all samples\n")
 }

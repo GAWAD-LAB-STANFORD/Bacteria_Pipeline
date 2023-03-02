@@ -131,7 +131,7 @@ echo -e "${SAMPLE}\t${HUMAN_ALIGNED_READS}\t${CONTIG_ALIGNED_READS}\t${UNALIGNED
 echo -e "sample\ttarget" > ${SAMPLE}_contig_read_targets.tsv
 samtools view ${SAMPLE}_contig_aligned.bam | cut -f 3 | grep "NODE" > ${SAMPLE}_temp_contig_read_targets.txt
 printf "${SAMPLE}\n%0.s" $(seq $(cat ${SAMPLE}_temp_contig_read_targets.txt | wc -l)) | \
-    paste - ${SAMPLE}_temp_contig_read_targets.txt >> ${SAMPLE}_contig_read_targets.tsv
+    paste - ${SAMPLE}_temp_contig_read_targets.txt | uniq -c | tr -s ' ' '\t' >> ${SAMPLE}_contig_read_targets.tsv
 echo "### Exporting summarized and contig read targets from BAM ### - END: $(date)"
 
 # echo "### Marking low complexity regions in contigs ### - START: $(date)"
@@ -153,7 +153,7 @@ fi
 rm -r contigs_${SAMPLE} 
 rm ${SAMPLE}_contigs.fasta.amb ${SAMPLE}_contigs.fasta.ann ${SAMPLE}_contigs.fasta.bwt
 rm ${SAMPLE}_contigs.fasta.pac ${SAMPLE}_contigs.fasta.sa
-rm ${SAMPLE}_human_aligned.bam* ${SAMPLE}_no_human.bam* ${SAMPLE}_contig_aligned.bam*
+rm ${SAMPLE}_human_aligned.bam* ${SAMPLE}_no_human.bam* # ${SAMPLE}_contig_aligned.bam*
 rm ${SAMPLE}_temp_contig_read_targets.txt
 rm ${SAMPLE}_no_human${R1_SUFFIX} ${SAMPLE}_no_human${R2_SUFFIX}
 rm ${SAMPLE}_any_mapping_to_human_query_names.txt
