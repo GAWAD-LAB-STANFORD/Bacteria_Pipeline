@@ -21,12 +21,16 @@ Defaults: \n\t\
     R2_suffix: _L001_R2_001.fastq.gz or _R1_001.fastq.gz \n\t\
     contig_len_min: 5000 \n\t\
     contig_align_min: 0.9 \n\n\
-Run after demultiplexing: \n\t\
-    sh ${PIPELINE_DIR}/submit_all.sh --fastq_dir /oak/stanford/groups/cgawad/MRD_project/ --project MRD_project \n\n\
-Run with demultiplexing: \n\t\
-    sh ${PIPELINE_DIR}/submit_all.sh --run_dir /oak/stanford/groups/cgawad/Illumina_Data/MiniSeq/191126_MN01236_0003_A000H2WWHT --fastq_dir /oak/stanford/groups/cgawad/MRD_project/ --project MRD_project \n\n\
-Run with demultiplexing, wait 12 hours before starting, and email notification when analysis begins and ends: \n\t\
-    sh ${PIPELINE_DIR}/submit_all.sh --run_dir /oak/stanford/groups/cgawad/Illumina_Data/MiniSeq/191126_MN01236_0003_A000H2WWHT --fastq_dir /oak/stanford/groups/cgawad/MRD_project/ --project MRD_project --slurm --begin=now+12hours --mail-type=ALL \n\n\
+Run after demultiplexing and fastq directory: \n\t\
+    sh ${PIPELINE_DIR}/submit_all.sh --fastq_dir /oak/stanford/groups/cgawad/2020-01-01_Fastqs/ --project 2020-01-01_Project \n\n\
+Run after demultiplexing and results directory: \n\t\
+    sh ${PIPELINE_DIR}/submit_all.sh --fastq_dir /oak/stanford/groups/cgawad/2020-01-01_Fastqs/ --results_dir /oak/stanford/groups/cgawad/2020-01-01_Results/ --project 2020-01-01_Project \n\n\
+Run with demultiplexing and fastq directory: \n\t\
+    sh ${PIPELINE_DIR}/submit_all.sh --run_dir /oak/stanford/groups/cgawad/Illumina_Data/MiniSeq/2020-01-01_BCLs --fastq_dir /oak/stanford/groups/cgawad/2020-01-01_Fastqs/ --project 2020-01-01_Project \n\n\
+Run with demultiplexing and results directory: \n\t\
+    sh ${PIPELINE_DIR}/submit_all.sh --run_dir /oak/stanford/groups/cgawad/Illumina_Data/MiniSeq/2020-01-01_BCLs --results_dir /oak/stanford/groups/cgawad/2020-01-01_Results/ --project 2020-01-01_Project \n\n\
+Run with demultiplexing, fastq directory, and results directory: \n\t\
+    sh ${PIPELINE_DIR}/submit_all.sh --run_dir /oak/stanford/groups/cgawad/Illumina_Data/MiniSeq/2020-01-01_BCLs --fastq_dir /oak/stanford/groups/cgawad/2020-01-01_Fastqs/ --results_dir /oak/stanford/groups/cgawad/2020-01-01_Results/ --project 2020-01-01_Project \n\n\
 For more information, read the README.md"
 
 # Reads in command line option arguments and assigns them to variables
@@ -256,6 +260,10 @@ if [ $STEP -ne 0 ] && [ $ONLY_IDENTIFY -eq 0 ]; then
             R1_SUFFIX="_R1_001.fastq.gz"
             R2_SUFFIX="_R2_001.fastq.gz"
         fi
+        if [ $(find ${FASTQ_DIR} -maxdepth 1 -name "*${R1_SUFFIX}" | wc -l) -eq 0 ]; then
+            R1_SUFFIX="_R1.fastq.gz"
+            R2_SUFFIX="_R2.fastq.gz"
+        fi
     fi
     SAMPLE_ARRAY=( $(find ${FASTQ_DIR} -maxdepth 1 -name "*${R1_SUFFIX}" -exec basename {} \; | \
         grep -v "Undetermined" | sed "s/${R1_SUFFIX}//") )
@@ -297,15 +305,24 @@ elif [ $STEP -eq 1 ]; then
         echo "Submitting $TEMP_JOB_COUNT jobs for samples $TEMP_ARRAY_START to $(($TEMP_ARRAY_START + ${#TEMP_SAMPLE_ARRAY[@]} - 1))" >> $PIPELINE_STATUS
         TEMP_SAMPLES_STRING=$( IFS=$':'; echo "${TEMP_SAMPLE_ARRAY[*]}" )
         echo -e "\nsbatch --parsable -e $STD_ERR_OUT_DIR/%A_%a_%x.err -o $STD_ERR_OUT_DIR/%A_%a_%x.out \
-            --array=1-${TEMP_JOB_COUNT} ${SCRIPT_DIR}/1_process_sample.sh \
+            --array=1-2 ${SCRIPT_DIR}/1_process_sample.sh \
             $FASTQ_DIR $RESULTS_DIR $R1_SUFFIX $R2_SUFFIX $SKIP_TRIMMOMATIC $REF_FASTA \
             $KRAKEN_DB_TYPES $KRAKEN_DB_DIR_PREFIX $TOOLS_DIR $RNA_INPUT $TEMP_SAMPLES_STRING\n" >> $PIPELINE_STATUS
         DEPENDENCIES+=( $(sbatch --parsable -e $STD_ERR_OUT_DIR/%A_%a_%x.err -o $STD_ERR_OUT_DIR/%A_%a_%x.out \
-            --array=1-${TEMP_JOB_COUNT} ${SCRIPT_DIR}/1_process_sample.sh \
+            --array=1-2 ${SCRIPT_DIR}/1_process_sample.sh \
             $FASTQ_DIR $RESULTS_DIR $R1_SUFFIX $R2_SUFFIX $SKIP_TRIMMOMATIC $REF_FASTA \
             $KRAKEN_DB_TYPES $KRAKEN_DB_DIR_PREFIX $TOOLS_DIR $RNA_INPUT $TEMP_SAMPLES_STRING) )
+        # echo -e "\nsbatch --parsable -e $STD_ERR_OUT_DIR/%A_%a_%x.err -o $STD_ERR_OUT_DIR/%A_%a_%x.out \
+        #     --array=1-${TEMP_JOB_COUNT} ${SCRIPT_DIR}/1_process_sample.sh \
+        #     $FASTQ_DIR $RESULTS_DIR $R1_SUFFIX $R2_SUFFIX $SKIP_TRIMMOMATIC $REF_FASTA \
+        #     $KRAKEN_DB_TYPES $KRAKEN_DB_DIR_PREFIX $TOOLS_DIR $RNA_INPUT $TEMP_SAMPLES_STRING\n" >> $PIPELINE_STATUS
+        # DEPENDENCIES+=( $(sbatch --parsable -e $STD_ERR_OUT_DIR/%A_%a_%x.err -o $STD_ERR_OUT_DIR/%A_%a_%x.out \
+        #     --array=1-${TEMP_JOB_COUNT} ${SCRIPT_DIR}/1_process_sample.sh \
+        #     $FASTQ_DIR $RESULTS_DIR $R1_SUFFIX $R2_SUFFIX $SKIP_TRIMMOMATIC $REF_FASTA \
+        #     $KRAKEN_DB_TYPES $KRAKEN_DB_DIR_PREFIX $TOOLS_DIR $RNA_INPUT $TEMP_SAMPLES_STRING) )
         TEMP_ARRAY_START=$(($TEMP_ARRAY_START + $TEMP_ARRAY_INCREMENT))
-    done
+    done 
+    exit
     echo -e "\nsbatch --dependency=afterany:$( IFS=$':'; echo "${DEPENDENCIES[*]}" ) -J $PROJECT \
         -e ${STD_ERR_OUT_DIR}/%A_submit_all_%x.err -o ${STD_ERR_OUT_DIR}/%A_submit_all_%x.out \
         ${PIPELINE_DIR}/submit_all.sh --step2 ${OPTIONS[@]}\n" >> $PIPELINE_STATUS
@@ -327,7 +344,7 @@ elif [ $STEP -eq 2 ] && [ $ONLY_IDENTIFY -eq 0 ]; then
         exit 1
     else
         echo "$CONTIG_COUNT contigs out of a possible ${#SAMPLE_ARRAY[@]} maximum" >> $PIPELINE_STATUS
-        rm ${STD_ERR_OUT_DIR}/*1_process_sample.out ${STD_ERR_OUT_DIR}/*1_process_sample.err
+        # rm ${STD_ERR_OUT_DIR}/*1_process_sample.out ${STD_ERR_OUT_DIR}/*1_process_sample.err
     fi
     echo "### De novo assembling contigs and detecting contamination ### - END: $(date)" >> $PIPELINE_STATUS
     
@@ -415,7 +432,7 @@ elif [ $STEP -eq 3 ]; then
         exit 1
     else
         echo "$BLAST_RESULTS_COUNT BLAST results out of a possible $MAX_RESULTS maximum" >> $PIPELINE_STATUS
-        rm ${STD_ERR_OUT_DIR}/*2_blast_contigs.out ${STD_ERR_OUT_DIR}/*2_blast_contigs.err
+        # rm ${STD_ERR_OUT_DIR}/*2_blast_contigs.out ${STD_ERR_OUT_DIR}/*2_blast_contigs.err
     fi
     echo "### BLAST aligning contigs ### - END: $(date)" >> $PIPELINE_STATUS
     
@@ -471,8 +488,8 @@ elif [ $STEP -eq 3 ]; then
         --ncbi_annotations_dir $NCBI_ANNOTATIONS_DIR ${FIGURE_OPTIONS[@]}
     echo "### Processing contamination, Kraken results, BLAST results, and making final figures ### - END: $(date)" >> $PIPELINE_STATUS
     
-    rm ${IDENTIFY}_long_contigs_
-    rm ${IDENTIFY}.*.kraken_jtree.json 
-    rm ${IDENTIFY}_blast_results_*.json
+    # rm ${IDENTIFY}_long_contigs_
+    # rm ${IDENTIFY}.*.kraken_jtree.json 
+    # rm ${IDENTIFY}_blast_results_*.json
     echo "END: $(date)" >> $PIPELINE_STATUS
 fi
