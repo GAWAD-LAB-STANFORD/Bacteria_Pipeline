@@ -11,7 +11,7 @@ HELP="\
 Purpose: \n\t\
     This pipeline is built to identify bacterial species from pair-end fastq.gz files and remove human contamination \n\n\
 Required arguments: -p/--project <arg> and either -f/--fastq_dir <arg> or -r/--results_dir <arg> \n\
-Optional arguments: -b/--run_dir <arg>, --sample_sheet <arg>, --R1_suffix <arg>, --R2_suffix <arg>, --err_out_dir <arg>, \n\t\
+Optional arguments: -b/--run_dir <arg>, --sample_sheet <arg>, --R1_suffix <arg>, --R2_suffix <arg>, --err_out_dir <arg>, --skip_scratch, \n\t\
     --skip_trimming, --rna, --skip_identify, --only_identify, --contig_len_min <arg>, --contig_align_min <arg>, --add_genus, --slurm <arg> \n\
 Defaults: \n\t\
     If no fastq_dir specified, uses results_dir \n\t\
@@ -30,6 +30,7 @@ Run with demultiplexing, wait 12 hours before starting, and email notification w
 For more information, read the README.md"
 
 # Reads in command line option arguments and assigns them to variables
+SKIP_SCRATCH=0
 SKIP_TRIMMOMATIC=0
 RNA_INPUT=0
 SKIP_IDENTIFY=0
@@ -71,6 +72,11 @@ while [ "$1" != "" ]; do
                                 ;;
         -d | --pipeline_dir )   shift
                                 PIPELINE_DIR=$1
+                                ;;
+        -s | --scratch_dir )         shift
+                                SCRATCH_DIR=$1
+                                ;;
+        --skip_scratch )        SKIP_SCRATCH=1
                                 ;;
         --skip_trimming )       SKIP_TRIMMOMATIC=1
                                 ;;
@@ -164,8 +170,12 @@ fi
 if [ ! -z $R2_SUFFIX ]; then
     OPTIONS+=( "--R2_suffix $R2_SUFFIX" )
 fi
+if [ $SKIP_SCRATCH -eq 1 ]; then
+    OPTIONS+=( "--skip_scratch" )
+fi
 if [ $SKIP_TRIMMOMATIC -eq 1 ]; then
     OPTIONS+=( "--skip_trimming" )
+    SCRATCH_DIR=$RESULTS_DIR
 fi
 if [ $RNA_INPUT -eq 1 ]; then
     OPTIONS+=( "--rna" )
@@ -210,6 +220,9 @@ cd $RESULTS_DIR
 if [ "$TEMP_PIPELINE_DIR" = "$PIPELINE_DIR" ]; then
     echo -e "\nSTART: $(date)\nBacteria Pipeline\nErr out dir: $STD_ERR_OUT_DIR\nResults dir: $RESULTS_DIR\nFastq dir: $FASTQ_DIR\nProject: $PROJECT" >> $PIPELINE_STATUS
     # Optional variable definitions
+    if [ $SKIP_SCRATCH -eq 1 ]; then
+        echo "Option: Skip scratch - will only run in result directory, will not run in scratch directory before moving files to result directory" >> $PIPELINE_STATUS
+    fi
     if [ $SKIP_TRIMMOMATIC -eq 1 ]; then
         echo "Option: Skip trimming - will not run trimmomatic" >> $PIPELINE_STATUS
     fi
