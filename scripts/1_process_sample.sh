@@ -8,7 +8,7 @@
 
 START_TIME=$(date +%s)
 FASTQ_DIR=$1
-RESULTS_DIR=$2
+SCRATCH_DIR=$2
 R1_SUFFIX=$3
 R2_SUFFIX=$4
 SKIP_TRIMMOMATIC=$5
@@ -20,8 +20,8 @@ RNA_INPUT=${10}
 SAMPLE_ARRAY=( $(echo ${11} | sed 's/:/ /g') )
 SAMPLE=${SAMPLE_ARRAY[$(( $SLURM_ARRAY_TASK_ID - 1 ))]}
 
-echo -e "START: $(date)\nBacteria Pipeline\nFastq dir: $FASTQ_DIR\nResults dir: $RESULTS_DIR\nSample: $SAMPLE"
-cd $RESULTS_DIR
+echo -e "START: $(date)\nBacteria Pipeline\nFastq dir: $FASTQ_DIR\nResults dir: $SCRATCH_DIR\nSample: $SAMPLE"
+cd $SCRATCH_DIR
 
 ml python/3.6.1 java/11.0.11 
 ml biology bwa samtools gatk star/2.5.4b

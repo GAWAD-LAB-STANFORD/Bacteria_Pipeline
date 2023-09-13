@@ -7,7 +7,7 @@
 #SBATCH --partition=cgawad
 
 START_TIME=$(date +%s)
-RESULTS_DIR=$1
+SCRATCH_DIR=$1
 TOOLS_DIR=$2
 BLAST_DB_TYPES_ARRAY=( $(echo $3 | sed 's/-/ /g') )
 NCBI_DB_DIR_PREFIX=$4
@@ -16,8 +16,8 @@ LONG_CONTIG_ARRAY=( $(echo $6 | sed 's/:/ /g') )
 CONTIG=${LONG_CONTIG_ARRAY[$(( $SLURM_ARRAY_TASK_ID - 1 ))]}
 CONTIG_NUM=$(echo $CONTIG | sed "s/${IDENTIFY}_long_contigs_//" | sed "s/.fasta//")
 
-echo -e "START: $(date)\nBacteria Pipeline\nResults dir: $RESULTS_DIR\nSlurm ID: $SLURM_ARRAY_TASK_ID\nContig: $CONTIG"
-cd $RESULTS_DIR
+echo -e "START: $(date)\nBacteria Pipeline\nResults dir: $SCRATCH_DIR\nSlurm ID: $SLURM_ARRAY_TASK_ID\nContig: $CONTIG"
+cd $SCRATCH_DIR
 
 for DB_TYPE in ${BLAST_DB_TYPES_ARRAY[@]}; do
     echo "DB type: $DB_TYPE"

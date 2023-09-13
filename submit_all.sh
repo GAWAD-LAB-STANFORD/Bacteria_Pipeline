@@ -11,14 +11,16 @@ HELP="\
 Purpose: \n\t\
     This pipeline is built to identify bacterial species from pair-end fastq.gz files and remove human contamination \n\n\
 Required arguments: -p/--project <arg> and either -f/--fastq_dir <arg> or -r/--results_dir <arg> \n\
-Optional arguments: -b/--run_dir <arg>, --sample_sheet <arg>, --R1_suffix <arg>, --R2_suffix <arg>, --err_out_dir <arg>, --skip_scratch, \n\t\
-    --skip_trimming, --rna, --skip_identify, --only_identify, --contig_len_min <arg>, --contig_align_min <arg>, --add_genus, --slurm <arg> \n\
+Optional arguments: -b/--run_dir <arg>, --err_out_dir <arg>, --scratch_dir <arg>, --sample_sheet <arg>, \n\t\
+    --R1_suffix <arg>, --R2_suffix <arg>, --skip_scratch, --skip_trimming, --rna, --skip_identify, \n\t\
+    --only_identify, --contig_len_min <arg>, --contig_align_min <arg>, --add_genus, --slurm <arg> \n\
 Defaults: \n\t\
     If no fastq_dir specified, uses results_dir \n\t\
     If no results_dir specified, makes new directory in fastq_dir \n\t\
+    scratch_dir: /scratch/groups/cgawad/date_project_Scratch \n\t\
     sample_sheet: SampleSheet.csv \n\t\
-    R1_suffix: _L001_R1_001.fastq.gz or _R1_001.fastq.gz \n\t\
-    R2_suffix: _L001_R2_001.fastq.gz or _R1_001.fastq.gz \n\t\
+    R1_suffix: _L001_R1_001.fastq.gz or _R1_001.fastq.gz or _R1.fastq.gz \n\t\
+    R2_suffix: _L001_R2_001.fastq.gz or _R1_001.fastq.gz or _R1.fastq.gz \n\t\
     contig_len_min: 5000 \n\t\
     contig_align_min: 0.9 \n\n\
 Run after demultiplexing and fastq directory: \n\t\
@@ -77,7 +79,7 @@ while [ "$1" != "" ]; do
         -d | --pipeline_dir )   shift
                                 PIPELINE_DIR=$1
                                 ;;
-        -s | --scratch_dir )         shift
+        -s | --scratch_dir )    shift
                                 SCRATCH_DIR=$1
                                 ;;
         --skip_scratch )        SKIP_SCRATCH=1
@@ -137,6 +139,16 @@ if [ -z $FASTQ_DIR ]; then
 elif [ -z $RESULTS_DIR ]; then
     RESULTS_DIR="${FASTQ_DIR}/$(date '+%Y-%m-%d')_${PROJECT}_Results"
 fi
+if [ ! -z $SCRATCH_DIR ] && [ $SKIP_SCRATCH -eq 1 ]; then
+    echo "Variables not supplied correctly. Cannot skip scratch while being provided scratch_dir for use. Exiting with code 1"
+    exit 1
+fi
+if [ -z $SCRATCH_DIR ] && [ $SKIP_SCRATCH -eq 0 ]; then
+    SCRATCH_DIR="/scratch/groups/cgawad/$(date '+%Y-%m-%d')_${PROJECT}_Scratch"
+fi
+if [ -z $SCRATCH_DIR ] && [ $SKIP_SCRATCH -eq 1 ]; then
+    SCRATCH_DIR="$RESULTS_DIR"
+fi
 if [ -z $STD_ERR_OUT_DIR ]; then
     STD_ERR_OUT_DIR="${RESULTS_DIR}/std_err_out_files"
 fi
@@ -147,10 +159,13 @@ fi
 if [ ! -d $RESULTS_DIR ]; then
     mkdir $RESULTS_DIR
 fi
+if [ ! -d $SCRATCH_DIR ]; then
+    mkdir $SCRATCH_DIR
+fi
 if [ ! -d $STD_ERR_OUT_DIR ]; then
     mkdir $STD_ERR_OUT_DIR
 fi
-OPTIONS=( "--err_out_dir $STD_ERR_OUT_DIR -f $FASTQ_DIR -r $RESULTS_DIR -d $PIPELINE_DIR -p $PROJECT" )
+OPTIONS=( "-f $FASTQ_DIR -r $RESULTS_DIR -d $PIPELINE_DIR -p $PROJECT -s $SCRATCH_DIR --err_out_dir $STD_ERR_OUT_DIR " )
 if [ ! -z $RUN_DIR ] && [ $ONLY_IDENTIFY -eq 1 ]; then
     echo "Variables not supplied correctly. Cannot perform demultiplexing while only identifying data. Exiting with code 1"
     exit 1
@@ -220,12 +235,14 @@ if [ $ONLY_IDENTIFY -eq 1 ]; then
 else
     PIPELINE_STATUS=${STD_ERR_OUT_DIR}/${PROJECT}_pipeline_status.txt
 fi
-cd $RESULTS_DIR
+cd $SCRATCH_DIR
 if [ "$TEMP_PIPELINE_DIR" = "$PIPELINE_DIR" ]; then
-    echo -e "\nSTART: $(date)\nBacteria Pipeline\nErr out dir: $STD_ERR_OUT_DIR\nResults dir: $RESULTS_DIR\nFastq dir: $FASTQ_DIR\nProject: $PROJECT" >> $PIPELINE_STATUS
-    # Optional variable definitions
-    if [ $SKIP_SCRATCH -eq 1 ]; then
-        echo "Option: Skip scratch - will only run in result directory, will not run in scratch directory before moving files to result directory" >> $PIPELINE_STATUS
+    echo -e "\nSTART: $(date)\nBacteria Pipeline\nResults dir: $RESULTS_DIR\nFastq dir: $FASTQ_DIR\nProject: $PROJECT\nScratch dir: $SCRATCH_DIR\nErr out dir: $STD_ERR_OUT_DIR" >> $PIPELINE_STATUS
+    # Optional variable definition
+    if [ $SKIP_SCRATCH -eq 0 ]; then
+        echo "Default: Scratch dir is different from Results dir" >> $PIPELINE_STATUS
+    else
+        echo "Option: Scratch dir is the same as Results dir" >> $PIPELINE_STATUS
     fi
     if [ $SKIP_TRIMMOMATIC -eq 1 ]; then
         echo "Option: Skip trimming - will not run trimmomatic" >> $PIPELINE_STATUS
@@ -318,24 +335,15 @@ elif [ $STEP -eq 1 ]; then
         echo "Submitting $TEMP_JOB_COUNT jobs for samples $TEMP_ARRAY_START to $(($TEMP_ARRAY_START + ${#TEMP_SAMPLE_ARRAY[@]} - 1))" >> $PIPELINE_STATUS
         TEMP_SAMPLES_STRING=$( IFS=$':'; echo "${TEMP_SAMPLE_ARRAY[*]}" )
         echo -e "\nsbatch --parsable -e $STD_ERR_OUT_DIR/%A_%a_%x.err -o $STD_ERR_OUT_DIR/%A_%a_%x.out \
-            --array=1-2 ${SCRIPT_DIR}/1_process_sample.sh \
-            $FASTQ_DIR $RESULTS_DIR $R1_SUFFIX $R2_SUFFIX $SKIP_TRIMMOMATIC $REF_FASTA \
+            --array=1-${TEMP_JOB_COUNT} ${SCRIPT_DIR}/1_process_sample.sh \
+            $FASTQ_DIR $SCRATCH_DIR $R1_SUFFIX $R2_SUFFIX $SKIP_TRIMMOMATIC $REF_FASTA \
             $KRAKEN_DB_TYPES $KRAKEN_DB_DIR_PREFIX $TOOLS_DIR $RNA_INPUT $TEMP_SAMPLES_STRING\n" >> $PIPELINE_STATUS
         DEPENDENCIES+=( $(sbatch --parsable -e $STD_ERR_OUT_DIR/%A_%a_%x.err -o $STD_ERR_OUT_DIR/%A_%a_%x.out \
-            --array=1-2 ${SCRIPT_DIR}/1_process_sample.sh \
-            $FASTQ_DIR $RESULTS_DIR $R1_SUFFIX $R2_SUFFIX $SKIP_TRIMMOMATIC $REF_FASTA \
+            --array=1-${TEMP_JOB_COUNT} ${SCRIPT_DIR}/1_process_sample.sh \
+            $FASTQ_DIR $SCRATCH_DIR $R1_SUFFIX $R2_SUFFIX $SKIP_TRIMMOMATIC $REF_FASTA \
             $KRAKEN_DB_TYPES $KRAKEN_DB_DIR_PREFIX $TOOLS_DIR $RNA_INPUT $TEMP_SAMPLES_STRING) )
-        # echo -e "\nsbatch --parsable -e $STD_ERR_OUT_DIR/%A_%a_%x.err -o $STD_ERR_OUT_DIR/%A_%a_%x.out \
-        #     --array=1-${TEMP_JOB_COUNT} ${SCRIPT_DIR}/1_process_sample.sh \
-        #     $FASTQ_DIR $RESULTS_DIR $R1_SUFFIX $R2_SUFFIX $SKIP_TRIMMOMATIC $REF_FASTA \
-        #     $KRAKEN_DB_TYPES $KRAKEN_DB_DIR_PREFIX $TOOLS_DIR $RNA_INPUT $TEMP_SAMPLES_STRING\n" >> $PIPELINE_STATUS
-        # DEPENDENCIES+=( $(sbatch --parsable -e $STD_ERR_OUT_DIR/%A_%a_%x.err -o $STD_ERR_OUT_DIR/%A_%a_%x.out \
-        #     --array=1-${TEMP_JOB_COUNT} ${SCRIPT_DIR}/1_process_sample.sh \
-        #     $FASTQ_DIR $RESULTS_DIR $R1_SUFFIX $R2_SUFFIX $SKIP_TRIMMOMATIC $REF_FASTA \
-        #     $KRAKEN_DB_TYPES $KRAKEN_DB_DIR_PREFIX $TOOLS_DIR $RNA_INPUT $TEMP_SAMPLES_STRING) )
         TEMP_ARRAY_START=$(($TEMP_ARRAY_START + $TEMP_ARRAY_INCREMENT))
     done 
-    exit
     echo -e "\nsbatch --dependency=afterany:$( IFS=$':'; echo "${DEPENDENCIES[*]}" ) -J $PROJECT \
         -e ${STD_ERR_OUT_DIR}/%A_submit_all_%x.err -o ${STD_ERR_OUT_DIR}/%A_submit_all_%x.out \
         ${PIPELINE_DIR}/submit_all.sh --step2 ${OPTIONS[@]}\n" >> $PIPELINE_STATUS
@@ -413,10 +421,10 @@ if [ $STEP -eq 2 ]; then
         TEMP_LONG_CONTIGS_STRING=$( IFS=$':'; echo "${TEMP_LONG_CONTIG_ARRAY[*]}" )
         echo -e "\nsbatch --parsable -e $STD_ERR_OUT_DIR/%A_%a_%x.err -o $STD_ERR_OUT_DIR/%A_%a_%x.out \
             --array=1-${TEMP_JOB_COUNT} ${SCRIPT_DIR}/2_blast_contigs.sh \
-            $RESULTS_DIR $TOOLS_DIR $BLAST_DB_TYPES $NCBI_DB_DIR_PREFIX $IDENTIFY $TEMP_LONG_CONTIGS_STRING\n" >> $PIPELINE_STATUS
+            $SCRATCH_DIR $TOOLS_DIR $BLAST_DB_TYPES $NCBI_DB_DIR_PREFIX $IDENTIFY $TEMP_LONG_CONTIGS_STRING\n" >> $PIPELINE_STATUS
         DEPENDENCIES+=( $(sbatch --parsable -e $STD_ERR_OUT_DIR/%A_%a_%x.err -o $STD_ERR_OUT_DIR/%A_%a_%x.out \
             --array=1-${TEMP_JOB_COUNT} ${SCRIPT_DIR}/2_blast_contigs.sh \
-            $RESULTS_DIR $TOOLS_DIR $BLAST_DB_TYPES $NCBI_DB_DIR_PREFIX $IDENTIFY $TEMP_LONG_CONTIGS_STRING) )
+            $SCRATCH_DIR $TOOLS_DIR $BLAST_DB_TYPES $NCBI_DB_DIR_PREFIX $IDENTIFY $TEMP_LONG_CONTIGS_STRING) )
         TEMP_ARRAY_START=$(($TEMP_ARRAY_START + $TEMP_ARRAY_INCREMENT))
     done
     echo -e "\nsbatch --dependency=afterany:$( IFS=$':'; echo "${DEPENDENCIES[*]}" ) -J $PROJECT \
@@ -501,8 +509,16 @@ elif [ $STEP -eq 3 ]; then
         --ncbi_annotations_dir $NCBI_ANNOTATIONS_DIR ${FIGURE_OPTIONS[@]}
     echo "### Processing contamination, Kraken results, BLAST results, and making final figures ### - END: $(date)" >> $PIPELINE_STATUS
     
+    # echo "### Removing intermediate files ### - START: $(date)"
     # rm ${IDENTIFY}_long_contigs_
     # rm ${IDENTIFY}.*.kraken_jtree.json 
     # rm ${IDENTIFY}_blast_results_*.json
+    # echo "### Removing intermediate files ### - END: $(date)"
+    
+    if [ "$SCRATCH_DIR" != "$RESULT_DIR" ]; then
+        echo "### Moving results from scratch dir to results dir ### - START: $(date)"
+        mv $SCRATCH_DIR/* $RESULTS_DIR/*
+        echo "### Moving results from scratch dir to results dir ### - END: $(date)"
+    fi
     echo "END: $(date)" >> $PIPELINE_STATUS
 fi
