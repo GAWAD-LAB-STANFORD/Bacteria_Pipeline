@@ -7,6 +7,7 @@
 #SBATCH --partition=cgawad
 
 PIPELINE_DIR="$( cd "$( dirname "$0" )" && pwd )"
+PIPELINE_COMMAND="$@"
 HELP="\
 Purpose: \n\t\
     This pipeline is built to identify bacterial species from pair-end fastq.gz files and remove human contamination \n\n\
@@ -129,7 +130,7 @@ NCBI_DB_DIR_PREFIX="/oak/stanford/groups/cgawad/Reference_Files/NCBI_RefSeq_Data
 NCBI_ANNOTATIONS_DIR="/oak/stanford/groups/cgawad/Reference_Files/NCBI_Annotations"
 CONTIGS_PER_BLAST_JOB=320
 
-# Ensure we have the requires variables set and set other variables
+# Ensure we have the required variables set and set other variables
 if ([ -z $FASTQ_DIR ] && [ -z $RESULTS_DIR ]) || [ -z $PROJECT ] || [ -z $PIPELINE_DIR ]; then
     echo "Variables not supplied correctly. Use -h/--help options for assistance. Ending program..."
     exit 1
@@ -152,7 +153,7 @@ fi
 if [ -z $STD_ERR_OUT_DIR ]; then
     STD_ERR_OUT_DIR="${RESULTS_DIR}/std_err_out_files"
 fi
-# Make results and std error output directories if they don't exist
+# Make directories if they don't exist
 if [ ! -d $FASTQ_DIR ]; then
     mkdir $FASTQ_DIR
 fi
@@ -188,9 +189,6 @@ if [ ! -z $R1_SUFFIX ]; then
 fi
 if [ ! -z $R2_SUFFIX ]; then
     OPTIONS+=( "--R2_suffix $R2_SUFFIX" )
-fi
-if [ $SKIP_SCRATCH -eq 1 ]; then
-    OPTIONS+=( "--skip_scratch" )
 fi
 if [ $SKIP_TRIMMOMATIC -eq 1 ]; then
     OPTIONS+=( "--skip_trimming" )
@@ -237,7 +235,7 @@ else
 fi
 cd $SCRATCH_DIR
 if [ "$TEMP_PIPELINE_DIR" = "$PIPELINE_DIR" ]; then
-    echo -e "\nSTART: $(date)\nBacteria Pipeline\nResults dir: $RESULTS_DIR\nFastq dir: $FASTQ_DIR\nProject: $PROJECT\nScratch dir: $SCRATCH_DIR\nErr out dir: $STD_ERR_OUT_DIR" >> $PIPELINE_STATUS
+    echo -e "\nSTART: $(date)\nBacteria Pipeline\n\n$PIPELINE_COMMAND\n\nResults dir: $RESULTS_DIR\nFastq dir: $FASTQ_DIR\nProject: $PROJECT\nScratch dir: $SCRATCH_DIR\nErr out dir: $STD_ERR_OUT_DIR" >> $PIPELINE_STATUS
     # Optional variable definition
     if [ $SKIP_SCRATCH -eq 0 ]; then
         echo "Default: Scratch dir is different from Results dir" >> $PIPELINE_STATUS
@@ -515,7 +513,7 @@ elif [ $STEP -eq 3 ]; then
     # rm ${IDENTIFY}_blast_results_*.json
     # echo "### Removing intermediate files ### - END: $(date)"
     
-    if [ "$SCRATCH_DIR" != "$RESULT_DIR" ]; then
+    if [ "$SCRATCH_DIR" != "$RESULTS_DIR" ]; then
         echo "### Moving results from scratch dir to results dir ### - START: $(date)"
         mv $SCRATCH_DIR/* $RESULTS_DIR/*
         echo "### Moving results from scratch dir to results dir ### - END: $(date)"
