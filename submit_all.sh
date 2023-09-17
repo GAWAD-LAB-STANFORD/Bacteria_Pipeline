@@ -14,7 +14,7 @@ Purpose: \n\t\
 Required arguments: -p/--project <arg> and either -f/--fastq_dir <arg> or -r/--results_dir <arg> \n\
 Optional arguments: -b/--run_dir <arg>, --err_out_dir <arg>, --scratch_dir <arg>, --sample_sheet <arg>, \n\t\
     --R1_suffix <arg>, --R2_suffix <arg>, --skip_scratch, --skip_trimming, --rna, --skip_identify, \n\t\
-    --only_identify, --contig_len_min <arg>, --contig_align_min <arg>, --add_genus, --slurm <arg> \n\
+    --only_identify, --identify <arg>, --contig_len_min <arg>, --contig_align_min <arg>, --add_genus, --slurm <arg> \n\
 Defaults: \n\t\
     If no fastq_dir specified, uses results_dir \n\t\
     If no results_dir specified, makes new directory in fastq_dir \n\t\
@@ -208,13 +208,13 @@ elif [ $ONLY_IDENTIFY -eq 1 ]; then
         STEP=2
     fi
 fi
-if [ $STEP -eq 0 ] && [ -z $RUN_DIR ]; then
-    STEP=1
-fi
 if [ ! -z $IDENTIFY ]; then
     OPTIONS+=( "--identify $IDENTIFY" )
 else
     IDENTIFY=$PROJECT
+fi
+if [ $STEP -eq 0 ] && [ -z $RUN_DIR ]; then
+    STEP=1
 fi
 if [ $CONTIG_LENGTH_MINIMUM -ne 5000 ]; then
     OPTIONS+=( "--contig_len_min $CONTIG_LENGTH_MINIMUM" )
@@ -235,8 +235,14 @@ else
 fi
 cd $SCRATCH_DIR
 if [ "$TEMP_PIPELINE_DIR" = "$PIPELINE_DIR" ]; then
-    echo -e "\nSTART: $(date)\nBacteria Pipeline\n\n$PIPELINE_COMMAND\n\nResults dir: $RESULTS_DIR\nFastq dir: $FASTQ_DIR\nProject: $PROJECT\nScratch dir: $SCRATCH_DIR\nErr out dir: $STD_ERR_OUT_DIR" >> $PIPELINE_STATUS
+    echo -e "\nSTART: $(date)\nBacteria Pipeline\n\n$PIPELINE_COMMAND\n\nProject: $PROJECT\nResults dir: $RESULTS_DIR\nFastq dir: $FASTQ_DIR\nScratch dir: $SCRATCH_DIR\nErr out dir: $STD_ERR_OUT_DIR" >> $PIPELINE_STATUS
     # Optional variable definition
+    if [ $SKIP_IDENTIFY -eq 1 ]; then
+        echo "Option: Skip identification of data - will only process the fastqs, build the contigs, and run Kraken2" >> $PIPELINE_STATUS
+    fi
+    if [ $ONLY_IDENTIFY -eq 1 ]; then
+        echo "Option: Only identification of data - will only BLAST and filter from already built contigs" >> $PIPELINE_STATUS
+    fi
     if [ $SKIP_SCRATCH -eq 0 ]; then
         echo "Default: Scratch dir is different from Results dir" >> $PIPELINE_STATUS
     else
@@ -257,12 +263,6 @@ if [ "$TEMP_PIPELINE_DIR" = "$PIPELINE_DIR" ]; then
         echo "Default: Contig align minimum: 0.9" >> $PIPELINE_STATUS
     else
         echo "Option: Contig align minimum: $CONTIG_ALIGN_MINIMUM" >> $PIPELINE_STATUS
-    fi
-    if [ $SKIP_IDENTIFY -eq 1 ]; then
-        echo "Option: Skip identification of data - will only process the fastqs, build the contigs, and run Kraken2" >> $PIPELINE_STATUS
-    fi
-    if [ $ONLY_IDENTIFY -eq 1 ]; then
-        echo "Option: Only identification of data - will only BLAST and filter from already built contigs" >> $PIPELINE_STATUS
     fi
     if [ $ADD_GENUS -eq 1 ]; then
         echo "Option: Adding genus to figures" >> $PIPELINE_STATUS
