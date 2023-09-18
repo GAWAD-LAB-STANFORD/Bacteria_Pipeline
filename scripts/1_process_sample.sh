@@ -128,10 +128,14 @@ UNALIGNED_READS=$(samtools view ${SAMPLE}_contig_aligned.bam | cut -f 3 | grep -
 echo -e "sample\thuman_aligned\tcontig_aligned\tunaligned" > ${SAMPLE}_summed_read_targets.tsv
 echo -e "${SAMPLE}\t${HUMAN_ALIGNED_READS}\t${CONTIG_ALIGNED_READS}\t${UNALIGNED_READS}" >> ${SAMPLE}_summed_read_targets.tsv
 
-echo -e "sample\ttarget" > ${SAMPLE}_contig_read_targets.tsv
+# echo -e "sample\ttarget" > ${SAMPLE}_contig_read_targets.tsv
+# printf "%s\t%s\t%s\n" "read_count" "sample" "target" > ${SAMPLE}_contig_read_targets.tsv
+echo -e "read_count\tsample\ttarget" > ${SAMPLE}_contig_read_targets.tsv
 samtools view ${SAMPLE}_contig_aligned.bam | cut -f 3 | grep "NODE" > ${SAMPLE}_temp_contig_read_targets.txt
+# printf "${SAMPLE}\n%0.s" $(seq $(cat ${SAMPLE}_temp_contig_read_targets.txt | wc -l)) | \
+#     paste - ${SAMPLE}_temp_contig_read_targets.txt | uniq -c | tr -s ' ' '\t' >> ${SAMPLE}_contig_read_targets.tsv
 printf "${SAMPLE}\n%0.s" $(seq $(cat ${SAMPLE}_temp_contig_read_targets.txt | wc -l)) | \
-    paste - ${SAMPLE}_temp_contig_read_targets.txt | uniq -c | tr -s ' ' '\t' >> ${SAMPLE}_contig_read_targets.tsv
+  paste - ${SAMPLE}_temp_contig_read_targets.txt | uniq -c | sed 's/^[[:space:]]*//' | tr -s ' ' '\t'  >> ${SAMPLE}_contig_read_targets.tsv
 echo "### Exporting summarized and contig read targets from BAM ### - END: $(date)"
 
 # echo "### Marking low complexity regions in contigs ### - START: $(date)"
