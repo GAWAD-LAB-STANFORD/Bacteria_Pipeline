@@ -41,14 +41,14 @@ option_list = list(
 ); 
 
 opt <- parse_args(OptionParser(option_list=option_list))
-opt <- list(project = "2023_08_21_JGI_scEnvBac_WGS_AVITI", identify = "2023_08_21_JGI_scEnvBac_WGS_AVITI", 
-            sample_read_count_filename = "2023_08_21_JGI_scEnvBac_WGS_AVITI.sample_read_counts.tsv",
-            summed_read_targets_filename = "2023_08_21_JGI_scEnvBac_WGS_AVITI.summed_read_targets.tsv",
-            contig_read_targets_filename = "2023_08_21_JGI_scEnvBac_WGS_AVITI.contig_read_targets.tsv",
-            contig_data_filename = "2023_08_21_JGI_scEnvBac_WGS_AVITI.contig_data.tsv",
-            kraken_db_types = "microbial-plasmid-viral", kraken_jtree_suffix = ".kraken_jtree.json",
-            blast_db_types = "nt-plasmid-viral", blast_results_suffix = ".blast_results.tsv",
-            ncbi_annotations_dir = "0", contig_alignment_fraction_min = 0.9)
+# opt <- list(project = "2023_08_21_JGI_scEnvBac_WGS_AVITI", identify = "2023_08_21_JGI_scEnvBac_WGS_AVITI", 
+#             sample_read_count_filename = "2023_08_21_JGI_scEnvBac_WGS_AVITI.sample_read_counts.tsv",
+#             summed_read_targets_filename = "2023_08_21_JGI_scEnvBac_WGS_AVITI.summed_read_targets.tsv",
+#             contig_read_targets_filename = "2023_08_21_JGI_scEnvBac_WGS_AVITI.contig_read_targets.tsv",
+#             contig_data_filename = "2023_08_21_JGI_scEnvBac_WGS_AVITI.contig_data.tsv",
+#             kraken_db_types = "microbial-plasmid-viral", kraken_jtree_suffix = ".kraken_jtree.json",
+#             blast_db_types = "nt-plasmid-viral", blast_results_suffix = ".blast_results.tsv",
+#             ncbi_annotations_dir = "0", contig_alignment_fraction_min = 0.9)
 
 if (is.null(opt$project) || is.null(opt$identify) || is.null(opt$sample_read_count_filename) || 
     is.null(opt$summed_read_targets_filename) || is.null(opt$contig_read_targets_filename) || 
@@ -156,7 +156,7 @@ rm(summed_read_targets_df, plot1)
 
 # Contig read targets ------------------------------------------------------------
 contig_read_targets_df <- read_tsv(opt$contig_read_targets_filename)
-if (! "read_count" %in% colnames(contig_read_targets_df)) { 
+if (! "read_count" %in% colnames(contig_read_targets_df)) {
   contig_read_targets_df <- read_tsv(opt$contig_read_targets_filename) %>%
     select(-sample) %>%
     separate(target, c("read_count", "sample", "target"), sep = "\\s", extra = "merge")
