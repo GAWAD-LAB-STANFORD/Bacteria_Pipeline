@@ -12,16 +12,17 @@ HELP="\
 Purpose: \n\t\
     This pipeline is built to identify bacterial species from pair-end fastq.gz files and remove human contamination \n\n\
 Required arguments: -p/--project <arg> and either -f/--fastq_dir <arg> or -r/--results_dir <arg> \n\
-Optional arguments: -b/--run_dir <arg>, --err_out_dir <arg>, --scratch_dir <arg>, --sample_sheet <arg>, \n\t\
-    --R1_suffix <arg>, --R2_suffix <arg>, --skip_scratch, --skip_trimming, --rna, --skip_identify, \n\t\
-    --only_identify, --identify <arg>, --contig_len_min <arg>, --contig_align_min <arg>, --add_genus, --slurm <arg> \n\
+Optional arguments: -s/--scratch_dir <arg>, --err_out_dir <arg>, --skip_scratch, -b/--run_dir <arg>, \n\t\
+    --sample_sheet <arg>, --skip_identify, --only_identify, --identify <arg>, \n\t\
+    --R1_suffix <arg>, --R2_suffix <arg>, --skip_trimming, --rna, \n\t\
+    --contig_len_min <arg>, --contig_align_min <arg>, --add_genus, --slurm <arg> \n\
 Defaults: \n\t\
     If no fastq_dir specified, uses results_dir \n\t\
     If no results_dir specified, makes new directory in fastq_dir \n\t\
     scratch_dir: /scratch/groups/cgawad/date_project_Scratch \n\t\
     sample_sheet: SampleSheet.csv \n\t\
     R1_suffix: _L001_R1_001.fastq.gz or _R1_001.fastq.gz or _R1.fastq.gz \n\t\
-    R2_suffix: _L001_R2_001.fastq.gz or _R1_001.fastq.gz or _R1.fastq.gz \n\t\
+    R2_suffix: _L001_R2_001.fastq.gz or _R2_001.fastq.gz or _R2.fastq.gz \n\t\
     contig_len_min: 5000 \n\t\
     contig_align_min: 0.9 \n\n\
 Run after demultiplexing and with fastq directory: \n\t\
@@ -38,10 +39,10 @@ For more information, read the README.md"
 
 # Reads in command line option arguments and assigns them to variables
 SKIP_SCRATCH=0
-SKIP_TRIMMOMATIC=0
-RNA_INPUT=0
 SKIP_IDENTIFY=0
 ONLY_IDENTIFY=0
+SKIP_TRIMMOMATIC=0
+RNA_INPUT=0
 CONTIG_LENGTH_MINIMUM=5000
 CONTIG_ALIGN_MINIMUM=0.9
 ADD_GENUS=0
@@ -52,21 +53,6 @@ while [ "$1" != "" ]; do
     case $1 in
         -h | --help )           echo -e $HELP
                                 exit 0
-                                ;;
-        -b | --run_dir )        shift
-                                RUN_DIR=$1
-                                ;;
-        --sample_sheet )        shift
-                                SAMPLE_SHEET=$1
-                                ;;
-        --R1_suffix )           shift
-                                R1_SUFFIX=$1
-                                ;;
-        --R2_suffix )           shift
-                                R2_SUFFIX=$1
-                                ;;
-        --err_out_dir )         shift
-                                STD_ERR_OUT_DIR=$1
                                 ;;
         -f | --fastq_dir )      shift
                                 FASTQ_DIR=$1
@@ -83,11 +69,22 @@ while [ "$1" != "" ]; do
         -s | --scratch_dir )    shift
                                 SCRATCH_DIR=$1
                                 ;;
+        --err_out_dir )         shift
+                                STD_ERR_OUT_DIR=$1
+                                ;;
         --skip_scratch )        SKIP_SCRATCH=1
                                 ;;
-        --skip_trimming )       SKIP_TRIMMOMATIC=1
+        -b | --run_dir )        shift
+                                RUN_DIR=$1
                                 ;;
-        --rna )                 RNA_INPUT=1
+        --sample_sheet )        shift
+                                SAMPLE_SHEET=$1
+                                ;;
+        --R1_suffix )           shift
+                                R1_SUFFIX=$1
+                                ;;
+        --R2_suffix )           shift
+                                R2_SUFFIX=$1
                                 ;;
         --skip_identify )       SKIP_IDENTIFY=1
                                 ;;
@@ -95,6 +92,10 @@ while [ "$1" != "" ]; do
                                 ;;
         --identify )            shift
                                 IDENTIFY=$1
+                                ;;
+        --skip_trimming )       SKIP_TRIMMOMATIC=1
+                                ;;
+        --rna )                 RNA_INPUT=1
                                 ;;
         --contig_len_min )      shift
                                 CONTIG_LENGTH_MINIMUM=$1
@@ -184,19 +185,6 @@ if [ ! -z $RUN_DIR ] && [ ! -z $SAMPLE_SHEET ]; then
     fi
     OPTIONS+=( "--run_dir $RUN_DIR --sample_sheet $SAMPLE_SHEET" )
 fi
-if [ ! -z $R1_SUFFIX ]; then
-    OPTIONS+=( "--R1_suffix $R1_SUFFIX" )
-fi
-if [ ! -z $R2_SUFFIX ]; then
-    OPTIONS+=( "--R2_suffix $R2_SUFFIX" )
-fi
-if [ $SKIP_TRIMMOMATIC -eq 1 ]; then
-    OPTIONS+=( "--skip_trimming" )
-    SCRATCH_DIR=$RESULTS_DIR
-fi
-if [ $RNA_INPUT -eq 1 ]; then
-    OPTIONS+=( "--rna" )
-fi
 if [ $SKIP_IDENTIFY -eq 1 ] && [ $ONLY_IDENTIFY -eq 1 ]; then
     echo "Variables not supplied correctly. Please specify either --skip_identify or --only_identify, not both. Exiting with code 1"
     exit 1
@@ -212,6 +200,19 @@ if [ ! -z $IDENTIFY ]; then
     OPTIONS+=( "--identify $IDENTIFY" )
 else
     IDENTIFY=$PROJECT
+fi
+if [ ! -z $R1_SUFFIX ]; then
+    OPTIONS+=( "--R1_suffix $R1_SUFFIX" )
+fi
+if [ ! -z $R2_SUFFIX ]; then
+    OPTIONS+=( "--R2_suffix $R2_SUFFIX" )
+fi
+if [ $SKIP_TRIMMOMATIC -eq 1 ]; then
+    OPTIONS+=( "--skip_trimming" )
+    SCRATCH_DIR=$RESULTS_DIR
+fi
+if [ $RNA_INPUT -eq 1 ]; then
+    OPTIONS+=( "--rna" )
 fi
 if [ $STEP -eq 0 ] && [ -z $RUN_DIR ]; then
     STEP=1
@@ -237,16 +238,19 @@ cd $SCRATCH_DIR
 if [ "$TEMP_PIPELINE_DIR" = "$PIPELINE_DIR" ]; then
     echo -e "\nSTART: $(date)\nBacteria Pipeline\n\n$PIPELINE_COMMAND\n\nProject: $PROJECT\nResults dir: $RESULTS_DIR\nFastq dir: $FASTQ_DIR\nScratch dir: $SCRATCH_DIR\nErr out dir: $STD_ERR_OUT_DIR" >> $PIPELINE_STATUS
     # Optional variable definition
+    if [ $SKIP_SCRATCH -eq 0 ]; then
+        echo "Default: Scratch dir is different from Results dir" >> $PIPELINE_STATUS
+    else
+        echo "Option: Scratch dir is the same as Results dir" >> $PIPELINE_STATUS
+    fi
     if [ $SKIP_IDENTIFY -eq 1 ]; then
         echo "Option: Skip identification of data - will only process the fastqs, build the contigs, and run Kraken2" >> $PIPELINE_STATUS
     fi
     if [ $ONLY_IDENTIFY -eq 1 ]; then
         echo "Option: Only identification of data - will only BLAST and filter from already built contigs" >> $PIPELINE_STATUS
     fi
-    if [ $SKIP_SCRATCH -eq 0 ]; then
-        echo "Default: Scratch dir is different from Results dir" >> $PIPELINE_STATUS
-    else
-        echo "Option: Scratch dir is the same as Results dir" >> $PIPELINE_STATUS
+    if [ "$IDENTIFY" != "$PROJECT" ]; then
+        echo "Option: Identify different from Project: $IDENTIFY" >> $PIPELINE_STATUS
     fi
     if [ $SKIP_TRIMMOMATIC -eq 1 ]; then
         echo "Option: Skip trimming - will not run trimmomatic" >> $PIPELINE_STATUS
@@ -271,7 +275,7 @@ if [ "$TEMP_PIPELINE_DIR" = "$PIPELINE_DIR" ]; then
 fi
 
 
-if [ ! -z $SLURM_OPTIONS ] || ([ $ONLY_IDENTIFY -eq 1 ] && [ "$TEMP_PIPELINE_DIR" = "$PIPELINE_DIR" ]); then
+if [ ! -z $SLURM_OPTIONS ]; then
     echo "Option: Slurm - entire pipeline run will be queued with user parameters" >> $PIPELINE_STATUS
     sbatch -J $PROJECT ${SLURM_OPTIONS[@]} \
         -e ${STD_ERR_OUT_DIR}/%A_submit_all_%x.err -o ${STD_ERR_OUT_DIR}/%A_submit_all_%x.out \
@@ -515,7 +519,7 @@ elif [ $STEP -eq 3 ]; then
     
     if [ "$SCRATCH_DIR" != "$RESULTS_DIR" ]; then
         echo "### Moving results from scratch dir to results dir ### - START: $(date)"
-        mv $SCRATCH_DIR/* $RESULTS_DIR/*
+        mv $SCRATCH_DIR/* $RESULTS_DIR/
         echo "### Moving results from scratch dir to results dir ### - END: $(date)"
     fi
     echo "END: $(date)" >> $PIPELINE_STATUS
