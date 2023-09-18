@@ -83,18 +83,18 @@ if (opt$add_genus) {
 
 
 # Common themes and functions ------------------------------------------------------
-ggplot_theme <- theme(axis.line.y = element_line(size=.1,color = "black"), axis.text.x = element_text(angle = 45, hjust = 1, size=10, lineheight=0.2, color="black"),
+ggplot_theme <- theme(axis.line.y = element_line(color = "black"), axis.text.x = element_text(angle = 45, hjust = 1, size=10, lineheight=0.2, color="black"),
                       panel.grid.major = element_line(color = "black"), legend.text=element_text(size=15), 
                       panel.background = element_rect(fill="white"), panel.grid.major.x = element_blank() , 
-                      panel.grid.major.y = element_line( size=.1, color="black" ), plot.title = element_text(size=20))
+                      panel.grid.major.y = element_line(color="black" ), plot.title = element_text(size=20))
 ggplot_theme_small_legend <- theme(axis.line.y = element_line(size=.1,color = "black"), axis.text.x = element_text(angle = 45, hjust = 1, size=10, lineheight=0.2, color="black"),
                                    panel.grid.major = element_line(color = "black"), legend.title = element_text(size = 5), legend.text = element_text(size = 5), 
                                    panel.background = element_rect(fill="white"), panel.grid.major.x = element_blank() , 
-                                   panel.grid.major.y = element_line( size=.1, color="black" ), plot.title = element_text(size=20))
+                                   panel.grid.major.y = element_line(color="black" ), plot.title = element_text(size=20))
 ggplot_theme_no_legend <- theme(axis.line.y = element_line(size=.1,color = "black"), axis.text.x = element_text(angle = 45, hjust = 1, size=10, lineheight=0.2, color="black"),
                                 panel.grid.major = element_line(color = "black"), legend.position = "none",
                                 panel.background = element_rect(fill="white"), panel.grid.major.x = element_blank() , 
-                                panel.grid.major.y = element_line( size=.1, color="black" ), plot.title = element_text(size=20))
+                                panel.grid.major.y = element_line(color="black" ), plot.title = element_text(size=20))
 ggtree_theme <- theme(axis.line.y = element_blank(), axis.text.x = element_text(angle = 45, hjust = 1, size=10, lineheight=0.2, color="black"),
                       panel.grid.major = element_line(color = "black"), legend.text=element_text(size=15), 
                       panel.background = element_rect(fill="white"), panel.grid.major.x = element_blank() , 
@@ -159,7 +159,8 @@ contig_read_targets_df <- read_tsv(opt$contig_read_targets_filename)
 if (! "read_count" %in% colnames(contig_read_targets_df)) {
   contig_read_targets_df <- read_tsv(opt$contig_read_targets_filename) %>%
     select(-sample) %>%
-    separate(target, c("read_count", "sample", "target"), sep = "\\s", extra = "merge")
+    separate(target, c("read_count", "sample", "target"), sep = "\\s", extra = "merge") %>%
+    type_convert()
   # Old solution, no longer relevant
   # contig_read_targets_df <- contig_read_targets_df %>%
   #   rename(remove = "...1", read_count = "1") %>%
