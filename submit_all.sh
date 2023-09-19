@@ -42,7 +42,7 @@ SKIP_SCRATCH=0
 SKIP_IDENTIFY=0
 ONLY_IDENTIFY=0
 SKIP_TRIMMOMATIC=0
-RNA_INPUT=0
+RNA=0
 CONTIG_LENGTH_MINIMUM=5000
 CONTIG_ALIGN_MINIMUM=0.9
 ADD_GENUS=0
@@ -95,7 +95,7 @@ while [ "$1" != "" ]; do
                                 ;;
         --skip_trimming )       SKIP_TRIMMOMATIC=1
                                 ;;
-        --rna )                 RNA_INPUT=1
+        --rna )                 RNA=1
                                 ;;
         --contig_len_min )      shift
                                 CONTIG_LENGTH_MINIMUM=$1
@@ -211,7 +211,7 @@ if [ $SKIP_TRIMMOMATIC -eq 1 ]; then
     OPTIONS+=( "--skip_trimming" )
     SCRATCH_DIR=$RESULTS_DIR
 fi
-if [ $RNA_INPUT -eq 1 ]; then
+if [ $RNA -eq 1 ]; then
     OPTIONS+=( "--rna" )
 fi
 if [ $STEP -eq 0 ] && [ -z $RUN_DIR ]; then
@@ -255,7 +255,7 @@ if [ "$TEMP_PIPELINE_DIR" = "$PIPELINE_DIR" ]; then
     if [ $SKIP_TRIMMOMATIC -eq 1 ]; then
         echo "Option: Skip trimming - will not run trimmomatic" >> $PIPELINE_STATUS
     fi
-    if [ $RNA_INPUT -eq 1 ]; then
+    if [ $RNA -eq 1 ]; then
         echo "Option: Expecting RNA input and will align using STAR instead of BWA" >> $PIPELINE_STATUS
     fi
     if [ $CONTIG_LENGTH_MINIMUM -eq 5000 ]; then
@@ -338,12 +338,12 @@ elif [ $STEP -eq 1 ]; then
         TEMP_SAMPLES_STRING=$( IFS=$':'; echo "${TEMP_SAMPLE_ARRAY[*]}" )
         echo -e "\nsbatch --parsable -e $STD_ERR_OUT_DIR/%A_%a_%x.err -o $STD_ERR_OUT_DIR/%A_%a_%x.out \
             --array=1-${TEMP_JOB_COUNT} ${SCRIPT_DIR}/1_process_sample.sh \
-            $FASTQ_DIR $SCRATCH_DIR $R1_SUFFIX $R2_SUFFIX $SKIP_TRIMMOMATIC $REF_FASTA \
-            $KRAKEN_DB_TYPES $KRAKEN_DB_DIR_PREFIX $TOOLS_DIR $RNA_INPUT $TEMP_SAMPLES_STRING\n" >> $PIPELINE_STATUS
+            $FASTQ_DIR $SCRATCH_DIR $R1_SUFFIX $R2_SUFFIX $SKIP_TRIMMOMATIC $RNA $REF_FASTA \
+            $KRAKEN_DB_TYPES $KRAKEN_DB_DIR_PREFIX $TOOLS_DIR $TEMP_SAMPLES_STRING\n" >> $PIPELINE_STATUS
         DEPENDENCIES+=( $(sbatch --parsable -e $STD_ERR_OUT_DIR/%A_%a_%x.err -o $STD_ERR_OUT_DIR/%A_%a_%x.out \
             --array=1-${TEMP_JOB_COUNT} ${SCRIPT_DIR}/1_process_sample.sh \
-            $FASTQ_DIR $SCRATCH_DIR $R1_SUFFIX $R2_SUFFIX $SKIP_TRIMMOMATIC $REF_FASTA \
-            $KRAKEN_DB_TYPES $KRAKEN_DB_DIR_PREFIX $TOOLS_DIR $RNA_INPUT $TEMP_SAMPLES_STRING) )
+            $FASTQ_DIR $SCRATCH_DIR $R1_SUFFIX $R2_SUFFIX $SKIP_TRIMMOMATIC $RNA $REF_FASTA \
+            $KRAKEN_DB_TYPES $KRAKEN_DB_DIR_PREFIX $TOOLS_DIR $TEMP_SAMPLES_STRING) )
         TEMP_ARRAY_START=$(($TEMP_ARRAY_START + $TEMP_ARRAY_INCREMENT))
     done 
     echo -e "\nsbatch --dependency=afterany:$( IFS=$':'; echo "${DEPENDENCIES[*]}" ) -J $PROJECT \

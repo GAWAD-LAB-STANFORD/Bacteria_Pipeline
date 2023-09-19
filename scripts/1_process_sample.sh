@@ -12,11 +12,11 @@ SCRATCH_DIR=$2
 R1_SUFFIX=$3
 R2_SUFFIX=$4
 SKIP_TRIMMOMATIC=$5
-REF_FASTA=$6
-KRAKEN_DB_TYPES_ARRAY=( $(echo $7 | sed 's/-/ /g') )
-KRAKEN_DB_DIR_PREFIX=$8
-TOOLS_DIR=$9
-RNA_INPUT=${10}
+RNA=$6
+REF_FASTA=$7
+KRAKEN_DB_TYPES_ARRAY=( $(echo $8 | sed 's/-/ /g') )
+KRAKEN_DB_DIR_PREFIX=$9
+TOOLS_DIR=${10}
 SAMPLE_ARRAY=( $(echo ${11} | sed 's/:/ /g') )
 SAMPLE=${SAMPLE_ARRAY[$(( $SLURM_ARRAY_TASK_ID - 1 ))]}
 
@@ -56,7 +56,7 @@ echo -e "sample\tread_count" > ${SAMPLE}.read_counts.tsv
 echo -e "$SAMPLE\t$READ_COUNT" >> ${SAMPLE}.read_counts.tsv
 echo "### Counting fastq read counts ### - END: $(date)"
 
-if [ $RNA_INPUT -eq 1 ]; then
+if [ $RNA -eq 1 ]; then
     echo "### Aligning RNA fastqs to human ### - START: $(date)"
     UNZIPPED_R1_FASTQ=$(basename $R1_FASTQ | sed "s/.gz//")
     UNZIPPED_R2_FASTQ=$(basename $R2_FASTQ | sed "s/.gz//")
