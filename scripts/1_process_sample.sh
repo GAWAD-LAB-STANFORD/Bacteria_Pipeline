@@ -34,10 +34,10 @@ export PATH=${TOOLS_DIR}/SPAdes-3.14.0-Linux/bin:$PATH
 if [ $SKIP_TRIMMOMATIC -eq 0 ]; then
     UNTRIMMED_R1_FASTQ=$R1_FASTQ
     UNTRIMMED_R2_FASTQ=$R2_FASTQ
-    R1_FASTQ=$(echo ${SAMPLE}${R1_SUFFIX} | sed "s/_R1_/_R1_trimmed_/")
-    R2_FASTQ=$(echo ${SAMPLE}${R2_SUFFIX} | sed "s/_R2_/_R2_trimmed_/")
-    UNPAIRED_R1_FASTQ=$(echo ${SAMPLE}${R1_SUFFIX} | sed "s/_R1_/_R1_trimmed_unpaired_/")
-    UNPAIRED_R2_FASTQ=$(echo ${SAMPLE}${R2_SUFFIX} | sed "s/_R2_/_R2_trimmed_unpaired_/")
+    R1_FASTQ=$(echo ${SAMPLE}${R1_SUFFIX} | sed "s/_R1/_R1_trimmed/")
+    R2_FASTQ=$(echo ${SAMPLE}${R2_SUFFIX} | sed "s/_R2/_R2_trimmed/")
+    UNPAIRED_R1_FASTQ=$(echo ${SAMPLE}${R1_SUFFIX} | sed "s/_R1/_R1_trimmed_unpaired/")
+    UNPAIRED_R2_FASTQ=$(echo ${SAMPLE}${R2_SUFFIX} | sed "s/_R2/_R2_trimmed_unpaired/")
     
     echo "### Trimming fastqs ### - START: $(date)"
     java -jar ${TOOLS_DIR}/Trimmomatic-0.35/trimmomatic-0.35.jar PE -phred33 -trimlog \
@@ -157,7 +157,7 @@ fi
 rm -r contigs_${SAMPLE} 
 rm ${SAMPLE}_contigs.fasta.amb ${SAMPLE}_contigs.fasta.ann ${SAMPLE}_contigs.fasta.bwt
 rm ${SAMPLE}_contigs.fasta.pac ${SAMPLE}_contigs.fasta.sa
-rm ${SAMPLE}_human_aligned.bam* ${SAMPLE}_no_human.bam* # ${SAMPLE}_contig_aligned.bam*
+rm ${SAMPLE}_human_aligned.bam* ${SAMPLE}_no_human.bam* ${SAMPLE}_contig_aligned.bam*
 rm ${SAMPLE}_temp_contig_read_targets.txt
 rm ${SAMPLE}_no_human${R1_SUFFIX} ${SAMPLE}_no_human${R2_SUFFIX}
 rm ${SAMPLE}_any_mapping_to_human_query_names.txt
