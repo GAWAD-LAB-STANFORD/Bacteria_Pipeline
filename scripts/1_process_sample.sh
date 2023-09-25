@@ -135,7 +135,7 @@ samtools view ${SAMPLE}_contig_aligned.bam | cut -f 3 | grep "NODE" > ${SAMPLE}_
 # printf "${SAMPLE}\n%0.s" $(seq $(cat ${SAMPLE}_temp_contig_read_targets.txt | wc -l)) | \
 #     paste - ${SAMPLE}_temp_contig_read_targets.txt | uniq -c | tr -s ' ' '\t' >> ${SAMPLE}_contig_read_targets.tsv
 printf "${SAMPLE}\n%0.s" $(seq $(cat ${SAMPLE}_temp_contig_read_targets.txt | wc -l)) | \
-  paste - ${SAMPLE}_temp_contig_read_targets.txt | uniq -c | sed 's/^[[:space:]]*//' | tr -s ' ' '\t'  >> ${SAMPLE}_contig_read_targets.tsv
+    paste - ${SAMPLE}_temp_contig_read_targets.txt | uniq -c | sed 's/^[[:space:]]*//' | tr -s ' ' '\t'  >> ${SAMPLE}_contig_read_targets.tsv
 echo "### Exporting summarized and contig read targets from BAM ### - END: $(date)"
 
 # echo "### Marking low complexity regions in contigs ### - START: $(date)"
