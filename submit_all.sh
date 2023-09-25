@@ -174,9 +174,9 @@ if [ ! -z $RUN_DIR ] && [ $ONLY_IDENTIFY -eq 1 ]; then
     echo "Variables not supplied correctly. Cannot perform demultiplexing while only identifying data. Exiting with code 1"
     exit 1
 fi
-if [ ! -z $RUN_DIR ]; then
+if [ ! -z $RUN_DIR ] && [ -z $SAMPLE_SHEET ]; then
     SAMPLE_SHEET="${RUN_DIR}/SampleSheet.csv"
-elif [ ! -z $SAMPLE_SHEET ]; then
+elif [ -z $RUN_DIR ] && [ ! -z $SAMPLE_SHEET ]; then
     echo "Variables not supplied correctly. Please specify a run diretory for demultiplexing with --run_dir. Exiting with code 1"
     exit 1
 fi
@@ -186,6 +186,9 @@ if [ ! -z $RUN_DIR ] && [ ! -z $SAMPLE_SHEET ]; then
         exit 1
     fi
     OPTIONS+=( "--run_dir $RUN_DIR --sample_sheet $SAMPLE_SHEET" )
+fi
+if [ $STEP -eq 0 ] && [ -z $RUN_DIR ]; then
+    STEP=1
 fi
 if [ $SKIP_IDENTIFY -eq 1 ] && [ $ONLY_IDENTIFY -eq 1 ]; then
     echo "Variables not supplied correctly. Please specify either --skip_identify or --only_identify, not both. Exiting with code 1"
@@ -215,10 +218,7 @@ if [ $SKIP_TRIMMOMATIC -eq 1 ]; then
 fi
 if [ $RNA -eq 1 ]; then
     OPTIONS+=( "--rna" )
-fi
-if [ $STEP -eq 0 ] && [ -z $RUN_DIR ]; then
-    STEP=1
-fi
+fi\
 if [ $CONTIG_LENGTH_MINIMUM -ne 5000 ]; then
     OPTIONS+=( "--contig_len_min $CONTIG_LENGTH_MINIMUM" )
 fi
