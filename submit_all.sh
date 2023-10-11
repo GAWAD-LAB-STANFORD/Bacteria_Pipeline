@@ -207,7 +207,7 @@ if [ $SKIP_TRIMMOMATIC -eq 1 ]; then
 fi
 if [ $RNA -eq 1 ]; then
     OPTIONS+=( "--rna" )
-fi\
+fi
 if [ $CONTIG_LENGTH_MINIMUM -ne 5000 ]; then
     OPTIONS+=( "--contig_len_min $CONTIG_LENGTH_MINIMUM" )
 fi
