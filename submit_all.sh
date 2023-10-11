@@ -15,7 +15,8 @@ Required arguments: -p/--project <arg> and either -f/--fastq_dir <arg> or -r/--r
 Optional arguments: -s/--scratch_dir <arg>, --err_out_dir <arg>, --skip_scratch, -b/--run_dir <arg>, \n\t\
     --sample_sheet <arg>, --skip_identify, --only_identify, --identify <arg>, \n\t\
     --R1_suffix <arg>, --R2_suffix <arg>, --skip_trimming, --rna, \n\t\
-    --contig_len_min <arg>, --contig_align_min <arg>, --add_genus, --slurm <arg> \n\
+    --contig_len_min <arg>, --kraken_db_types <arg>, --blast_db_types <arg>, \n\t\
+    --num_alignments <arg>, --contig_align_min <arg>, --add_genus, --slurm <arg> \n\
 Defaults: \n\t\
     If no fastq_dir specified, uses results_dir \n\t\
     If no results_dir specified, makes new directory in fastq_dir \n\t\
@@ -24,6 +25,9 @@ Defaults: \n\t\
     R1_suffix: _L001_R1_001.fastq.gz or _R1_001.fastq.gz or _R1.fastq.gz \n\t\
     R2_suffix: _L001_R2_001.fastq.gz or _R2_001.fastq.gz or _R2.fastq.gz \n\t\
     contig_len_min: 5000 \n\t\
+    kraken_db_types: microbial \n\t\
+    blast_db_types: nt \n\t\
+    num_alignments: 5 \n\t\
     contig_align_min: 0.9 \n\n\
 Run after demultiplexing and with fastq directory: \n\t\
     sh ${PIPELINE_DIR}/submit_all.sh --fastq_dir /oak/stanford/groups/cgawad/2020-01-01_Fastqs/ --project 2020-01-01_Project \n\n\
@@ -44,6 +48,9 @@ ONLY_IDENTIFY=0
 SKIP_TRIMMOMATIC=0
 RNA=0
 CONTIG_LENGTH_MINIMUM=5000
+KRAKEN_DB_TYPES="microbial"
+BLAST_DB_TYPES="nt"
+NUM_ALIGNMENTS=5
 CONTIG_ALIGN_MINIMUM=0.9
 ADD_GENUS=0
 STEP=0
@@ -101,11 +108,20 @@ while [ "$1" != "" ]; do
         --contig_len_min )      shift
                                 CONTIG_LENGTH_MINIMUM=$1
                                 ;;
-        --contig_align_min )    shift
-                                CONTIG_ALIGN_MIN=$1
-                                ;;
         --add_genus )           shift
                                 ADD_GENUS=1
+                                ;;
+        --kraken_db_types )     shift
+                                KRAKEN_DB_TYPES=$1
+                                ;;
+        --blast_db_types )      shift
+                                BLAST_DB_TYPES=$1
+                                ;;
+        --num_alignments )      shift
+                                NUM_ALIGNMENTS=$1
+                                ;;
+        --contig_align_min )    shift
+                                CONTIG_ALIGN_MIN=$1
                                 ;;
         --step1 )               STEP=1
                                 ;;
@@ -126,9 +142,7 @@ REFERENCE_DIR="/oak/stanford/groups/cgawad/Reference_Files/GATK_Resource_Bundle_
 TOOLS_DIR="/oak/stanford/groups/cgawad/Sequencing_Analysis_Tools"
 REF_FASTA="${REFERENCE_DIR}/Homo_sapiens_assembly38.fasta"
 SCRIPT_DIR="${PIPELINE_DIR}/scripts"
-KRAKEN_DB_TYPES="microbial-plasmid-viral"
 KRAKEN_DB_DIR_PREFIX="/oak/stanford/groups/cgawad/Reference_Files/Kraken2_Fatfree_Databases/kraken2-fatfree-"
-BLAST_DB_TYPES="nt-plasmid-viral"
 NCBI_DB_DIR_PREFIX="/oak/stanford/groups/cgawad/Reference_Files/NCBI_RefSeq_Databases/ncbi_database_"
 NCBI_ANNOTATIONS_DIR="/oak/stanford/groups/cgawad/Reference_Files/NCBI_Annotations"
 CONTIGS_PER_BLAST_JOB=320
@@ -211,6 +225,15 @@ fi
 if [ $CONTIG_LENGTH_MINIMUM -ne 5000 ]; then
     OPTIONS+=( "--contig_len_min $CONTIG_LENGTH_MINIMUM" )
 fi
+if [ "$KRAKEN_DB_TYPES" != "microbial" ]; then
+    OPTIONS+=( "--kraken_db_types $KRAKEN_DB_TYPES" )
+fi
+if [ "$BLAST_DB_TYPES" != "nt" ]; then
+    OPTIONS+=( "--blast_db_types $BLAST_DB_TYPES" )
+fi
+if [ $NUM_ALIGNMENTS -ne 250 ]; then
+    OPTIONS+=( "--num_alignments $NUM_ALIGNMENTS" )
+fi
 if [ "$CONTIG_ALIGN_MINIMUM" = "0.9" ]; then
     OPTIONS+=( "--contig_align_min $CONTIG_ALIGN_MINIMUM" )
 fi
@@ -253,6 +276,16 @@ if [ "$TEMP_PIPELINE_DIR" = "$PIPELINE_DIR" ]; then
         echo "Default: Contig length minimum: 5000" >> $PIPELINE_STATUS
     else
         echo "Option: Contig length minimum: $CONTIG_LENGTH_MINIMUM" >> $PIPELINE_STATUS
+    fi
+    if [ "$KRAKEN_DB_TYPES" = "microbial" ]; then
+        echo "Default: Kraken db types: microbial" >> $PIPELINE_STATUS
+    else
+        echo "Option: Kraken db types: $KRAKEN_DB_TYPES" >> $PIPELINE_STATUS
+    fi
+    if [ "$BLAST_DB_TYPES" = "nt" ]; then
+        echo "Default: Blast db types: nt" >> $PIPELINE_STATUS
+    else
+        echo "Option: Blast db types: $BLAST_DB_TYPES" >> $PIPELINE_STATUS
     fi
     if [ "$CONTIG_ALIGN_MINIMUM" = "0.9" ]; then
         echo "Default: Contig align minimum: 0.9" >> $PIPELINE_STATUS
@@ -425,10 +458,10 @@ if ([ $STEP -eq 0 ] && [ $ONLY_IDENTIFY -eq 1 ]) || [ $STEP -eq 2 ]; then
     TEMP_LONG_CONTIGS_STRING=$( IFS=$':'; echo "${TEMP_LONG_CONTIG_ARRAY[*]}" )
     echo -e "\nsbatch --parsable -e $STD_ERR_OUT_DIR/%A_%a_%x.err -o $STD_ERR_OUT_DIR/%A_%a_%x.out \
         --array=1-${TEMP_JOB_COUNT} ${SCRIPT_DIR}/2_blast_contigs.sh \
-        $SCRATCH_DIR $TOOLS_DIR $BLAST_DB_TYPES $NCBI_DB_DIR_PREFIX $IDENTIFY $TEMP_LONG_CONTIGS_STRING\n" >> $PIPELINE_STATUS
+        $SCRATCH_DIR $TOOLS_DIR $BLAST_DB_TYPES $NCBI_DB_DIR_PREFIX $IDENTIFY $NUM_ALIGNMENTS $TEMP_LONG_CONTIGS_STRING\n" >> $PIPELINE_STATUS
     DEPENDENCIES+=( $(sbatch --parsable -e $STD_ERR_OUT_DIR/%A_%a_%x.err -o $STD_ERR_OUT_DIR/%A_%a_%x.out \
         --array=1-${TEMP_JOB_COUNT} ${SCRIPT_DIR}/2_blast_contigs.sh \
-        $SCRATCH_DIR $TOOLS_DIR $BLAST_DB_TYPES $NCBI_DB_DIR_PREFIX $IDENTIFY $TEMP_LONG_CONTIGS_STRING) )
+        $SCRATCH_DIR $TOOLS_DIR $BLAST_DB_TYPES $NCBI_DB_DIR_PREFIX $IDENTIFY $NUM_ALIGNMENTS $TEMP_LONG_CONTIGS_STRING) )
     TEMP_ARRAY_START=$(($TEMP_ARRAY_START + $TEMP_ARRAY_INCREMENT))
     echo -e "$(date)\nNew start: $TEMP_ARRAY_START\nIncrement: $TEMP_ARRAY_INCREMENT" >> $PIPELINE_STATUS
 

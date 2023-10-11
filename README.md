@@ -30,7 +30,7 @@
         - If you do not specify a fastq directory, the program will assume the fastq.gz files are in the results directory you specified, and will end the program if no fastq.gz files are found
         - If you do not specify a results directory, the program will make a new folder with the current date in the name within the fastq directory 
     - Specify the project name for the final resulting VCF that will be made using *-p* or *--project*
-- Optional arguments: -s/--scratch_dir >arg<, --err_out_dir >arg<, --skip_scratch, -b/--run_dir >arg<, --sample_sheet >arg<, --skip_identify, --only_identify, --identify >arg<, --R1_suffix >arg<, --R2_suffix >arg<, --skip_trimming, --rna, --contig_len_min >arg<, --contig_align_min >arg<, --add_genus, --slurm >arg<
+- Optional arguments: -s/--scratch_dir >arg<, --err_out_dir >arg<, --skip_scratch, -b/--run_dir >arg<, --sample_sheet >arg<, --skip_identify, --only_identify, --identify >arg<, --R1_suffix >arg<, --R2_suffix >arg<, --skip_trimming, --rna, --contig_len_min >arg<, --kraken_db_types >arg<, --blast_db_types >arg<, --num_alignments >arg<, --contig_align_min >arg<, --add_genus, --slurm >arg<
     - You can specify a directory to perform all intermediate steps in with *-s* or *--scratch_dir*
     - You can specify a directory to output the standard error and out print statements of all jobs to using *--err_out_dir*
     - If you want to skip having the pipeline run intermediate steps in scratch, use *--skip_scratch*
@@ -42,6 +42,9 @@
     - If you don't want trimmomatic to run, add the *--skip_trimming* option
     - If you want to process RNA instead of DNA data, add the *--rna* option and the program will align the sequences using STAR instead of BWA
     - You can change the default minimum length for contigs that are kept from 5000 to a chosen number using *--contig_len_min*
+    - If you want to use different kraken2 databases from the default, specify which ones you want to use with *--kraken_db_types*
+    - If you want to use different BLAST databases from the default, specify which ones you want to use with *--blast_db_types*
+    - If you want to only have returned a maximum number of BLAST results, choose your maximum number using *--num_alignments*
     - You can change the default minimum contig alignment for BLAST results from 0.9 (90%) to a chosen number using *--contig_align_min*
     - Besides the already implemented job name and standard error and output print statements, you can specify additional slurm commands for the pipeline job following the use of the *--slurm* option. If you use this option, **make sure it is the last one you use**
         - A useful example would be setting a future time to run the job and asking for email notifications like so:
