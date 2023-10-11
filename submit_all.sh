@@ -143,14 +143,9 @@ if [ -z $FASTQ_DIR ]; then
 elif [ -z $RESULTS_DIR ]; then
     RESULTS_DIR="${FASTQ_DIR}/$(date '+%Y-%m-%d')_${PROJECT}_Results"
 fi
-if [ ! -z $SCRATCH_DIR ] && [ $SKIP_SCRATCH -eq 1 ]; then
-    echo "Variables not supplied correctly. Cannot skip scratch while being provided scratch_dir for use. Exiting with code 1"
-    exit 1
-fi
 if [ -z $SCRATCH_DIR ] && [ $SKIP_SCRATCH -eq 0 ]; then
     SCRATCH_DIR="/scratch/groups/cgawad/$(date '+%Y-%m-%d')_${PROJECT}_Scratch"
-fi
-if [ -z $SCRATCH_DIR ] && [ $SKIP_SCRATCH -eq 1 ]; then
+elif [ $SKIP_SCRATCH -eq 1 ]; then
     SCRATCH_DIR="$RESULTS_DIR"
 fi
 if [ -z $STD_ERR_OUT_DIR ]; then
@@ -187,9 +182,6 @@ if [ ! -z $RUN_DIR ] && [ ! -z $SAMPLE_SHEET ]; then
     fi
     OPTIONS+=( "--run_dir $RUN_DIR --sample_sheet $SAMPLE_SHEET" )
 fi
-if [ $STEP -eq 0 ] && [ -z $RUN_DIR ]; then
-    STEP=1
-fi
 if [ $SKIP_IDENTIFY -eq 1 ] && [ $ONLY_IDENTIFY -eq 1 ]; then
     echo "Variables not supplied correctly. Please specify either --skip_identify or --only_identify, not both. Exiting with code 1"
     exit 1
@@ -197,9 +189,6 @@ elif [ $SKIP_IDENTIFY -eq 1 ]; then
     OPTIONS+=( "--skip_identify" )
 elif [ $ONLY_IDENTIFY -eq 1 ]; then
     OPTIONS+=( "--only_identify" )
-    if [ $STEP -eq 0 ]; then
-        STEP=2
-    fi
 fi
 if [ ! -z $IDENTIFY ]; then
     OPTIONS+=( "--identify $IDENTIFY" )
@@ -286,7 +275,7 @@ if [ ! -z $SLURM_OPTIONS ]; then
 fi
 
 
-if [ $STEP -ne 0 ] && [ $ONLY_IDENTIFY -eq 0 ]; then
+if ([ $STEP -eq 0 ] && [ -z $RUN_DIR ]) || [ $STEP -eq 1 ] || [ $STEP -eq 2 ]; then
     if [ -z $R1_SUFFIX ] || [ -z $R2_SUFFIX ]; then
         R1_SUFFIX="_L001_R1_001.fastq.gz"
         R2_SUFFIX="_L001_R2_001.fastq.gz"
@@ -306,13 +295,10 @@ if [ $STEP -ne 0 ] && [ $ONLY_IDENTIFY -eq 0 ]; then
         echo "END: $(date)" >> $PIPELINE_STATUS
         exit 1
     fi
-    if [ $STEP -eq 1 ]; then
-        echo -e "Number of samples: ${#SAMPLE_ARRAY[@]}\nSamples: ${SAMPLE_ARRAY[@]}" >> $PIPELINE_STATUS
-    fi
 fi
 
 
-if [ $STEP -eq 0 ]; then
+if [ $STEP -eq 0 ] && [ ! -z $RUN_DIR ] && [ $ONLY_IDENTIFY -eq 0 ]; then
     echo "### Demultiplexing ### - START: $(date)" >> $PIPELINE_STATUS
     echo -e "Run dir: $RUN_DIR\nSample sheet: $SAMPLE_SHEET" >> $PIPELINE_STATUS
     echo -e "\nsbatch --parsable -e ${STD_ERR_OUT_DIR}/%A_%x.err -o ${STD_ERR_OUT_DIR}/%A_%x.out \
@@ -327,8 +313,9 @@ if [ $STEP -eq 0 ]; then
     sbatch --dependency=afterok:${DEPENDENCIES[0]} -J $PROJECT \
         -e ${STD_ERR_OUT_DIR}/%A_submit_all_%x.err -o ${STD_ERR_OUT_DIR}/%A_submit_all_%x.out \
         ${PIPELINE_DIR}/submit_all.sh --step1 ${OPTIONS[@]}
-elif [ $STEP -eq 1 ]; then
+elif ([ $STEP -eq 0 ] && [ -z $RUN_DIR ] && [ $ONLY_IDENTIFY -eq 0 ]) || ([ $STEP -eq 1 ] && [ $ONLY_IDENTIFY -eq 0 ]); then
     if [ $TEMP_ARRAY_START -eq 0 ]; then
+        echo -e "Number of samples: ${#SAMPLE_ARRAY[@]}\nSamples: ${SAMPLE_ARRAY[@]}" >> $PIPELINE_STATUS
         echo "### De novo assembling contigs and detecting contamination ### - START: $(date)" >> $PIPELINE_STATUS
         JOB_COUNT=${#SAMPLE_ARRAY[@]}
         echo "Process sample jobs to run: $JOB_COUNT" >> $PIPELINE_STATUS
@@ -398,7 +385,7 @@ elif [ $STEP -eq 2 ] && [ $ONLY_IDENTIFY -eq 0 ]; then
 fi
 
 
-if [ $STEP -eq 2 ] || [ $STEP -eq 3 ]; then
+if ([ $STEP -eq 0 ] && [ $ONLY_IDENTIFY -eq 1 ]) || [ $STEP -eq 2 ]; then
     SAMPLE_ARRAY=( $(ls *_contigs.fasta | sed "s/_contigs.fasta//") )
     if [ ${#SAMPLE_ARRAY[@]} -eq 0 ]; then
         echo "No contig fasta files found in the results directory. Exiting with code 1" >> $PIPELINE_STATUS
@@ -408,7 +395,7 @@ if [ $STEP -eq 2 ] || [ $STEP -eq 3 ]; then
 fi
 
 
-if [ $STEP -eq 2 ]; then
+if ([ $STEP -eq 0 ] && [ $ONLY_IDENTIFY -eq 1 ]) || [ $STEP -eq 2 ]; then
     if [ $TEMP_ARRAY_START -eq 0 ]; then
         ml python/3.6.1 biology py-biopython/1.79_py39
 
