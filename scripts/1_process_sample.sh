@@ -86,17 +86,7 @@ gatk --java-options "-XX:+UseParallelGC -XX:ParallelGCThreads=4 -Xmx64g" Collect
     -R $REF_FASTA -I ${SAMPLE}_human_aligned.bam -O ${SAMPLE}_human_alignment_metrics.tsv
 echo "### Collecting human alignment metrics ### - END: $(date)"
 
-# echo "### Getting meta data for human matches from BAM ### - START: $(date)"
-# samtools view  ${SAMPLE}_human_aligned.bam $(samtools view -H ${SAMPLE}_human_aligned.bam | grep -P "@SQ.+SN:chr" | \
-#     cut -f 2 | sed 's/^SN://')| cut -f 1 | sort -u > ${SAMPLE}_any_mapping_to_human_query_names.txt
-# # samtools view ${SAMPLE}_human_aligned.bam $(samtools view -H ${SAMPLE}_human_aligned.bam | grep -P "@SQ.+SN:chr..?\t" | \
-# #     cut -f 2 | sed 's/^SN://') | awk '$7=="="' | cut -f 1 | sort -u > ${SAMPLE}_both_mapping_to_human_query_names.txt
-# echo "### Getting meta data for human matches from BAM ### - END: $(date)"
-
 echo "### Filtering BAM for reads that don't match human ### - START: $(date)"
-# gatk --java-options "-XX:+UseParallelGC -XX:ParallelGCThreads=4 -Xmx64g" FilterSamReads \
-#     --FILTER excludeReadList -I ${SAMPLE}_human_aligned.bam -O ${SAMPLE}_no_human.bam \
-#     -RLF ${SAMPLE}_any_mapping_to_human_query_names.txt --VALIDATION_STRINGENCY SILENT
 samtools view -b -f 4 ${SAMPLE}_human_aligned.bam > ${SAMPLE}_no_human.bam
 samtools index ${SAMPLE}_no_human.bam
 gatk --java-options "-XX:+UseParallelGC -XX:ParallelGCThreads=4 -Xmx64g" SamToFastq -I ${SAMPLE}_no_human.bam \
@@ -128,12 +118,8 @@ UNALIGNED_READS=$(samtools view ${SAMPLE}_contig_aligned.bam | cut -f 3 | grep -
 echo -e "sample\thuman_aligned\tcontig_aligned\tunaligned" > ${SAMPLE}_summed_read_targets.tsv
 echo -e "${SAMPLE}\t${HUMAN_ALIGNED_READS}\t${CONTIG_ALIGNED_READS}\t${UNALIGNED_READS}" >> ${SAMPLE}_summed_read_targets.tsv
 
-# echo -e "sample\ttarget" > ${SAMPLE}_contig_read_targets.tsv
-# printf "%s\t%s\t%s\n" "read_count" "sample" "target" > ${SAMPLE}_contig_read_targets.tsv
 echo -e "read_count\tsample\ttarget" > ${SAMPLE}_contig_read_targets.tsv
 samtools view ${SAMPLE}_contig_aligned.bam | cut -f 3 | grep "NODE" > ${SAMPLE}_temp_contig_read_targets.txt
-# printf "${SAMPLE}\n%0.s" $(seq $(cat ${SAMPLE}_temp_contig_read_targets.txt | wc -l)) | \
-#     paste - ${SAMPLE}_temp_contig_read_targets.txt | uniq -c | tr -s ' ' '\t' >> ${SAMPLE}_contig_read_targets.tsv
 printf "${SAMPLE}\n%0.s" $(seq $(cat ${SAMPLE}_temp_contig_read_targets.txt | wc -l)) | \
     paste - ${SAMPLE}_temp_contig_read_targets.txt | uniq -c | sed 's/^[[:space:]]*//' | tr -s ' ' '\t'  >> ${SAMPLE}_contig_read_targets.tsv
 echo "### Exporting summarized and contig read targets from BAM ### - END: $(date)"
