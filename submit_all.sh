@@ -557,9 +557,9 @@ elif [ $STEP -eq 3 ]; then
     echo "### Processing contamination, Kraken results, BLAST results, and making final figures ### - END: $(date)" >> $PIPELINE_STATUS
     
     # echo "### Removing intermediate files ### - START: $(date)"
-    # rm ${IDENTIFY}_long_contigs_
-    # rm ${IDENTIFY}.*.kraken_jtree.json 
-    # rm ${IDENTIFY}_blast_results_*.json
+    rm ${IDENTIFY}_long_contigs_
+    rm ${IDENTIFY}.*.kraken_jtree.json 
+    rm ${IDENTIFY}_blast_results_*.json
     # echo "### Removing intermediate files ### - END: $(date)"
     
     if [ "$SCRATCH_DIR" != "$RESULTS_DIR" ]; then
