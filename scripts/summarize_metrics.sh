@@ -7,7 +7,7 @@ SAMPLE_SHEET=$5
 
 echo "### Summarizing metrics ### - START: $(date)" >> $PIPELINE_STATUS
 SAMPLE_READ_COUNTS="${PROJECT}.sample_read_counts.tsv"
-READ_COUNT_FILENAMES=( $(ls *.read_counts.tsv) )
+READ_COUNT_FILENAMES=( $(ls *_read_counts.tsv) )
 head -n 1 ${READ_COUNT_FILENAMES[0]} > $SAMPLE_READ_COUNTS
 for i in ${READ_COUNT_FILENAMES[@]}; do tail -n +2 $i; done >> $SAMPLE_READ_COUNTS
 if [ ! -z $RUN_DIR ]; then

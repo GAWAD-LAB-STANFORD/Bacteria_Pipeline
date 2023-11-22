@@ -52,8 +52,8 @@ fi
 echo "### Counting fastq read counts ### - START: $(date)"
 READ_COUNT=$(echo $(zcat $R1_FASTQ | wc -l ) \
     $(zcat $R2_FASTQ | wc -l) | awk '{ print ($1 + $2) / 4 }' )
-echo -e "sample\tread_count" > ${SAMPLE}.read_counts.tsv
-echo -e "$SAMPLE\t$READ_COUNT" >> ${SAMPLE}.read_counts.tsv
+echo -e "sample\tread_count" > ${SAMPLE}_read_counts.tsv
+echo -e "$SAMPLE\t$READ_COUNT" >> ${SAMPLE}_read_counts.tsv
 echo "### Counting fastq read counts ### - END: $(date)"
 
 if [ $RNA -eq 1 ]; then
