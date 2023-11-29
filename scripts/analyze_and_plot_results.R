@@ -39,16 +39,17 @@ option_list = list(
   make_option(c("--add_genus"), action = "store_true", default = FALSE,
               help="optional [default = %default]")
 ); 
-
 opt <- parse_args(OptionParser(option_list=option_list))
-# opt <- list(project = "2023_08_21_JGI_scEnvBac_WGS_AVITI", identify = "2023_08_21_JGI_scEnvBac_WGS_AVITI", 
-#             sample_read_count_filename = "2023_08_21_JGI_scEnvBac_WGS_AVITI.sample_read_counts.tsv",
-#             summed_read_targets_filename = "2023_08_21_JGI_scEnvBac_WGS_AVITI.summed_read_targets.tsv",
-#             contig_read_targets_filename = "2023_08_21_JGI_scEnvBac_WGS_AVITI.contig_read_targets.tsv",
-#             contig_data_filename = "2023_08_21_JGI_scEnvBac_WGS_AVITI.contig_data.tsv",
-#             kraken_db_types = "microbial-plasmid-viral", kraken_jtree_suffix = ".kraken_jtree.json",
-#             blast_db_types = "nt-plasmid-viral", blast_results_suffix = ".blast_results.tsv",
-#             ncbi_annotations_dir = "0", contig_alignment_fraction_min = 0.9)
+# project <- "viral_wgs_BacPipe"
+# opt <- list(project = project, identify = project, 
+#             sample_read_count_filename = sprintf("%s.sample_read_counts.tsv", project),
+#             summed_read_targets_filename = sprintf("%s.summed_read_targets.tsv", project),
+#             contig_read_targets_filename = sprintf("%s.contig_read_targets.tsv", project),
+#             contig_data_filename = sprintf("%s.contig_data.tsv", project),
+#             kraken_db_types = "viral-microbial", kraken_jtree_suffix = ".kraken_jtree.json",
+#             blast_db_types = "viral-nt", blast_results_suffix = ".blast_results.tsv",
+#             ncbi_annotations_dir = "0", contig_alignment_fraction_min = 0.9,
+#             add_genus = FALSE)
 
 if (is.null(opt$project) || is.null(opt$identify) || is.null(opt$sample_read_count_filename) || 
     is.null(opt$summed_read_targets_filename) || is.null(opt$contig_read_targets_filename) || 
@@ -83,23 +84,23 @@ if (opt$add_genus) {
 
 
 # Common themes and functions ------------------------------------------------------
-ggplot_theme <- theme(axis.line.y = element_line(color = "black"), axis.text.x = element_text(angle = 45, hjust = 1, size=10, lineheight=0.2, color="black"),
-                      panel.grid.major = element_line(color = "black"), legend.text=element_text(size=15), 
-                      panel.background = element_rect(fill="white"), panel.grid.major.x = element_blank() , 
-                      panel.grid.major.y = element_line(color="black" ), plot.title = element_text(size=20))
-ggplot_theme_small_legend <- theme(axis.line.y = element_line(size=.1,color = "black"), axis.text.x = element_text(angle = 45, hjust = 1, size=10, lineheight=0.2, color="black"),
+ggplot_theme <- theme(axis.line.y = element_line(color = "black"), axis.text.x = element_text(angle = 45, hjust = 1, size = 10, lineheight = 0.2, color = "black"),
+                      panel.grid.major = element_line(color = "black"), legend.text = element_text(size = 15), 
+                      panel.background = element_rect(fill = "white"), panel.grid.major.x = element_blank() , 
+                      panel.grid.major.y = element_line(color = "black" ), plot.title = element_text(size = 20))
+ggplot_theme_small_legend <- theme(axis.line.y = element_line(color = "black"), axis.text.x = element_text(angle = 45, hjust = 1, size = 10, lineheight = 0.2, color = "black"),
                                    panel.grid.major = element_line(color = "black"), legend.title = element_text(size = 5), legend.text = element_text(size = 5), 
-                                   panel.background = element_rect(fill="white"), panel.grid.major.x = element_blank() , 
-                                   panel.grid.major.y = element_line(color="black" ), plot.title = element_text(size=20))
-ggplot_theme_no_legend <- theme(axis.line.y = element_line(size=.1,color = "black"), axis.text.x = element_text(angle = 45, hjust = 1, size=10, lineheight=0.2, color="black"),
+                                   panel.background = element_rect(fill = "white"), panel.grid.major.x = element_blank() , 
+                                   panel.grid.major.y = element_line(color = "black" ), plot.title = element_text(size = 20))
+ggplot_theme_no_legend <- theme(axis.line.y = element_line(color = "black"), axis.text.x = element_text(angle = 45, hjust = 1, size = 10, lineheight = 0.2, color = "black"),
                                 panel.grid.major = element_line(color = "black"), legend.position = "none",
-                                panel.background = element_rect(fill="white"), panel.grid.major.x = element_blank() , 
-                                panel.grid.major.y = element_line(color="black" ), plot.title = element_text(size=20))
-ggtree_theme <- theme(axis.line.y = element_blank(), axis.text.x = element_text(angle = 45, hjust = 1, size=10, lineheight=0.2, color="black"),
-                      panel.grid.major = element_line(color = "black"), legend.text=element_text(size=15), 
-                      panel.background = element_rect(fill="white"), panel.grid.major.x = element_blank() , 
-                      panel.grid.major.y = element_blank(), plot.title = element_text(size=20))
-grid_table_theme <- gridExtra::ttheme_default(core = list(fg_params=list(cex = 0.9)), colhead = list(fg_params=list(cex = 1.0)))
+                                panel.background = element_rect(fill = "white"), panel.grid.major.x = element_blank() , 
+                                panel.grid.major.y = element_line(color = "black" ), plot.title = element_text(size=20))
+ggtree_theme <- theme(axis.line.y = element_blank(), axis.text.x = element_text(angle = 45, hjust = 1, size = 10, lineheight = 0.2, color = "black"),
+                      panel.grid.major = element_line(color = "black"), legend.text = element_text(size = 15), 
+                      panel.background = element_rect(fill = "white"), panel.grid.major.x = element_blank() , 
+                      panel.grid.major.y = element_blank(), plot.title = element_text(size = 20))
+grid_table_theme <- gridExtra::ttheme_default(core = list(fg_params = list(cex = 0.9)), colhead = list(fg_params = list(cex = 1.0)))
 
 parse_long_sample_name <- function(df, filename = NULL) {
   if (str_count(df$sample, "_")[1] == 6) {
@@ -461,6 +462,9 @@ for (i in 1:length(blast_db_types)) {
   filename <- sprintf("%s.%s%s", opt$identify, blast_db_types[i], opt$blast_results_suffix)
   if (file.exists(filename)) {
     df <- read_tsv(filename)
+    if (taxonomic_variable_string_list[i] == "Virus") {
+      df <- mutate(df, virus = ifelse(is.na(virus), source, virus))
+    }
     all_alignments_df <- preprocess_blast_results(df, contig_data_df)
     df <- filter(all_alignments_df, tophit_aln_query_fraction >= opt$contig_alignment_fraction_min)
     if (nrow(df) > 0) {
@@ -565,3 +569,4 @@ for (i in 1:length(summarized_df_list)) {
     }
   }
 }
+
