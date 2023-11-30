@@ -434,6 +434,8 @@ if ([ $STEP -eq 0 ] && [ $ONLY_IDENTIFY -eq 1 ]) || [ $STEP -eq 2 ]; then
 
 
         echo "### Organzing contigs ### - START: $(date)" >> $PIPELINE_STATUS
+        echo -e "\npython3 ${SCRIPT_DIR}/organize_contigs.py \
+            _contigs.fasta $CONTIG_LENGTH_MINIMUM $CONTIGS_PER_BLAST_JOB ${IDENTIFY}_long_contigs_ $PIPELINE_STATUS"
         python3 ${SCRIPT_DIR}/organize_contigs.py \
             "_contigs.fasta" $CONTIG_LENGTH_MINIMUM $CONTIGS_PER_BLAST_JOB "${IDENTIFY}_long_contigs_" $PIPELINE_STATUS
         if [ $(ls ${IDENTIFY}_long_contigs_* | wc -l) -eq 0 ]; then
