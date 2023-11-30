@@ -437,14 +437,23 @@ scaled_taxonomic_proportion_of_contig_length_plot <- function(sample_df, taxonom
 export_with_ncbi_annotations <- function(summed_df, ncbi_annotation_string, taxonomic_variable_string, blast_db_string) {
   ncbi_annotation_string <- tolower(ncbi_annotation_string)
   taxonomic_variable_string <- tolower(taxonomic_variable_string)
-  if (opt$ncbi_annotations_dir != "0") {
-    annotation_df <- read_tsv(sprintf("%s/%s_annotations.tsv", opt$ncbi_annotations_dir, ncbi_annotation_string))
-    summed_df <- plyr::join(summed_df, annotation_df, by = c(taxonomic_variable_string), type = "left", match = "first")
-  }
   if (ncbi_annotation_string == "bacteria") {
     write_tsv(summed_df, sprintf("%s.summarized_%s_%s.tsv", opt$identify, blast_db_string, taxonomic_variable_string))
   } else {
     write_tsv(summed_df, sprintf("%s.summarized_%s.tsv", opt$identify, blast_db_string))
+  }
+  if (opt$ncbi_annotations_dir != "0") {
+  tryCatch({
+      annotation_df <- read_tsv(sprintf("%s/%s_annotations.tsv", opt$ncbi_annotations_dir, ncbi_annotation_string))
+      summed_df <- plyr::join(summed_df, annotation_df, by = c(taxonomic_variable_string), type = "left", match = "first")
+      if (ncbi_annotation_string == "bacteria") {
+        write_tsv(summed_df, sprintf("%s.summed_annotated_%s_%s.tsv", opt$identify, blast_db_string, taxonomic_variable_string))
+      } else {
+        write_tsv(summed_df, sprintf("%s.summed_annotated_%s.tsv", opt$identify, blast_db_string))
+      }
+    }, error = function(e) {
+      cat(sprintf("An error occured trying to add NCBI annotations\n"))
+    })
   }
   cat(sprintf("Summarized and annotated %s BLAST results for all samples\n", blast_db_string))
 }
