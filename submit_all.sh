@@ -14,7 +14,7 @@ Purpose: \n\t\
 Required arguments: -p/--project <arg> and either -f/--fastq_dir <arg> or -r/--results_dir <arg> \n\
 Optional arguments: -s/--scratch_dir <arg>, --err_out_dir <arg>, --skip_scratch, -b/--run_dir <arg>, \n\t\
     --sample_sheet <arg>, --skip_identify, --only_identify, --identify <arg>, \n\t\
-    --R1_suffix <arg>, --R2_suffix <arg>, --skip_trimming, --rna, \n\t\
+    --R1_suffix <arg>, --R2_suffix <arg>, --skip_trimming, --rna, --filter_rhesus, \n\t\
     --contig_len_min <arg>, --kraken_db_types <arg>, --blast_db_types <arg>, \n\t\
     --num_alignments <arg>, --contig_align_min <arg>, --add_genus, --slurm <arg> \n\
 Defaults: \n\t\
@@ -47,6 +47,7 @@ SKIP_IDENTIFY=0
 ONLY_IDENTIFY=0
 SKIP_TRIMMOMATIC=0
 RNA=0
+FILTER_RHESUS=1
 CONTIG_LENGTH_MINIMUM=5000
 KRAKEN_DB_TYPES="microbial"
 BLAST_DB_TYPES="nt"
@@ -105,6 +106,8 @@ while [ "$1" != "" ]; do
                                 ;;
         --rna )                 RNA=1
                                 ;;
+        --filter_rhesus )       FILTER_RHESUS=1
+                                ;;
         --contig_len_min )      shift
                                 CONTIG_LENGTH_MINIMUM=$1
                                 ;;
@@ -141,6 +144,7 @@ TEMP_ARRAY_INCREMENT=1000
 REFERENCE_DIR="/oak/stanford/groups/cgawad/Reference_Files/GATK_Resource_Bundle_hg38"
 TOOLS_DIR="/oak/stanford/groups/cgawad/Sequencing_Analysis_Tools"
 REF_FASTA="${REFERENCE_DIR}/Homo_sapiens_assembly38.fasta"
+RHESUS_FASTA="/oak/stanford/groups/cgawad/Reference_Files/Macaca_mulattta_Rhesus_monkey_hg38/Macaca_mulatta_Rhesus_monkey_hg38.fasta"
 SCRIPT_DIR="${PIPELINE_DIR}/scripts"
 KRAKEN_DB_DIR_PREFIX="/oak/stanford/groups/cgawad/Reference_Files/Kraken2_Fatfree_Databases/kraken2-fatfree-"
 NCBI_DB_DIR_PREFIX="/oak/stanford/groups/cgawad/Reference_Files/NCBI_RefSeq_Databases/ncbi_database_"
@@ -222,6 +226,14 @@ fi
 if [ $RNA -eq 1 ]; then
     OPTIONS+=( "--rna" )
 fi
+if [ $FILTER_RHESUS -eq 1 ]; then
+    OPTIONS+=( "--filter_rhesus" )
+    REF_FASTA_STRING="${REF_FASTA}:${RHESUS_FASTA}"
+    REF_NAME_STRING="human:rhesus"
+else
+    REF_FASTA_STRING="${REF_FASTA}"
+    REF_NAME_STRING="human"
+fi
 if [ $CONTIG_LENGTH_MINIMUM -ne 5000 ]; then
     OPTIONS+=( "--contig_len_min $CONTIG_LENGTH_MINIMUM" )
 fi
@@ -271,6 +283,9 @@ if [ "$TEMP_PIPELINE_DIR" = "$PIPELINE_DIR" ]; then
     fi
     if [ $RNA -eq 1 ]; then
         echo "Option: Expecting RNA input and will align using STAR instead of BWA" >> $PIPELINE_STATUS
+    fi
+    if [ $FILTER_RHESUS -eq 1 ]; then
+        echo "Option: Filter rhesus - will remove reads that align to macaca mulatta rhesus monkey" >> $PIPELINE_STATUS
     fi
     if [ $CONTIG_LENGTH_MINIMUM -eq 5000 ]; then
         echo "Default: Contig length minimum: 5000" >> $PIPELINE_STATUS
@@ -361,11 +376,11 @@ elif ([ $STEP -eq 0 ] && [ -z $RUN_DIR ] && [ $ONLY_IDENTIFY -eq 0 ]) || ([ $STE
     TEMP_SAMPLES_STRING=$( IFS=$':'; echo "${TEMP_SAMPLE_ARRAY[*]}" )
     echo -e "\nsbatch --parsable -e $STD_ERR_OUT_DIR/%A_%a_%x.err -o $STD_ERR_OUT_DIR/%A_%a_%x.out \
         --array=1-${TEMP_JOB_COUNT} ${SCRIPT_DIR}/1_process_sample.sh \
-        $FASTQ_DIR $SCRATCH_DIR $R1_SUFFIX $R2_SUFFIX $SKIP_TRIMMOMATIC $RNA $REF_FASTA \
+        $FASTQ_DIR $SCRATCH_DIR $R1_SUFFIX $R2_SUFFIX $SKIP_TRIMMOMATIC $RNA $REF_FASTA_STRING $REF_NAME_STRING \
         $KRAKEN_DB_TYPES $KRAKEN_DB_DIR_PREFIX $TOOLS_DIR $TEMP_SAMPLES_STRING\n" >> $PIPELINE_STATUS
     DEPENDENCIES+=( $(sbatch --parsable -e $STD_ERR_OUT_DIR/%A_%a_%x.err -o $STD_ERR_OUT_DIR/%A_%a_%x.out \
         --array=1-${TEMP_JOB_COUNT} ${SCRIPT_DIR}/1_process_sample.sh \
-        $FASTQ_DIR $SCRATCH_DIR $R1_SUFFIX $R2_SUFFIX $SKIP_TRIMMOMATIC $RNA $REF_FASTA \
+        $FASTQ_DIR $SCRATCH_DIR $R1_SUFFIX $R2_SUFFIX $SKIP_TRIMMOMATIC $RNA $REF_FASTA_STRING $REF_NAME_STRING \
         $KRAKEN_DB_TYPES $KRAKEN_DB_DIR_PREFIX $TOOLS_DIR $TEMP_SAMPLES_STRING) )
     TEMP_ARRAY_START=$(($TEMP_ARRAY_START + $TEMP_ARRAY_INCREMENT))
     echo -e "$(date)\nIncrement: $TEMP_ARRAY_INCREMENT\nNew start: $TEMP_ARRAY_START" >> $PIPELINE_STATUS

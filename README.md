@@ -30,7 +30,7 @@
         - If you do not specify a fastq directory, the program will assume the fastq.gz files are in the results directory you specified, and will end the program if no fastq.gz files are found
         - If you do not specify a results directory, the program will make a new folder with the current date in the name within the fastq directory 
     - Specify the project name for the final resulting VCF that will be made using *-p* or *--project*
-- Optional arguments: -s/--scratch_dir >arg<, --err_out_dir >arg<, --skip_scratch, -b/--run_dir >arg<, --sample_sheet >arg<, --skip_identify, --only_identify, --identify >arg<, --R1_suffix >arg<, --R2_suffix >arg<, --skip_trimming, --rna, --contig_len_min >arg<, --kraken_db_types >arg<, --blast_db_types >arg<, --num_alignments >arg<, --contig_align_min >arg<, --add_genus, --slurm >arg<
+- Optional arguments: -s/--scratch_dir >arg<, --err_out_dir >arg<, --skip_scratch, -b/--run_dir >arg<, --sample_sheet >arg<, --skip_identify, --only_identify, --identify >arg<, --R1_suffix >arg<, --R2_suffix >arg<, --skip_trimming, --rna, --filter_rhesus, --contig_len_min >arg<, --kraken_db_types >arg<, --blast_db_types >arg<, --num_alignments >arg<, --contig_align_min >arg<, --add_genus, --slurm >arg<
     - You can specify a directory to perform all intermediate steps in with *-s* or *--scratch_dir*
     - You can specify a directory to output the standard error and out print statements of all jobs to using *--err_out_dir*
     - If you want to skip having the pipeline run intermediate steps in scratch, use *--skip_scratch*
@@ -41,6 +41,7 @@
     - If your read 1 and read 2 fastq.gz files differentiate themselves by some pattern other than _L001_R1_001.fastq.gz and _L001_R2_001.fastq.gz or _R1_001.fastq.gz and _R2_001.fastq.gz or _R1.fastq.gz and R2.fastq.gz, use *--R1_suffix* and *--R2_suffix* options to let the pipeline know
     - If you don't want trimmomatic to run, add the *--skip_trimming* option
     - If you want to process RNA instead of DNA data, add the *--rna* option and the program will align the sequences using STAR instead of BWA
+    - If you want to also filter reads from Rhesus monkey, add the *--filter_rhesus* option
     - You can change the default minimum length for contigs that are kept from 5000 to a chosen number using *--contig_len_min*
     - If you want to use different kraken2 databases from the default, specify which ones you want to use with *--kraken_db_types*
     - If you want to use different BLAST databases from the default, specify which ones you want to use with *--blast_db_types*

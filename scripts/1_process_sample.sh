@@ -13,11 +13,12 @@ R1_SUFFIX=$3
 R2_SUFFIX=$4
 SKIP_TRIMMOMATIC=$5
 RNA=$6
-REF_FASTA=$7
-KRAKEN_DB_TYPES_ARRAY=( $(echo $8 | sed 's/-/ /g') )
-KRAKEN_DB_DIR_PREFIX=$9
-TOOLS_DIR=${10}
-SAMPLE_ARRAY=( $(echo ${11} | sed 's/:/ /g') )
+REF_FASTA_ARRAY=( $(echo $7 | sed 's/:/ /g') )
+REF_NAME_ARRAY=( $(echo $8 | sed 's/:/ /g') )
+KRAKEN_DB_TYPES_ARRAY=( $(echo $9 | sed 's/-/ /g') )
+KRAKEN_DB_DIR_PREFIX=${10}
+TOOLS_DIR=${11}
+SAMPLE_ARRAY=( $(echo ${12} | sed 's/:/ /g') )
 SAMPLE=${SAMPLE_ARRAY[$(( $SLURM_ARRAY_TASK_ID - 1 ))]}
 
 echo -e "START: $(date)\nBacteria Pipeline\nFastq dir: $FASTQ_DIR\nResults dir: $SCRATCH_DIR\nSample: $SAMPLE"
@@ -56,53 +57,91 @@ echo -e "sample\tread_count" > ${SAMPLE}_read_counts.tsv
 echo -e "$SAMPLE\t$READ_COUNT" >> ${SAMPLE}_read_counts.tsv
 echo "### Counting fastq read counts ### - END: $(date)"
 
-if [ $RNA -eq 1 ]; then
-    echo "### Aligning RNA fastqs to human ### - START: $(date)"
-    UNZIPPED_R1_FASTQ=$(basename $R1_FASTQ | sed "s/.gz//")
-    UNZIPPED_R2_FASTQ=$(basename $R2_FASTQ | sed "s/.gz//")
-    zcat $R1_FASTQ > $UNZIPPED_R1_FASTQ
-    zcat $R2_FASTQ > $UNZIPPED_R2_FASTQ
-    STAR --genomeDir \
-        /oak/stanford/groups/cgawad/Reference_Files/GATK_Resource_Bundle_hg38/hg38_STAR_index/ \
-        --runThreadN 4 --readFilesIn $UNZIPPED_R1_FASTQ $UNZIPPED_R2_FASTQ \
-        --outFileNamePrefix $SAMPLE --outSAMtype BAM SortedByCoordinate \
-        --outSAMunmapped Within --outSAMattributes Standard
-    rm $UNZIPPED_R1_FASTQ $UNZIPPED_R2_FASTQ
-    mv ${SAMPLE}Aligned.sortedByCoord.out.bam ${SAMPLE}_human_aligned.bam
-    echo "### Aligning RNA fastqs to human ### - END: $(date)"
-else
-    echo "### Aligning DNA fastqs to human ### - START: $(date)"
-    bwa aln -t 4 $REF_FASTA $R1_FASTQ > ${SAMPLE}_R1.sai
-    bwa aln -t 4 $REF_FASTA $R2_FASTQ > ${SAMPLE}_R2.sai
-    bwa sampe -a 700 $REF_FASTA ${SAMPLE}_R1.sai ${SAMPLE}_R2.sai $R1_FASTQ $R2_FASTQ | \
-        samtools view -b - | samtools sort -o ${SAMPLE}_human_aligned.bam -
-    samtools index ${SAMPLE}_human_aligned.bam
-    rm ${SAMPLE}_R1.sai ${SAMPLE}_R2.sai
-    echo "### Aligning DNA fastqs to human ### - END: $(date)"
-fi
+PREV_R1_FASTQ=$R1_FASTQ
+PREV_R2_FASTQ=$R2_FASTQ
+for ((REF_INDEX = 0 ; REF_INDEX < ${#REF_FASTA_ARRAY[@]} ; REF_INDEX++)); do
+    REF_FASTA=${REF_FASTA_ARRAY[$REF_INDEX]}
+    REF_NAME=${REF_NAME_ARRAY[$REF_INDEX]}
 
-echo "### Collecting human alignment metrics ### - START: $(date)"
-gatk --java-options "-XX:+UseParallelGC -XX:ParallelGCThreads=4 -Xmx64g" CollectAlignmentSummaryMetrics \
-    -R $REF_FASTA -I ${SAMPLE}_human_aligned.bam -O ${SAMPLE}_human_alignment_metrics.tsv
-echo "### Collecting human alignment metrics ### - END: $(date)"
+    if [ $RNA -eq 1 ]; then
+        echo "### Aligning RNA fastqs to human ### - START: $(date)"
+        UNZIPPED_R1_FASTQ=$(basename $PREV_R1_FASTQ | sed "s/.gz//")
+        UNZIPPED_R2_FASTQ=$(basename $PREV_R2_FASTQ | sed "s/.gz//")
+        zcat $PREV_R1_FASTQ > $UNZIPPED_R1_FASTQ
+        zcat $PREV_R2_FASTQ > $UNZIPPED_R2_FASTQ
+        STAR --genomeDir \
+            /oak/stanford/groups/cgawad/Reference_Files/GATK_Resource_Bundle_hg38/hg38_STAR_index/ \
+            --runThreadN 4 --readFilesIn $UNZIPPED_R1_FASTQ $UNZIPPED_R2_FASTQ \
+            --outFileNamePrefix $SAMPLE --outSAMtype BAM SortedByCoordinate \
+            --outSAMunmapped Within --outSAMattributes Standard
+        rm $UNZIPPED_R1_FASTQ $UNZIPPED_R2_FASTQ
+        mv ${SAMPLE}Aligned.sortedByCoord.out.bam ${SAMPLE}_${REF_NAME}_aligned.bam
+        echo "### Aligning RNA fastqs to human ### - END: $(date)"
+    else
+        echo "### Aligning DNA fastqs to human ### - START: $(date)"
+        bwa aln -t 4 $REF_FASTA $PREV_R1_FASTQ > ${SAMPLE}_R1.sai
+        bwa aln -t 4 $REF_FASTA $PREV_R2_FASTQ > ${SAMPLE}_R2.sai
+        bwa sampe -a 700 $REF_FASTA ${SAMPLE}_R1.sai ${SAMPLE}_R2.sai $PREV_R1_FASTQ $PREV_R2_FASTQ | \
+            samtools view -b - | samtools sort -o ${SAMPLE}_${REF_NAME}_aligned.bam -
+        samtools index ${SAMPLE}_${REF_NAME}_aligned.bam
+        rm ${SAMPLE}_R1.sai ${SAMPLE}_R2.sai
+        echo "### Aligning DNA fastqs to human ### - END: $(date)"
+    fi
 
-echo "### Filtering BAM for reads that don't match human ### - START: $(date)"
-samtools view -b -f 4 ${SAMPLE}_human_aligned.bam > ${SAMPLE}_no_human.bam
-samtools index ${SAMPLE}_no_human.bam
-gatk --java-options "-XX:+UseParallelGC -XX:ParallelGCThreads=4 -Xmx64g" SamToFastq -I ${SAMPLE}_no_human.bam \
-    -F ${SAMPLE}_no_human${R1_SUFFIX} -F2 ${SAMPLE}_no_human${R2_SUFFIX} --VALIDATION_STRINGENCY SILENT
-echo "### Filtering BAM for reads that don't match human ### - END: $(date)"
+    echo "### Collecting $REF_NAME alignment metrics ### - START: $(date)"
+    gatk --java-options "-XX:+UseParallelGC -XX:ParallelGCThreads=4 -Xmx64g" CollectAlignmentSummaryMetrics \
+        -R $REF_FASTA -I ${SAMPLE}_${REF_NAME}_aligned.bam -O ${SAMPLE}_${REF_NAME}_alignment_metrics.tsv
+    echo "### Collecting ${REF_NAME} alignment metrics ### - END: $(date)"
+
+    echo "### Filtering unmapped reads from $REF_NAME into a new BAM ### - START: $(date)"
+    samtools view -b -q 1 ${SAMPLE}_${REF_NAME}_aligned.bam > ${SAMPLE}_${REF_NAME}_aligned_mapq_ge_1.bam
+    samtools view -b -f 4 ${SAMPLE}_${REF_NAME}_mapq_ge_1.bam > ${SAMPLE}_no_${REF_NAME}.bam
+    samtools index ${SAMPLE}_no_${REF_NAME}.bam
+    echo "### Filtering unmapped reads from $REF_NAME into a new BAM ### - END: $(date)"
+
+    echo "### Converting unmapped reads from $REF_NAME from BAM to fastq ### - START: $(date)"
+    gatk --java-options "-XX:+UseParallelGC -XX:ParallelGCThreads=2 -Xmx32g" SamToFastq -I ${SAMPLE}_no_${REF_NAME}.bam \
+        -F ${SAMPLE}_no_${REF_NAME}${R1_SUFFIX} -F2 ${SAMPLE}_no_${REF_NAME}${R2_SUFFIX} --VALIDATION_STRINGENCY SILENT
+    echo "### Converting unmapped reads from $REF_NAME from BAM to fastq ### - START: $(date)"
+
+    PREV_R1_FASTQ=${SAMPLE}_no_${REF_NAME}${R1_SUFFIX}
+    PREV_R2_FASTQ=${SAMPLE}_no_${REF_NAME}${R2_SUFFIX}
+done
+
+echo -e "sample\tbam_aligned\treads" > ${SAMPLE}_summed_read_targets.tsv
+for ((REF_INDEX = 0 ; REF_INDEX < ${#REF_FASTA_ARRAY[@]} ; REF_INDEX++)); do
+    REF_FASTA=${REF_FASTA_ARRAY[$REF_INDEX]}
+    REF_NAME=${REF_NAME_ARRAY[$REF_INDEX]}
+    
+    NEXT_INDEX=$((REF_INDEX+1))
+    TEMP_ALIGNED_READS=$(samtools view ${SAMPLE}_${REF_NAME}_aligned.bam | cut -f 3 | grep "chr" | wc -l)
+    echo -e "${SAMPLE}\t${REF_NAME}\t${TEMP_ALIGNED_READS}" >> ${SAMPLE}_summed_read_targets.tsv
+    TEMP_MAPQ_READS=$(samtools view ${SAMPLE}_${REF_NAME}_aligned_mapq_ge_1.bam | cut -f 3 | grep "chr" | wc -l)
+    echo -e "${SAMPLE}\t${REF_NAME}_mapq_ge_1\t${TEMP_MAPQ_READS}" >> ${SAMPLE}_summed_read_targets.tsv
+    rm ${SAMPLE}_${REF_NAME}_aligned.bam ${SAMPLE}_${REF_NAME}_aligned.bam.bai
+    rm ${SAMPLE}_${REF_NAME}_aligned_mapq_ge_1.bam ${SAMPLE}_${REF_NAME}_aligned_mapq_ge_1.bam.bai
+    if [ $NEXT_INDEX -eq ${#REF_FASTA_ARRAY[@]} ]; then
+        cp ${SAMPLE}_no_${REF_NAME}${R1_SUFFIX} ${SAMPLE}_ref_filtered${R1_SUFFIX}
+        cp ${SAMPLE}_no_${REF_NAME}${R2_SUFFIX} ${SAMPLE}_ref_filtered${R2_SUFFIX}
+        cp ${SAMPLE}_no_${REF_NAME}.bam ${SAMPLE}_ref_filtered.bam
+        cp ${SAMPLE}_no_${REF_NAME}.bam.bai ${SAMPLE}_ref_filtered.bam.bai
+    else
+        rm ${SAMPLE}_no_${REF_NAME}${R1_SUFFIX} ${SAMPLE}_no_${REF_NAME}${R2_SUFFIX}
+        rm ${SAMPLE}_no_${REF_NAME}.bam ${SAMPLE}_no_${REF_NAME}.bam.bai
+    fi
+done
 
 echo "### De novo assembling contigs ### - START: $(date)"
 mkdir contigs_${SAMPLE}
 python3 /oak/stanford/groups/cgawad/Sequencing_Analysis_Tools/SPAdes-3.14.0-Linux/bin/spades.py \
-    -t 4 -m 64 -1 ${SAMPLE}_no_human${R1_SUFFIX} -2 ${SAMPLE}_no_human${R2_SUFFIX} -o contigs_${SAMPLE}
+    -t 4 -m 64 -1 ${SAMPLE}_ref_filtered${R1_SUFFIX} -2 ${SAMPLE}_ref_filtered${R2_SUFFIX} -o contigs_${SAMPLE}
 mv contigs_${SAMPLE}/contigs.fasta ${SAMPLE}_contigs.fasta
+mv scaffolds_${SAMPLE}/scaffolds.fasta ${SAMPLE}_scaffolds.fasta
 echo "### De novo assembling contigs ### - END: $(date)"
 
 echo "### Aligning reads to contigs ### - START: $(date)"
 bwa index ${SAMPLE}_contigs.fasta
-bwa mem -M ${SAMPLE}_contigs.fasta ${SAMPLE}_no_human${R1_SUFFIX} ${SAMPLE}_no_human${R2_SUFFIX} | \
+bwa mem -M ${SAMPLE}_contigs.fasta ${SAMPLE}_ref_filtered${R1_SUFFIX} ${SAMPLE}_ref_filtered${R2_SUFFIX} | \
     samtools view -b - | samtools sort -o ${SAMPLE}_contig_aligned.bam -
 echo "### Aligning reads to contigs ### - END: $(date)"
 
@@ -112,11 +151,10 @@ gatk --java-options "-XX:+UseParallelGC -XX:ParallelGCThreads=4 -Xmx64g" Collect
 echo "### Collecting contig alignment metrics ### - END: $(date)"
 
 echo "### Exporting summarized and contig read targets from BAM ### - START: $(date)"
-HUMAN_ALIGNED_READS=$(samtools view ${SAMPLE}_human_aligned.bam | cut -f 3 | grep "chr" | wc -l)
 CONTIG_ALIGNED_READS=$(samtools view ${SAMPLE}_contig_aligned.bam | cut -f 3 | grep "NODE" | wc -l)
+echo -e "${SAMPLE}\tcontig\t${CONTIG_ALIGNED_READS}" >> ${SAMPLE}_summed_read_targets.tsv
 UNALIGNED_READS=$(samtools view ${SAMPLE}_contig_aligned.bam | cut -f 3 | grep -v "NODE" | wc -l)
-echo -e "sample\thuman_aligned\tcontig_aligned\tunaligned" > ${SAMPLE}_summed_read_targets.tsv
-echo -e "${SAMPLE}\t${HUMAN_ALIGNED_READS}\t${CONTIG_ALIGNED_READS}\t${UNALIGNED_READS}" >> ${SAMPLE}_summed_read_targets.tsv
+echo -e "${SAMPLE}\tcontig_unaligned\t${UNALIGNED_READS}" >> ${SAMPLE}_summed_read_targets.tsv
 
 echo -e "read_count\tsample\ttarget" > ${SAMPLE}_contig_read_targets.tsv
 samtools view ${SAMPLE}_contig_aligned.bam | cut -f 3 | grep "NODE" > ${SAMPLE}_temp_contig_read_targets.txt
@@ -128,13 +166,17 @@ echo "### Exporting summarized and contig read targets from BAM ### - END: $(dat
 # ${TOOLS_DIR}/ncbi-blast-2.10.0+/bin/dustmasker -in ${SAMPLE}_contigs.fasta -outfmt fasta -out ${SAMPLE}_contigs_high_complexity.fasta
 # echo "### Marking low complexity regions in contigs ### - END: $(date)"
 
-echo "### Running kraken2 on non-human matches ### - START: $(date)"
+echo "### Running kraken2 on ref filtered matches ### - START: $(date)"
 for DB_TYPE in ${KRAKEN_DB_TYPES_ARRAY[@]}; do
-    kraken2 --db ${KRAKEN_DB_DIR_PREFIX}${DB_TYPE} --threads 4 --output ${SAMPLE}_no_human_vs_kraken.tsv --paired --gzip-compressed \
-        --report ${SAMPLE}_${DB_TYPE}_kraken_report.tsv ${SAMPLE}_no_human${R1_SUFFIX} ${SAMPLE}_no_human${R2_SUFFIX}
+    kraken2 --db ${KRAKEN_DB_DIR_PREFIX}${DB_TYPE} --threads 4 --output ${SAMPLE}_ref_filtered_vs_kraken.tsv --paired --gzip-compressed \
+        --report ${SAMPLE}_${DB_TYPE}_kraken_report.tsv ${SAMPLE}_ref_filtered${R1_SUFFIX} ${SAMPLE}_ref_filtered${R2_SUFFIX}
 done
 echo "### Running kraken2 on non-human matches ### - END: $(date)"
 
+if [ ! -f ${SAMPLE}_contigs.fasta ]; then
+    echo "Final file ${SAMPLE}_contigs.fasta not found. Exiting with code 1"
+    exit 1
+fi
 if [ $SKIP_TRIMMOMATIC -eq 0 ]; then
     rm ${SAMPLE}_trimmomatic_log.txt
     rm $R1_FASTQ $R2_FASTQ
@@ -143,13 +185,10 @@ fi
 rm -r contigs_${SAMPLE} 
 rm ${SAMPLE}_contigs.fasta.amb ${SAMPLE}_contigs.fasta.ann ${SAMPLE}_contigs.fasta.bwt
 rm ${SAMPLE}_contigs.fasta.pac ${SAMPLE}_contigs.fasta.sa
-rm ${SAMPLE}_human_aligned.bam* ${SAMPLE}_no_human.bam* ${SAMPLE}_contig_aligned.bam*
+rm ${SAMPLE}_contig_aligned.bam ${SAMPLE}_contig_aligned.bam.bai
 rm ${SAMPLE}_temp_contig_read_targets.txt
-rm ${SAMPLE}_no_human${R1_SUFFIX} ${SAMPLE}_no_human${R2_SUFFIX}
 rm ${SAMPLE}_any_mapping_to_human_query_names.txt
-rm ${SAMPLE}_no_human_vs_kraken.tsv
-if [ ! -f ${SAMPLE}_contigs.fasta ]; then
-    echo "Final file ${SAMPLE}_contigs.fasta not found. Exiting with code 1"
-    exit 1
-fi
+rm ${SAMPLE}_ref_filtered_vs_kraken.tsv
+rm ${SAMPLE}_ref_filtered${R1_SUFFIX} ${SAMPLE}_ref_filtered${R2_SUFFIX}
+rm ${SAMPLE}_ref_filtered.bam ${SAMPLE}_ref_filtered.bam.bai
 echo -e "END: $(date)\nRuntime: $(($(date +%s)-$START_TIME)) seconds"

@@ -79,7 +79,7 @@ echo "Merged contigs" >> $PIPELINE_STATUS
 
 SUMMED_READ_TARGETS_FILENAMES=( $(ls *_summed_read_targets.tsv) )
 head -n 1 ${SUMMED_READ_TARGETS_FILENAMES[0]} > ${PROJECT}.summed_read_targets.tsv
-for i in ${SUMMED_READ_TARGETS_FILENAMES[@]}; do sed -n 2p $i >> ${PROJECT}.summed_read_targets.tsv; done
+for i in ${SUMMED_READ_TARGETS_FILENAMES[@]}; do tail -n +2 $i >> ${PROJECT}.summed_read_targets.tsv; done
 echo "Merged summarized read targets" >> $PIPELINE_STATUS
 
 CONTIG_READ_TARGETS_FILENAMES=( $(ls *_contig_read_targets.tsv) )
