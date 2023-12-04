@@ -21,7 +21,7 @@ TOOLS_DIR=${11}
 SAMPLE_ARRAY=( $(echo ${12} | sed 's/:/ /g') )
 SAMPLE=${SAMPLE_ARRAY[$(( $SLURM_ARRAY_TASK_ID - 1 ))]}
 
-echo -e "START: $(date)\nBacteria Pipeline\nFastq dir: $FASTQ_DIR\nResults dir: $SCRATCH_DIR\nSample: $SAMPLE"
+echo -e "START: $(date)\nBacteria Pipeline\nFastq dir: $FASTQ_DIR\nScratch dir: $SCRATCH_DIR\nSample: $SAMPLE"
 cd $SCRATCH_DIR
 
 ml python/3.6.1 java/11.0.11 

@@ -17,7 +17,7 @@ LONG_CONTIG_ARRAY=( $(echo $7 | sed 's/:/ /g') )
 CONTIG=${LONG_CONTIG_ARRAY[$(( $SLURM_ARRAY_TASK_ID - 1 ))]}
 CONTIG_NUM=$(echo $CONTIG | sed "s/${IDENTIFY}_long_contigs_//" | sed "s/.fasta//")
 
-echo -e "START: $(date)\nBacteria Pipeline\nResults dir: $SCRATCH_DIR\nSlurm ID: $SLURM_ARRAY_TASK_ID\nContig: $CONTIG"
+echo -e "START: $(date)\nBacteria Pipeline\nScratch dir: $SCRATCH_DIR\nContig: $CONTIG"
 cd $SCRATCH_DIR
 
 for DB_TYPE in ${BLAST_DB_TYPES_ARRAY[@]}; do
