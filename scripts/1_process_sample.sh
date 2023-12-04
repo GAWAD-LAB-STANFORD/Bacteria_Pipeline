@@ -168,7 +168,7 @@ echo "### Exporting summarized and contig read targets from BAM ### - END: $(dat
 
 echo "### Running kraken2 on ref filtered matches ### - START: $(date)"
 for DB_TYPE in ${KRAKEN_DB_TYPES_ARRAY[@]}; do
-    kraken2 --db ${KRAKEN_DB_DIR_PREFIX}${DB_TYPE} --threads 4 --output ${SAMPLE}_ref_filtered_vs_kraken.tsv --paired --gzip-compressed \
+    kraken2 --db ${KRAKEN_DB_DIR_PREFIX}${DB_TYPE} --threads 4 --output ${SAMPLE}_kraken_vs_ref_filtered.tsv --paired --gzip-compressed \
         --report ${SAMPLE}_${DB_TYPE}_kraken_report.tsv ${SAMPLE}_ref_filtered${R1_SUFFIX} ${SAMPLE}_ref_filtered${R2_SUFFIX}
 done
 echo "### Running kraken2 on non-human matches ### - END: $(date)"
@@ -188,7 +188,7 @@ rm ${SAMPLE}_contigs.fasta.pac ${SAMPLE}_contigs.fasta.sa
 rm ${SAMPLE}_contig_aligned.bam ${SAMPLE}_contig_aligned.bam.bai
 rm ${SAMPLE}_temp_contig_read_targets.txt
 rm ${SAMPLE}_any_mapping_to_human_query_names.txt
-rm ${SAMPLE}_ref_filtered_vs_kraken.tsv
+rm ${SAMPLE}_kraken_vs_ref_filtered.tsv
 rm ${SAMPLE}_ref_filtered${R1_SUFFIX} ${SAMPLE}_ref_filtered${R2_SUFFIX}
 rm ${SAMPLE}_ref_filtered.bam ${SAMPLE}_ref_filtered.bam.bai
 echo -e "END: $(date)\nRuntime: $(($(date +%s)-$START_TIME)) seconds"
