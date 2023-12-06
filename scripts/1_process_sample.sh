@@ -95,12 +95,13 @@ for ((REF_INDEX = 0 ; REF_INDEX < ${#REF_FASTA_ARRAY[@]} ; REF_INDEX++)); do
 
     echo "### Filtering unmapped reads from $REF_NAME into a new BAM ### - START: $(date)"
     samtools view -b -q 1 ${SAMPLE}_${REF_NAME}_aligned.bam > ${SAMPLE}_${REF_NAME}_mapq_ge_1.bam
+    samtools index ${SAMPLE}_${REF_NAME}_mapq_ge_1.bam
     samtools view -b -f 4 ${SAMPLE}_${REF_NAME}_mapq_ge_1.bam > ${SAMPLE}_no_${REF_NAME}.bam
     samtools index ${SAMPLE}_no_${REF_NAME}.bam
     echo "### Filtering unmapped reads from $REF_NAME into a new BAM ### - END: $(date)"
 
     echo "### Converting unmapped reads from $REF_NAME from BAM to fastq ### - START: $(date)"
-    gatk --java-options "-XX:+UseParallelGC -XX:ParallelGCThreads=2 -Xmx32g" SamToFastq -I ${SAMPLE}_no_${REF_NAME}.bam \
+    gatk --java-options "-XX:+UseParallelGC -XX:ParallelGCThreads=4 -Xmx64g" SamToFastq -I ${SAMPLE}_no_${REF_NAME}.bam \
         -F ${SAMPLE}_no_${REF_NAME}${R1_SUFFIX} -F2 ${SAMPLE}_no_${REF_NAME}${R2_SUFFIX} --VALIDATION_STRINGENCY SILENT
     echo "### Converting unmapped reads from $REF_NAME from BAM to fastq ### - START: $(date)"
 
@@ -116,10 +117,10 @@ for ((REF_INDEX = 0 ; REF_INDEX < ${#REF_FASTA_ARRAY[@]} ; REF_INDEX++)); do
     NEXT_INDEX=$((REF_INDEX+1))
     TEMP_ALIGNED_READS=$(samtools view ${SAMPLE}_${REF_NAME}_aligned.bam | cut -f 3 | grep "chr" | wc -l)
     echo -e "${SAMPLE}\t${REF_NAME}\t${TEMP_ALIGNED_READS}" >> ${SAMPLE}_summed_read_targets.tsv
-    TEMP_MAPQ_READS=$(samtools view ${SAMPLE}_${REF_NAME}_aligned_mapq_ge_1.bam | cut -f 3 | grep "chr" | wc -l)
+    TEMP_MAPQ_READS=$(samtools view ${SAMPLE}_${REF_NAME}_mapq_ge_1.bam | cut -f 3 | grep "chr" | wc -l)
     echo -e "${SAMPLE}\t${REF_NAME}_mapq_ge_1\t${TEMP_MAPQ_READS}" >> ${SAMPLE}_summed_read_targets.tsv
     rm ${SAMPLE}_${REF_NAME}_aligned.bam ${SAMPLE}_${REF_NAME}_aligned.bam.bai
-    rm ${SAMPLE}_${REF_NAME}_aligned_mapq_ge_1.bam ${SAMPLE}_${REF_NAME}_aligned_mapq_ge_1.bam.bai
+    rm ${SAMPLE}_${REF_NAME}_mapq_ge_1.bam ${SAMPLE}_${REF_NAME}_mapq_ge_1.bam.bai
     if [ $NEXT_INDEX -eq ${#REF_FASTA_ARRAY[@]} ]; then
         cp ${SAMPLE}_no_${REF_NAME}${R1_SUFFIX} ${SAMPLE}_ref_filtered${R1_SUFFIX}
         cp ${SAMPLE}_no_${REF_NAME}${R2_SUFFIX} ${SAMPLE}_ref_filtered${R2_SUFFIX}
