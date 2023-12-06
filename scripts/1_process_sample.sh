@@ -64,7 +64,7 @@ for ((REF_INDEX = 0 ; REF_INDEX < ${#REF_FASTA_ARRAY[@]} ; REF_INDEX++)); do
     REF_NAME=${REF_NAME_ARRAY[$REF_INDEX]}
 
     if [ $RNA -eq 1 ]; then
-        echo "### Aligning RNA fastqs to human ### - START: $(date)"
+        echo "### Aligning RNA fastqs to $REF_NAME ### - START: $(date)"
         UNZIPPED_R1_FASTQ=$(basename $PREV_R1_FASTQ | sed "s/.gz//")
         UNZIPPED_R2_FASTQ=$(basename $PREV_R2_FASTQ | sed "s/.gz//")
         zcat $PREV_R1_FASTQ > $UNZIPPED_R1_FASTQ
@@ -76,16 +76,16 @@ for ((REF_INDEX = 0 ; REF_INDEX < ${#REF_FASTA_ARRAY[@]} ; REF_INDEX++)); do
             --outSAMunmapped Within --outSAMattributes Standard
         rm $UNZIPPED_R1_FASTQ $UNZIPPED_R2_FASTQ
         mv ${SAMPLE}Aligned.sortedByCoord.out.bam ${SAMPLE}_${REF_NAME}_aligned.bam
-        echo "### Aligning RNA fastqs to human ### - END: $(date)"
+        echo "### Aligning RNA fastqs to $REF_NAME ### - END: $(date)"
     else
-        echo "### Aligning DNA fastqs to human ### - START: $(date)"
+        echo "### Aligning DNA fastqs to $REF_NAME ### - START: $(date)"
         bwa aln -t 4 $REF_FASTA $PREV_R1_FASTQ > ${SAMPLE}_R1.sai
         bwa aln -t 4 $REF_FASTA $PREV_R2_FASTQ > ${SAMPLE}_R2.sai
         bwa sampe -a 700 $REF_FASTA ${SAMPLE}_R1.sai ${SAMPLE}_R2.sai $PREV_R1_FASTQ $PREV_R2_FASTQ | \
             samtools view -b - | samtools sort -o ${SAMPLE}_${REF_NAME}_aligned.bam -
         samtools index ${SAMPLE}_${REF_NAME}_aligned.bam
         rm ${SAMPLE}_R1.sai ${SAMPLE}_R2.sai
-        echo "### Aligning DNA fastqs to human ### - END: $(date)"
+        echo "### Aligning DNA fastqs to $REF_NAME ### - END: $(date)"
     fi
 
     echo "### Collecting $REF_NAME alignment metrics ### - START: $(date)"
@@ -94,7 +94,7 @@ for ((REF_INDEX = 0 ; REF_INDEX < ${#REF_FASTA_ARRAY[@]} ; REF_INDEX++)); do
     echo "### Collecting ${REF_NAME} alignment metrics ### - END: $(date)"
 
     echo "### Filtering unmapped reads from $REF_NAME into a new BAM ### - START: $(date)"
-    samtools view -b -q 1 ${SAMPLE}_${REF_NAME}_aligned.bam > ${SAMPLE}_${REF_NAME}_aligned_mapq_ge_1.bam
+    samtools view -b -q 1 ${SAMPLE}_${REF_NAME}_aligned.bam > ${SAMPLE}_${REF_NAME}_mapq_ge_1.bam
     samtools view -b -f 4 ${SAMPLE}_${REF_NAME}_mapq_ge_1.bam > ${SAMPLE}_no_${REF_NAME}.bam
     samtools index ${SAMPLE}_no_${REF_NAME}.bam
     echo "### Filtering unmapped reads from $REF_NAME into a new BAM ### - END: $(date)"
