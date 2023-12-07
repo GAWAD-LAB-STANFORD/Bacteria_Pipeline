@@ -366,7 +366,7 @@ elif ([ $STEP -eq 0 ] && [ -z $RUN_DIR ] && [ $ONLY_IDENTIFY -eq 0 ]) || ([ $STE
         echo -e "Number of samples: ${#SAMPLE_ARRAY[@]}\nSamples: ${SAMPLE_ARRAY[@]}\n" >> $PIPELINE_STATUS
         echo "### De novo assembling contigs and detecting contamination ### - START: $(date)" >> $PIPELINE_STATUS
         JOB_COUNT=${#SAMPLE_ARRAY[@]}
-        echo "Process sample jobs to run: $JOB_COUNT" >> $PIPELINE_STATUS
+        echo "Jobs to run: $JOB_COUNT" >> $PIPELINE_STATUS
         TEMP_ARRAY_START=1
     fi
     
@@ -464,7 +464,7 @@ if ([ $STEP -eq 0 ] && [ $ONLY_IDENTIFY -eq 1 ]) || [ $STEP -eq 2 ]; then
         echo "### BLAST aligning contigs ### - START: $(date)" >> $PIPELINE_STATUS
         LONG_CONTIG_ARRAY=( $(ls ${IDENTIFY}_long_contigs_*) )
         JOB_COUNT=${#LONG_CONTIG_ARRAY[@]}
-        echo "BLAST jobs to run: $JOB_COUNT" >> $PIPELINE_STATUS
+        echo "Jobs to run: $JOB_COUNT" >> $PIPELINE_STATUS
         TEMP_ARRAY_START=1
     fi
 
