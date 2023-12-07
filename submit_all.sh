@@ -10,7 +10,7 @@ PIPELINE_DIR="$( cd "$( dirname "$0" )" && pwd )"
 PIPELINE_COMMAND="$@"
 HELP="\
 Purpose: \n\t\
-    This pipeline is built to identify bacterial species from pair-end fastq.gz files and remove human contamination \n\n\
+    To identify bacterial species from pair-end fastq.gz files and remove human contamination \n\n\
 Required arguments: -p/--project <arg> and either -f/--fastq_dir <arg> or -r/--results_dir <arg> \n\
 Optional arguments: -s/--scratch_dir <arg>, --err_out_dir <arg>, --skip_scratch, -b/--run_dir <arg>, \n\t\
     --sample_sheet <arg>, --skip_identify, --only_identify, --identify <arg>, \n\t\
@@ -47,7 +47,7 @@ SKIP_IDENTIFY=0
 ONLY_IDENTIFY=0
 SKIP_TRIMMOMATIC=0
 RNA=0
-FILTER_RHESUS=1
+FILTER_RHESUS=0
 CONTIG_LENGTH_MINIMUM=5000
 KRAKEN_DB_TYPES="microbial"
 BLAST_DB_TYPES="nt"

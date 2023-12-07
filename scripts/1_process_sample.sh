@@ -109,16 +109,18 @@ for ((REF_INDEX = 0 ; REF_INDEX < ${#REF_FASTA_ARRAY[@]} ; REF_INDEX++)); do
     PREV_R2_FASTQ=${SAMPLE}_no_${REF_NAME}${R2_SUFFIX}
 done
 
-echo -e "sample\tbam_aligned\treads" > ${SAMPLE}_summed_read_targets.tsv
+echo -e "sample\tbam\treads" > ${SAMPLE}_summed_read_targets.tsv
 for ((REF_INDEX = 0 ; REF_INDEX < ${#REF_FASTA_ARRAY[@]} ; REF_INDEX++)); do
     REF_FASTA=${REF_FASTA_ARRAY[$REF_INDEX]}
     REF_NAME=${REF_NAME_ARRAY[$REF_INDEX]}
     
     NEXT_INDEX=$((REF_INDEX+1))
-    TEMP_ALIGNED_READS=$(samtools view ${SAMPLE}_${REF_NAME}_aligned.bam | cut -f 3 | grep "chr" | wc -l)
+    TEMP_ALIGNED_READS=$(samtools view -c ${SAMPLE}_${REF_NAME}_aligned.bam)
     echo -e "${SAMPLE}\t${REF_NAME}\t${TEMP_ALIGNED_READS}" >> ${SAMPLE}_summed_read_targets.tsv
-    TEMP_MAPQ_READS=$(samtools view ${SAMPLE}_${REF_NAME}_mapq_ge_1.bam | cut -f 3 | grep "chr" | wc -l)
+    TEMP_MAPQ_READS=$(samtools view -c ${SAMPLE}_${REF_NAME}_mapq_ge_1.bam)
     echo -e "${SAMPLE}\t${REF_NAME}_mapq_ge_1\t${TEMP_MAPQ_READS}" >> ${SAMPLE}_summed_read_targets.tsv
+    TEMP_NO_READS=$(samtools view -c ${SAMPLE}_no_${REF_NAME}.bam)
+    echo -e "${SAMPLE}\tno_${REF_NAME}\t${TEMP_NO_READS}" >> ${SAMPLE}_summed_read_targets.tsv
     rm ${SAMPLE}_${REF_NAME}_aligned.bam ${SAMPLE}_${REF_NAME}_aligned.bam.bai
     rm ${SAMPLE}_${REF_NAME}_mapq_ge_1.bam ${SAMPLE}_${REF_NAME}_mapq_ge_1.bam.bai
     if [ $NEXT_INDEX -eq ${#REF_FASTA_ARRAY[@]} ]; then
