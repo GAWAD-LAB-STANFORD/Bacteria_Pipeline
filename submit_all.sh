@@ -405,6 +405,8 @@ elif [ $STEP -eq 2 ] && [ $ONLY_IDENTIFY -eq 0 ]; then
     for SAMPLE in ${SAMPLE_ARRAY[@]}; do
         if [ ! -f ${SAMPLE}_contigs.fasta ]; then
             echo -e "\tSample number $SAMPLE_COUNT - ${SAMPLE}_contigs.fasta file not found" >> $PIPELINE_STATUS
+        else
+            rm ${STD_ERR_OUT_DIR}/*_${SAMPLE_COUNT}_1_process_sample.out ${STD_ERR_OUT_DIR}/*_${SAMPLE_COUNT}_1_process_sample.err
         fi
         SAMPLE_COUNT=$((SAMPLE_COUNT+1))
     done
@@ -415,14 +417,13 @@ elif [ $STEP -eq 2 ] && [ $ONLY_IDENTIFY -eq 0 ]; then
         exit 1
     else
         echo "$CONTIG_COUNT contigs out of a possible ${#SAMPLE_ARRAY[@]} maximum" >> $PIPELINE_STATUS
-        # rm ${STD_ERR_OUT_DIR}/*1_process_sample.out ${STD_ERR_OUT_DIR}/*1_process_sample.err
     fi
     echo "### De novo assembling contigs and detecting contamination ### - END: $(date)" >> $PIPELINE_STATUS
     
     
     ml R/4.2.0
     export R_LIBS="/home/groups/cgawad/R_libs"
-    bash ${SCRIPT_DIR}/summarize_metrics.sh $PIPELINE_STATUS $PROJECT $KRAKEN_DB_TYPES $RUN_DIR $SAMPLE_SHEET
+    bash ${SCRIPT_DIR}/merge_metrics.sh $PIPELINE_STATUS $PROJECT $KRAKEN_DB_TYPES $RUN_DIR $SAMPLE_SHEET $REF_NAME_STRING
     
     
     if [ $SKIP_IDENTIFY -eq 1 ]; then
@@ -573,11 +574,11 @@ elif [ $STEP -eq 3 ]; then
         --ncbi_annotations_dir $NCBI_ANNOTATIONS_DIR ${FIGURE_OPTIONS[@]}
     echo "### Processing contamination, Kraken results, BLAST results, and making final figures ### - END: $(date)" >> $PIPELINE_STATUS
     
-    # echo "### Removing intermediate files ### - START: $(date)"
-    rm ${IDENTIFY}_long_contigs_
+    echo "### Removing intermediate files ### - START: $(date)" >> $PIPELINE_STATUS
+    rm ${IDENTIFY}_long_contigs_*
     rm ${IDENTIFY}.*.kraken_jtree.json 
     rm ${IDENTIFY}_blast_results_*.json
-    # echo "### Removing intermediate files ### - END: $(date)"
+    echo "### Removing intermediate files ### - END: $(date)" >> $PIPELINE_STATUS
     
     if [ "$SCRATCH_DIR" != "$RESULTS_DIR" ]; then
         echo "### Moving results from scratch dir to results dir ### - START: $(date)"
