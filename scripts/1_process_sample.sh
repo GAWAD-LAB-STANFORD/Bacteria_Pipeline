@@ -123,10 +123,9 @@ for ((REF_INDEX = 0 ; REF_INDEX < ${#REF_FASTA_ARRAY[@]} ; REF_INDEX++)); do
         cp ${SAMPLE}_no_${REF_NAME}${R2_SUFFIX} ${SAMPLE}_ref_filtered${R2_SUFFIX}
         cp ${SAMPLE}_no_${REF_NAME}.bam ${SAMPLE}_ref_filtered.bam
         cp ${SAMPLE}_no_${REF_NAME}.bam.bai ${SAMPLE}_ref_filtered.bam.bai
-    else
-        rm ${SAMPLE}_no_${REF_NAME}${R1_SUFFIX} ${SAMPLE}_no_${REF_NAME}${R2_SUFFIX}
-        rm ${SAMPLE}_no_${REF_NAME}.bam ${SAMPLE}_no_${REF_NAME}.bam.bai
     fi
+    rm ${SAMPLE}_no_${REF_NAME}${R1_SUFFIX} ${SAMPLE}_no_${REF_NAME}${R2_SUFFIX}
+    rm ${SAMPLE}_no_${REF_NAME}.bam ${SAMPLE}_no_${REF_NAME}.bam.bai
 done
 
 echo "### De novo assembling contigs ### - START: $(date)"
@@ -134,7 +133,7 @@ mkdir contigs_${SAMPLE}
 python3 /oak/stanford/groups/cgawad/Sequencing_Analysis_Tools/SPAdes-3.14.0-Linux/bin/spades.py \
     -t 4 -m 64 -1 ${SAMPLE}_ref_filtered${R1_SUFFIX} -2 ${SAMPLE}_ref_filtered${R2_SUFFIX} -o contigs_${SAMPLE}
 mv contigs_${SAMPLE}/contigs.fasta ${SAMPLE}_contigs.fasta
-mv scaffolds_${SAMPLE}/scaffolds.fasta ${SAMPLE}_scaffolds.fasta
+mv contigs_${SAMPLE}/scaffolds.fasta ${SAMPLE}_scaffolds.fasta
 echo "### De novo assembling contigs ### - END: $(date)"
 
 echo "### Aligning reads to contigs ### - START: $(date)"
