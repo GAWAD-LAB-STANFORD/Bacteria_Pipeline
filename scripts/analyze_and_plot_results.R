@@ -34,28 +34,31 @@ option_list = list(
               help="REQUIRED", metavar="character"),
   make_option(c("--ncbi_annotations_dir"), type="character", default="0",
               help="optional [default = %default]", metavar="character"),
+  make_option(c("--blast_hit_rank_min"), type="double", default=1,
+              help="optional [default = %default]", metavar="double"),
   make_option(c("--contig_alignment_fraction_min"), type="double", default=0.9,
               help="optional [default = %default]", metavar="double"),
   make_option(c("--add_genus"), action = "store_true", default = FALSE,
               help="optional [default = %default]")
 ); 
 opt <- parse_args(OptionParser(option_list=option_list))
-# project <- "viral_wgs_BacPipe"
+# project <- "viral_target_BacPipe_rhesus"
 # opt <- list(project = project, identify = project, 
 #             sample_read_count_filename = sprintf("%s.sample_read_counts.tsv", project),
 #             summed_read_targets_filename = sprintf("%s.summed_read_targets.tsv", project),
 #             contig_read_targets_filename = sprintf("%s.contig_read_targets.tsv", project),
 #             contig_data_filename = sprintf("%s.contig_data.tsv", project),
-#             kraken_db_types = "viral-microbial", kraken_jtree_suffix = ".kraken_jtree.json",
-#             blast_db_types = "viral-nt", blast_results_suffix = ".blast_results.tsv",
-#             ncbi_annotations_dir = "0", contig_alignment_fraction_min = 0.9,
-#             add_genus = FALSE)
+#             kraken_db_types = "microbial", kraken_jtree_suffix = ".kraken_jtree.json",
+#             blast_db_types = "nt", blast_results_suffix = ".blast_results.tsv",
+#             ncbi_annotations_dir = "0", blast_hit_rank_min = 5,
+#             contig_alignment_fraction_min = 0.9, add_genus = FALSE)
 
 if (is.null(opt$project) || is.null(opt$identify) || is.null(opt$sample_read_count_filename) || 
     is.null(opt$summed_read_targets_filename) || is.null(opt$contig_read_targets_filename) || 
     is.null(opt$contig_data_filename) || is.null(opt$kraken_db_types) ||
     is.null(opt$kraken_jtree_suffix) || is.null(opt$blast_db_types) || is.null(opt$blast_results_suffix) ||
-    is.null(opt$ncbi_annotations_dir) || is.null(opt$contig_alignment_fraction_min)) {
+    is.null(opt$ncbi_annotations_dir) || is.null(opt$blast_hit_rank_min) || 
+    is.null(opt$contig_alignment_fraction_min)) {
   stop("You must specify all required options. Use --help to get help.")
 }
 
@@ -139,19 +142,19 @@ rm(sample_read_counts_df, expected_coverage_df, plot1)
 summed_read_targets_df <- read_tsv(opt$summed_read_targets_filename)
 summed_read_targets_df <- parse_long_sample_name(summed_read_targets_df, opt$summed_read_targets_filename)
 summed_read_targets_df <- summed_read_targets_df %>%
-  select(sample, human_aligned, contig_aligned, unaligned) %>%
-  melt(id.vars = c("sample"), value.name = "read_count", variable.name = "alignment") %>%
   group_by(sample) %>%
-  mutate(percent_read_count = read_count / sum(read_count) * 100) %>%
+  mutate(percent_reads = reads / sum(reads) * 100) %>%
   ungroup()
+plot_height <- (length(summed_read_targets_df$sample)/100)+5
+plot_width <- (length(summed_read_targets_df$sample)/20)+15
 
-# Read counts for three different categories: contig, human, and undetermined
-#   Read counts from BWA ALN aligning of all reads against their Contigs and Hg38 reference
-plot1 <- ggplot(summed_read_targets_df, aes(sample, read_count, fill = reorder(alignment, read_count))) + 
-  geom_bar(stat = "identity", position = position_dodge()) + geom_text(aes(label = round(percent_read_count, 2)), vjust=-1, position = position_dodge(0.9)) +
-  labs(title = "Human contamination by read count", x = "Sample", y = "Read count", fill = "Read categories") + ggplot_theme
-ggsave(sprintf("%s.fig_human_contamination.pdf", opt$project), plot = plot1, width = 11, height = 8.5)
-cat("Plotted human contamination for all samples\n")
+# Read counts for all categories of aligned BAMs
+#   These include human, optional rhesus, contig, and unaligned of all of these
+plot1 <- ggplot(summed_read_targets_df, aes(sample, reads, fill = reorder(bam, reads))) + 
+  geom_bar(stat = "identity", position = position_dodge()) + geom_text(aes(label = sprintf("%s%%", round(percent_reads, 2))), position = position_dodge(0.9), angle = 90) +
+  labs(title = "Contamination by read count", x = "Sample", y = "Read count", fill = "BAM from which reads were obtained") + ggplot_theme
+ggsave(sprintf("%s.fig_contamination.pdf", opt$project), plot = plot1, width = plot_width, height = plot_height)
+cat("Plotted contamination for all samples\n")
 rm(summed_read_targets_df, plot1)
 
 
@@ -214,10 +217,9 @@ preprocess_blast_results <- function(sample_df, contig_data_df) {
   sample_df <- parse_long_sample_name(sample_df)
   if ("species" %in% colnames(sample_df)) {
     sample_df <- sample_df %>%
-      filter(hit_rank == 1) %>% 
       mutate(hit_taxid = factor(hit_taxid), genus = sub(pattern = " .+", "", species))
   }
-  sample_df <- filter(sample_df, hit_rank == 1) %>% 
+  sample_df <- sample_df %>%
     mutate(tophit_aln_query_fraction = top_hsp_align_len / contig_length) %>%
     group_by(sample) %>% 
     mutate(query_length_rank = 1:length(contig_length)) %>% 
@@ -274,41 +276,37 @@ summarize_sample_metrics <- function(sample_df, taxonomic_variable_string) {
       mutate(species = ifelse(is.na(word(species, 1, 2)), species, word(species, 1, 2)))
   }
   summed_sample_df <- sample_df %>%
-    mutate(reverse_ranking = (max(contig_rank) + 1) - contig_rank) %>%
     mutate(total_largest_contig = max(contig_length),
-           total_read_count = sum(read_count),
+           total_read_count = sum(read_count, na.rm = TRUE),
            total_contigs = length(contig), 
-           total_contig_length = sum(contig_length),
-           total_blast_length = sum(top_hsp_align_len),
-           total_contig_graph_cov = sum(contig_graph_cov),
-           total_reverse_ranking = sum(reverse_ranking),
-           total_blast_alignment_fractions = sum(tophit_aln_query_fraction)) %>%
+           total_contig_length = sum(contig_length, na.rm = TRUE),
+           total_blast_length = sum(top_hsp_align_len, na.rm = TRUE),
+           total_contig_graph_cov = sum(contig_graph_cov, na.rm = TRUE),
+           total_blast_alignment_fractions = sum(tophit_aln_query_fraction, na.rm = TRUE)) %>%
     group_by(.dots = taxonomic_variable_string) %>%
     mutate(max_reference_len = max(reference_len),
            largest_contig = max(contig_length),
-           summed_read_count = sum(read_count),
+           summed_read_count = sum(read_count, na.rm = TRUE),
            summed_contigs = n(),
-           summed_contig_length = sum(contig_length),
-           summed_blast_length = sum(top_hsp_align_len),
-           summed_contig_graph_cov = sum(contig_graph_cov),
-           summed_reverse_rankings = sum(reverse_ranking),
-           summed_blast_alignment_fractions = sum(tophit_aln_query_fraction)) %>%
+           summed_contig_length = sum(contig_length, na.rm = TRUE),
+           summed_blast_length = sum(top_hsp_align_len, na.rm = TRUE),
+           summed_contig_graph_cov = sum(contig_graph_cov, na.rm = TRUE),
+           summed_blast_alignment_fractions = sum(tophit_aln_query_fraction, na.rm = TRUE)) %>%
     mutate(percent_largest_contig = largest_contig / total_largest_contig * 100,
            percent_read_count = summed_read_count / total_read_count * 100,
            percent_contigs = summed_contigs / total_contigs * 100,
            percent_contig_length = summed_contig_length / total_contig_length * 100,
            percent_blast_length = summed_blast_length / total_blast_length * 100,
            percent_contig_graph_cov = summed_contig_graph_cov / total_contig_graph_cov * 100,
-           percent_reverse_ranking = summed_reverse_rankings / total_reverse_ranking * 100,
            percent_blast_alignment_fraction = summed_blast_alignment_fractions / total_blast_alignment_fractions * 100,
            percent_reference_covered_by_contigs = summed_contig_length / max_reference_len * 100,
            percent_reference_covered_by_blasts = summed_blast_length / max_reference_len * 100) %>%
-    select(sample, taxonomic_variable_string, largest_contig, summed_read_count, summed_contigs, summed_contig_length, 
-           summed_blast_length, summed_contig_graph_cov, summed_blast_alignment_fractions,
-           percent_largest_contig, percent_read_count, percent_contigs, percent_contig_length, 
-           percent_blast_length, percent_contig_graph_cov, percent_reverse_ranking, 
-           percent_blast_alignment_fraction, percent_reference_covered_by_contigs, 
-           percent_reference_covered_by_blasts, max_reference_len) %>%
+    # select(sample, taxonomic_variable_string, largest_contig, summed_read_count, summed_contigs, summed_contig_length, 
+    #        summed_blast_length, summed_contig_graph_cov, summed_blast_alignment_fractions,
+    #        percent_largest_contig, percent_read_count, percent_contigs, percent_contig_length, 
+    #        percent_blast_length, percent_contig_graph_cov, percent_reverse_ranking, 
+    #        percent_blast_alignment_fraction, percent_reference_covered_by_contigs, 
+    #        percent_reference_covered_by_blasts, max_reference_len) %>%
     distinct() %>%
     ungroup()
   return(summed_sample_df)
@@ -349,12 +347,14 @@ kraken_ggtree_plot <- function(sample_string, db_type) {
     json <- fromJSON(file = sprintf("%s.%s.%s%s", opt$identify, sample_string, db_type, opt$kraken_jtree_suffix))
     width <- json$metadata$max_depth + 1
     tree <- read.jtree(sprintf("%s.%s.%s%s", opt$identify, sample_string, db_type, opt$kraken_jtree_suffix))
-    tree1 <- ggtree(tree, branch.length='none', aes(color=percent_fragments_covered), size = 1) + 
+    suppressWarnings(suppressMessages(print(tree1 <- ggtree(tree, branch.length='none', aes(color=percent_fragments_covered), size = 1) + 
       geom_label(aes(x=branch, label=label), vjust=-1) + geom_label(aes(x=branch, label=percent_fragments_covered)) +
       geom_tiplab(size=5, color="black") + 
       labs(title = "Percent coverage from kraken2 results", x = "Depth of identification") +
-      ylim(0, width/2) + xlim(0, width) + theme(legend.position="bottom") + ggtree_theme +
-      scale_color_continuous(low='red', high='royalblue1')
+      theme(legend.position="bottom") + ggtree_theme + scale_color_continuous(low='red', high='royalblue1') +
+      ylim(0, width/2) + xlim(0, width))))
+    # Suppressing this warning: Removed 1 rows containing missing values (`geom_label()`)
+    # Suppressing this message: Scale for y is already present. Adding another scale for y, which will replace the existing scale.
     return(tree1)
   }, error = function(e) {
     cat(sprintf("\t\tProblem reading %s.%s.%s%s\n", opt$identify, sample_string, db_type, opt$kraken_jtree_suffix))
@@ -470,7 +470,8 @@ taxonomic_color_list <- list()
 for (i in 1:length(blast_db_types)) {
   filename <- sprintf("%s.%s%s", opt$identify, blast_db_types[i], opt$blast_results_suffix)
   if (file.exists(filename)) {
-    df <- read_tsv(filename)
+    df <- read_tsv(filename) %>%
+      filter(hit_rank <= opt$blast_hit_rank_min)
     if (taxonomic_variable_string_list[i] == "Virus") {
       df <- mutate(df, virus = ifelse(is.na(virus), source, virus))
     }
@@ -529,7 +530,9 @@ for (current_sample in unique_samples) {
       summed_sample_df <- summarize_sample_metrics(sample_df, taxonomic_variable_string_list[i])
       lg50_sample_df <- lg50_contigs_over_reference(sample_df, taxonomic_variable_string_list[i])
       if (nrow(lg50_sample_df) > 0) {
-        summed_sample_df <- left_join(summed_sample_df, lg50_sample_df)
+        join_by_columns <- colnames(lg50_sample_df)[!grepl("lg50", colnames(lg50_sample_df))]
+        summed_sample_df <- left_join(summed_sample_df, lg50_sample_df, by = (join_by_columns), suffix=c('.a', '.b')) %>%
+          setNames(gsub('\\.a$', '', names(.)))
         summed_sample_df <- mutate(summed_sample_df, 
                                    lg50_count = ifelse(is.na(lg50_count), 0, lg50_count),
                                    lg50_percent = ifelse(is.na(lg50_percent), 0, lg50_percent))
@@ -563,7 +566,7 @@ for (current_sample in unique_samples) {
     pdf(sprintf("%s.%s.fig_kraken_blast_results.pdf", opt$identify, current_sample), width = 50, height = variable_height)
     grid.arrange(grobs = grid_list, layout_matrix = grid_layout)
     dev.off()
-    cat(sprintf("\t%s - %s\n", count, current_sample))
+    cat(sprintf("\t%s/%s - %s\n", count, length(unique_samples), current_sample))
   }
   count = count + 1
 }
