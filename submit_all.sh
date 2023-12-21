@@ -506,9 +506,7 @@ if ([ $STEP -eq 0 ] && [ $ONLY_IDENTIFY -eq 1 ]) || [ $STEP -eq 2 ]; then
     fi
 elif [ $STEP -eq 3 ]; then
     BLAST_DB_TYPES_ARRAY=( $(echo $BLAST_DB_TYPES | sed 's/-/ /g') )
-    BLAST_RESULTS_COUNT=$(ls ${IDENTIFY}_blast_results_* | wc -l)
     CONTIG_NUM_ARRAY=( $(ls ${IDENTIFY}_long_contigs_* | sed "s/${IDENTIFY}_long_contigs_//" | sed "s/.fasta//") )
-    MAX_RESULTS=$(echo ${#CONTIG_NUM_ARRAY[@]} ${#BLAST_DB_TYPES_ARRAY[@]} | awk '{ print $1 * $2 }')
     CONTIG_COUNT=1
     for CONTIG_NUM in ${CONTIG_NUM_ARRAY[@]}; do
         for DB_TYPE in ${BLAST_DB_TYPES_ARRAY[@]}; do
@@ -520,6 +518,8 @@ elif [ $STEP -eq 3 ]; then
         done
         CONTIG_COUNT=$((CONTIG_COUNT+1))
     done
+    BLAST_RESULTS_COUNT=$(ls ${IDENTIFY}_blast_results_* | wc -l)
+    MAX_RESULTS=$(echo ${#CONTIG_NUM_ARRAY[@]} ${#BLAST_DB_TYPES_ARRAY[@]} | awk '{ print $1 * $2 }')
     if [ $BLAST_RESULTS_COUNT -eq 0 ]; then
         echo "No BLAST results found. Exiting with code 1" >> $PIPELINE_STATUS
         echo "END: $(date)" >> $PIPELINE_STATUS
