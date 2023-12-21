@@ -514,6 +514,8 @@ elif [ $STEP -eq 3 ]; then
         for DB_TYPE in ${BLAST_DB_TYPES_ARRAY[@]}; do
             if [ ! -f ${IDENTIFY}_blast_results_${DB_TYPE}_${CONTIG_NUM}.json ]; then
                 echo -e "\tLong contig file number $CONTIG_COUNT - ${IDENTIFY}_blast_results_${DB_TYPE}_${CONTIG_NUM}.json not found" >> $PIPELINE_STATUS
+            else
+                rm ${STD_ERR_OUT_DIR}/*_${CONTIG_COUNT}_2_blast_contigs.out ${STD_ERR_OUT_DIR}/*_${CONTIG_COUNT}_2_blast_contigs.err
             fi
         done
         CONTIG_COUNT=$((CONTIG_COUNT+1))
@@ -524,7 +526,6 @@ elif [ $STEP -eq 3 ]; then
         exit 1
     else
         echo "$BLAST_RESULTS_COUNT BLAST results out of a possible $MAX_RESULTS maximum" >> $PIPELINE_STATUS
-        # rm ${STD_ERR_OUT_DIR}/*2_blast_contigs.out ${STD_ERR_OUT_DIR}/*2_blast_contigs.err
     fi
     echo "### BLAST aligning contigs ### - END: $(date)" >> $PIPELINE_STATUS
     
