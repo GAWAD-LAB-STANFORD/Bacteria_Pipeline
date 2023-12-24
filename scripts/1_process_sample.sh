@@ -98,7 +98,7 @@ for ((REF_INDEX = 0 ; REF_INDEX < ${#REF_FASTA_ARRAY[@]} ; REF_INDEX++)); do
     echo "### Collecting ${REF_NAME} alignment metrics ### - END: $(date)"
 
     echo "### Filtering unmapped reads from $REF_NAME into a new BAM ### - START: $(date)"
-    samtools view -b -q 1 ${SAMPLE}_${REF_NAME}_aligned.bam > ${SAMPLE}_no_${REF_NAME}.bam
+    samtools view -b -f 4 ${SAMPLE}_${REF_NAME}_aligned.bam > ${SAMPLE}_no_${REF_NAME}.bam
     samtools index ${SAMPLE}_no_${REF_NAME}.bam
     echo "### Filtering unmapped reads from $REF_NAME into a new BAM ### - END: $(date)"
 
