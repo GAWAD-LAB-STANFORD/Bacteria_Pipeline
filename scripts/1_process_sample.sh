@@ -137,7 +137,6 @@ mkdir contigs_${SAMPLE}
 python3 /oak/stanford/groups/cgawad/Sequencing_Analysis_Tools/SPAdes-3.14.0-Linux/bin/spades.py \
     -t 4 -m 64 -1 ${SAMPLE}_ref_filtered${R1_SUFFIX} -2 ${SAMPLE}_ref_filtered${R2_SUFFIX} -o contigs_${SAMPLE}
 mv contigs_${SAMPLE}/contigs.fasta ${SAMPLE}_contigs.fasta
-mv contigs_${SAMPLE}/scaffolds.fasta ${SAMPLE}_scaffolds.fasta
 echo "### De novo assembling contigs ### - END: $(date)"
 
 echo "### Aligning reads to contigs ### - START: $(date)"
@@ -162,6 +161,36 @@ samtools view ${SAMPLE}_contig_aligned.bam | cut -f 3 | grep "NODE" > ${SAMPLE}_
 printf "${SAMPLE}\n%0.s" $(seq $(cat ${SAMPLE}_temp_contig_read_targets.txt | wc -l)) | \
     paste - ${SAMPLE}_temp_contig_read_targets.txt | uniq -c | sed 's/^[[:space:]]*//' | tr -s ' ' '\t'  >> ${SAMPLE}_contig_read_targets.tsv
 echo "### Exporting summarized and contig read targets from BAM ### - END: $(date)"
+
+if [ ! -f contigs_${SAMPLE}/scaffolds.fasta ]; then
+    echo -e "\t\tWARNING: No scaffolds made"
+elif [ $(cmp ${SAMPLE}_contigs.fasta contigs_${SAMPLE}/scaffolds.fasta) ]; then
+    echo -e "\t\tWARNING: Contigs are the same as scaffolds"
+else
+    mv contigs_${SAMPLE}/scaffolds.fasta ${SAMPLE}_scaffolds.fasta
+    echo "### Aligning reads to scaffolds ### - START: $(date)"
+    bwa index ${SAMPLE}_scaffolds.fasta
+    bwa mem -M ${SAMPLE}_scaffolds.fasta ${SAMPLE}_ref_filtered${R1_SUFFIX} ${SAMPLE}_ref_filtered${R2_SUFFIX} | \
+        samtools view -b - | samtools sort -o ${SAMPLE}_scaffold_aligned.bam -
+    echo "### Aligning reads to scaffolds ### - END: $(date)"
+
+    echo "### Collecting scaffold alignment metrics ### - START: $(date)"
+    gatk --java-options "-XX:+UseParallelGC -XX:ParallelGCThreads=4 -Xmx64g" CollectAlignmentSummaryMetrics \
+        -R ${SAMPLE}_scaffolds.fasta -I ${SAMPLE}_scaffold_aligned.bam -O ${SAMPLE}_scaffold_alignment_metrics.tsv
+    echo "### Collecting scaffold alignment metrics ### - END: $(date)"
+
+    echo "### Exporting summarized and scaffold read targets from BAM ### - START: $(date)"
+    SCAFFOLD_ALIGNED_READS=$(samtools view ${SAMPLE}_scaffold_aligned.bam | cut -f 3 | grep "NODE" | wc -l)
+    echo -e "${SAMPLE}\tscaffold\t${SCAFFOLD_ALIGNED_READS}" >> ${SAMPLE}_summed_read_targets.tsv
+    UNALIGNED_READS=$(samtools view ${SAMPLE}_scaffold_aligned.bam | cut -f 3 | grep -v "NODE" | wc -l)
+    echo -e "${SAMPLE}\tscaffold_unaligned\t${UNALIGNED_READS}" >> ${SAMPLE}_summed_read_targets.tsv
+
+    echo -e "read_count\tsample\ttarget" > ${SAMPLE}_scaffold_read_targets.tsv
+    samtools view ${SAMPLE}_scaffold_aligned.bam | cut -f 3 | grep "NODE" > ${SAMPLE}_temp_scaffold_read_targets.txt
+    printf "${SAMPLE}\n%0.s" $(seq $(cat ${SAMPLE}_temp_scaffold_read_targets.txt | wc -l)) | \
+        paste - ${SAMPLE}_temp_scaffold_read_targets.txt | uniq -c | sed 's/^[[:space:]]*//' | tr -s ' ' '\t'  >> ${SAMPLE}_scaffold_read_targets.tsv
+    echo "### Exporting summarized and scaffold read targets from BAM ### - END: $(date)"
+fi
 
 # echo "### Marking low complexity regions in contigs ### - START: $(date)"
 # ${TOOLS_DIR}/ncbi-blast-2.10.0+/bin/dustmasker -in ${SAMPLE}_contigs.fasta -outfmt fasta -out ${SAMPLE}_contigs_high_complexity.fasta
@@ -188,6 +217,12 @@ rm ${SAMPLE}_contigs.fasta.amb ${SAMPLE}_contigs.fasta.ann ${SAMPLE}_contigs.fas
 rm ${SAMPLE}_contigs.fasta.pac ${SAMPLE}_contigs.fasta.sa
 rm ${SAMPLE}_contig_aligned.bam ${SAMPLE}_contig_aligned.bam.bai
 rm ${SAMPLE}_temp_contig_read_targets.txt
+if [ -f ${SAMPLE}_scaffolds.fasta ]
+    rm ${SAMPLE}_scaffolds.fasta.amb ${SAMPLE}_scaffolds.fasta.ann ${SAMPLE}_scaffolds.fasta.bwt
+    rm ${SAMPLE}_scaffolds.fasta.pac ${SAMPLE}_scaffolds.fasta.sa
+    rm ${SAMPLE}_scaffold_aligned.bam ${SAMPLE}_scaffold_aligned.bam.bai
+    rm ${SAMPLE}_temp_scaffold_read_targets.txt
+fi
 rm ${SAMPLE}_any_mapping_to_human_query_names.txt
 rm ${SAMPLE}_kraken_vs_ref_filtered.tsv
 rm ${SAMPLE}_ref_filtered${R1_SUFFIX} ${SAMPLE}_ref_filtered${R2_SUFFIX}
