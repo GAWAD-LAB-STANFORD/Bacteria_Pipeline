@@ -15,8 +15,8 @@ Required arguments: -p/--project <arg> and either -f/--fastq_dir <arg> or -r/--r
 Optional arguments: -s/--scratch_dir <arg>, --err_out_dir <arg>, --skip_scratch, -b/--run_dir <arg>, \n\t\
     --sample_sheet <arg>, --skip_identify, --only_identify, --identify <arg>, \n\t\
     --R1_suffix <arg>, --R2_suffix <arg>, --skip_trimming, --rna, --filter_rhesus, \n\t\
-    --contig_len_min <arg>, --kraken_db_types <arg>, --blast_db_types <arg>, \n\t\
-    --num_alignments <arg>, --contig_align_min <arg>, --add_genus, --slurm <arg> \n\
+    --analyze_scaffolds, --query_len_min <arg>, --kraken_db_types <arg>, --blast_db_types <arg>, \n\t\
+    --num_alignments <arg>, --blast_hit_rank_min <arg>, --query_align_min <arg>, --add_genus, --slurm <arg> \n\
 Defaults: \n\t\
     If no fastq_dir specified, uses results_dir \n\t\
     If no results_dir specified, makes new directory in fastq_dir \n\t\
@@ -24,11 +24,12 @@ Defaults: \n\t\
     sample_sheet: SampleSheet.csv \n\t\
     R1_suffix: _L001_R1_001.fastq.gz or _R1_001.fastq.gz or _R1.fastq.gz \n\t\
     R2_suffix: _L001_R2_001.fastq.gz or _R2_001.fastq.gz or _R2.fastq.gz \n\t\
-    contig_len_min: 5000 \n\t\
+    query_len_min: 5000 \n\t\
     kraken_db_types: microbial \n\t\
     blast_db_types: nt \n\t\
     num_alignments: 5 \n\t\
-    contig_align_min: 0.9 \n\n\
+    blast_hit_rank_min: 1 \n\t\
+    query_align_min: 0.9 \n\n\
 Run after demultiplexing and with fastq directory: \n\t\
     sh ${PIPELINE_DIR}/submit_all.sh --fastq_dir /oak/stanford/groups/cgawad/2020-01-01_Fastqs/ --project 2020-01-01_Project \n\n\
 Run after demultiplexing and with results directory: \n\t\
@@ -48,11 +49,13 @@ ONLY_IDENTIFY=0
 SKIP_TRIMMOMATIC=0
 RNA=0
 FILTER_RHESUS=0
-CONTIG_LENGTH_MINIMUM=5000
+QUERY="contig"
+QUERY_LENGTH_MIN=5000
 KRAKEN_DB_TYPES="microbial"
 BLAST_DB_TYPES="nt"
 NUM_ALIGNMENTS=5
-CONTIG_ALIGN_MINIMUM=0.9
+BLAST_HIT_RANK_MIN=1
+QUERY_ALIGN_MIN=0.9
 ADD_GENUS=0
 STEP=0
 TEMP_ARRAY_START=0
@@ -109,8 +112,10 @@ while [ "$1" != "" ]; do
                                 ;;
         --filter_rhesus )       FILTER_RHESUS=1
                                 ;;
-        --contig_len_min )      shift
-                                CONTIG_LENGTH_MINIMUM=$1
+        --analyze_scaffolds )   QUERY="scaffold"
+                                ;;
+        --query_len_min )       shift
+                                QUERY_LENGTH_MIN=$1
                                 ;;
         --add_genus )           shift
                                 ADD_GENUS=1
@@ -124,8 +129,11 @@ while [ "$1" != "" ]; do
         --num_alignments )      shift
                                 NUM_ALIGNMENTS=$1
                                 ;;
-        --contig_align_min )    shift
-                                CONTIG_ALIGN_MIN=$1
+        --blast_hit_rank_min )  shift
+                                BLAST_HIT_RANK_MIN=$1
+                                ;;
+        --query_align_min )     shift
+                                QUERY_ALIGN_MIN=$1
                                 ;;
         --step1 )               STEP=1
                                 ;;
@@ -150,7 +158,7 @@ SCRIPT_DIR="${PIPELINE_DIR}/scripts"
 KRAKEN_DB_DIR_PREFIX="/oak/stanford/groups/cgawad/Reference_Files/Kraken2_Fatfree_Databases/kraken2-fatfree-"
 NCBI_DB_DIR_PREFIX="/oak/stanford/groups/cgawad/Reference_Files/NCBI_RefSeq_Databases/ncbi_database_"
 NCBI_ANNOTATIONS_DIR="/oak/stanford/groups/cgawad/Reference_Files/NCBI_Annotations"
-CONTIGS_PER_BLAST_JOB=320
+QUERIES_PER_BLAST_JOB=320
 
 # Ensure we have the required variables set and set other variables
 if ([ -z $FASTQ_DIR ] && [ -z $RESULTS_DIR ]) || [ -z $PROJECT ] || [ -z $PIPELINE_DIR ]; then
@@ -235,8 +243,11 @@ else
     REF_FASTA_STRING="${REF_FASTA}"
     REF_NAME_STRING="human"
 fi
-if [ $CONTIG_LENGTH_MINIMUM -ne 5000 ]; then
-    OPTIONS+=( "--contig_len_min $CONTIG_LENGTH_MINIMUM" )
+if [ "$QUERY" != "contig" ]; then
+    OPTIONS+=( "--analyze_scaffolds" )
+fi
+if [ $QUERY_LENGTH_MIN -ne 5000 ]; then
+    OPTIONS+=( "--query_len_min $QUERY_LENGTH_MIN" )
 fi
 if [ "$KRAKEN_DB_TYPES" != "microbial" ]; then
     OPTIONS+=( "--kraken_db_types $KRAKEN_DB_TYPES" )
@@ -247,8 +258,11 @@ fi
 if [ $NUM_ALIGNMENTS -ne 250 ]; then
     OPTIONS+=( "--num_alignments $NUM_ALIGNMENTS" )
 fi
-if [ "$CONTIG_ALIGN_MINIMUM" = "0.9" ]; then
-    OPTIONS+=( "--contig_align_min $CONTIG_ALIGN_MINIMUM" )
+if [ "$BLAST_HIT_RANK_MINIMUM" != "1" ]; then
+    OPTIONS+=( "--blast_hit_rank_min $BLAST_HIT_RANK_MINIMUM" )
+fi
+if [ "$QUERY_ALIGN_MIN" != "0.9" ]; then
+    OPTIONS+=( "--query_align_min $QUERY_ALIGN_MIN" )
 fi
 if [ $ADD_GENUS -eq 1 ]; then
     FIGURE_OPTIONS+=( "--add_genus" )
@@ -271,10 +285,10 @@ if [ "$TEMP_PIPELINE_DIR" = "$PIPELINE_DIR" ]; then
         echo "Option: Scratch dir is the same as Results dir" >> $PIPELINE_STATUS
     fi
     if [ $SKIP_IDENTIFY -eq 1 ]; then
-        echo "Option: Skip identification of data - will only process the fastqs, build the contigs, and run Kraken2" >> $PIPELINE_STATUS
+        echo "Option: Skip identification of data - will only process the fastqs, build the contigs and scaffolds, and run Kraken2" >> $PIPELINE_STATUS
     fi
     if [ $ONLY_IDENTIFY -eq 1 ]; then
-        echo "Option: Only identification of data - will only BLAST and filter from already built contigs" >> $PIPELINE_STATUS
+        echo "Option: Only identification of data - will only BLAST and filter from already built contigs and scaffolds" >> $PIPELINE_STATUS
     fi
     if [ "$IDENTIFY" != "$PROJECT" ]; then
         echo "Option: Identify different from Project: $IDENTIFY" >> $PIPELINE_STATUS
@@ -288,10 +302,15 @@ if [ "$TEMP_PIPELINE_DIR" = "$PIPELINE_DIR" ]; then
     if [ $FILTER_RHESUS -eq 1 ]; then
         echo "Option: Filter rhesus - will remove reads that align to macaca mulatta rhesus monkey" >> $PIPELINE_STATUS
     fi
-    if [ $CONTIG_LENGTH_MINIMUM -eq 5000 ]; then
-        echo "Default: Contig length minimum: 5000" >> $PIPELINE_STATUS
+    if [ "$QUERY" = "contig" ];
+        echo "Default: Contigs will be blasted and analyzed" >> $PIPELINE_STATUS
     else
-        echo "Option: Contig length minimum: $CONTIG_LENGTH_MINIMUM" >> $PIPELINE_STATUS
+        echo "Option: Scaffolds will be blasted and analyzed" >> $PIPELINE_STATUS
+    fi
+    if [ $QUERY_LENGTH_MIN -eq 5000 ]; then
+        echo "Default: Query length minimum: 5000" >> $PIPELINE_STATUS
+    else
+        echo "Option: Query length minimum: $QUERY_LENGTH_MIN" >> $PIPELINE_STATUS
     fi
     if [ "$KRAKEN_DB_TYPES" = "microbial" ]; then
         echo "Default: Kraken db types: microbial" >> $PIPELINE_STATUS
@@ -303,10 +322,15 @@ if [ "$TEMP_PIPELINE_DIR" = "$PIPELINE_DIR" ]; then
     else
         echo "Option: Blast db types: $BLAST_DB_TYPES" >> $PIPELINE_STATUS
     fi
-    if [ "$CONTIG_ALIGN_MINIMUM" = "0.9" ]; then
-        echo "Default: Contig align minimum: 0.9" >> $PIPELINE_STATUS
+    if [ "$BLAST_HIT_RANK_MINIMUM" = "1" ]; then
+        echo "Default: Blast hit rank minimum: 1" >> $PIPELINE_STATUS
     else
-        echo "Option: Contig align minimum: $CONTIG_ALIGN_MINIMUM" >> $PIPELINE_STATUS
+        echo "Option: Blast hit rank minimum: $BLAST_HIT_RANK_MINIMUM" >> $PIPELINE_STATUS
+    fi
+    if [ "$QUERY_ALIGN_MIN" = "0.9" ]; then
+        echo "Default: Query align minimum: 0.9" >> $PIPELINE_STATUS
+    else
+        echo "Option: Query align minimum: $QUERY_ALIGN_MIN" >> $PIPELINE_STATUS
     fi
     if [ $ADD_GENUS -eq 1 ]; then
         echo "Option: Adding genus to figures" >> $PIPELINE_STATUS
@@ -366,7 +390,7 @@ if [ $STEP -eq 0 ] && [ ! -z $RUN_DIR ] && [ $ONLY_IDENTIFY -eq 0 ]; then
 elif ([ $STEP -eq 0 ] && [ -z $RUN_DIR ] && [ $ONLY_IDENTIFY -eq 0 ]) || ([ $STEP -eq 1 ] && [ $ONLY_IDENTIFY -eq 0 ]); then
     if [ $TEMP_ARRAY_START -eq 0 ]; then
         echo -e "Number of samples: ${#SAMPLE_ARRAY[@]}\nSamples: ${SAMPLE_ARRAY[@]}\n" >> $PIPELINE_STATUS
-        echo "### De novo assembling contigs and detecting contamination ### - START: $(date)" >> $PIPELINE_STATUS
+        echo "### De novo assembling contigs and scaffolds, and detecting contamination ### - START: $(date)" >> $PIPELINE_STATUS
         JOB_COUNT=${#SAMPLE_ARRAY[@]}
         echo "Jobs to run: $JOB_COUNT" >> $PIPELINE_STATUS
         TEMP_ARRAY_START=1
@@ -414,15 +438,17 @@ elif [ $STEP -eq 2 ] && [ $ONLY_IDENTIFY -eq 0 ]; then
         fi
         SAMPLE_COUNT=$((SAMPLE_COUNT+1))
     done
-    CONTIG_COUNT=$(ls *_contigs.fasta | wc -l)
-    if [ $CONTIG_COUNT -eq 0 ]; then
+    CONTIG_FILE_COUNT=$(ls *_contigs.fasta | wc -l)
+    SCAFFOLD_FILE_COUNT=$(ls *_scaffolds.fasta | wc -l)
+    if [ $CONTIG_FILE_COUNT -eq 0 ]; then
         echo "No contigs found. Exiting with code 1" >> $PIPELINE_STATUS
         echo "END: $(date)" >> $PIPELINE_STATUS
         exit 1
     else
-        echo "$CONTIG_COUNT contigs out of a possible ${#SAMPLE_ARRAY[@]} maximum" >> $PIPELINE_STATUS
+        echo "$CONTIG_FILE_COUNT contig files out of a possible ${#SAMPLE_ARRAY[@]} maximum" >> $PIPELINE_STATUS
+        echo "$SCAFFOLD_FILE_COUNT scaffold files out of a possible ${#SAMPLE_ARRAY[@]} maximum" >> $PIPELINE_STATUS
     fi
-    echo "### De novo assembling contigs and detecting contamination ### - END: $(date)" >> $PIPELINE_STATUS
+    echo "### De novo assembling contigs and scaffolds, and detecting contamination ### - END: $(date)" >> $PIPELINE_STATUS
     
     
     ml R/4.2.0
@@ -439,9 +465,9 @@ fi
 
 
 if ([ $STEP -eq 0 ] && [ $ONLY_IDENTIFY -eq 1 ]) || [ $STEP -eq 2 ]; then
-    SAMPLE_ARRAY=( $(ls *_contigs.fasta | sed "s/_contigs.fasta//") )
+    SAMPLE_ARRAY=( $(ls *_${QUERY}s.fasta | sed "s/_${QUERY}s.fasta//") )
     if [ ${#SAMPLE_ARRAY[@]} -eq 0 ]; then
-        echo "No contig fasta files found in the results directory. Exiting with code 1" >> $PIPELINE_STATUS
+        echo "No ${QUERY} fasta files found in the results directory. Exiting with code 1" >> $PIPELINE_STATUS
         echo "END: $(date)" >> $PIPELINE_STATUS
         exit 1
     fi
@@ -452,38 +478,37 @@ if ([ $STEP -eq 0 ] && [ $ONLY_IDENTIFY -eq 1 ]) || [ $STEP -eq 2 ]; then
     if [ $TEMP_ARRAY_START -eq 0 ]; then
         ml python/3.6.1 biology py-biopython/1.79_py39
 
-
-        echo "### Organzing contigs ### - START: $(date)" >> $PIPELINE_STATUS
-        echo -e "\npython3 ${SCRIPT_DIR}/organize_contigs.py \
-            _contigs.fasta $CONTIG_LENGTH_MINIMUM $CONTIGS_PER_BLAST_JOB ${IDENTIFY}_long_contigs_ $PIPELINE_STATUS"
-        python3 ${SCRIPT_DIR}/organize_contigs.py \
-            "_contigs.fasta" $CONTIG_LENGTH_MINIMUM $CONTIGS_PER_BLAST_JOB "${IDENTIFY}_long_contigs_" $PIPELINE_STATUS
-        if [ $(ls ${IDENTIFY}_long_contigs_* | wc -l) -eq 0 ]; then
-            echo "No contigs longer than $CONTIG_LENGTH_MINIMUM. Exiting with code 1" >> $PIPELINE_STATUS
+        echo "### Organzing queries ### - START: $(date)" >> $PIPELINE_STATUS
+        echo -e "\npython3 ${SCRIPT_DIR}/organize_queries.py \
+            _${QUERY}s.fasta $QUERY_LENGTH_MIN $QUERIES_PER_BLAST_JOB ${IDENTIFY}_long_${QUERY}s_ $PIPELINE_STATUS"
+        python3 ${SCRIPT_DIR}/organize_queries.py \
+            "_${QUERY}s.fasta" $QUERY_LENGTH_MIN $QUERIES_PER_BLAST_JOB "${IDENTIFY}_long_${QUERY}s_" $PIPELINE_STATUS
+        if [ $(ls ${IDENTIFY}_long_${QUERY}s_* | wc -l) -eq 0 ]; then
+            echo "No ${QUERY}s longer than $QUERY_LENGTH_MIN. Exiting with code 1" >> $PIPELINE_STATUS
             echo "END: $(date)" >> $PIPELINE_STATUS
             exit 1
         fi
-        echo "### Organzing contigs ### - END: $(date)" >> $PIPELINE_STATUS
+        echo "### Organzing queries ### - END: $(date)" >> $PIPELINE_STATUS
         
 
-        echo "### BLAST aligning contigs ### - START: $(date)" >> $PIPELINE_STATUS
-        LONG_CONTIG_ARRAY=( $(ls ${IDENTIFY}_long_contigs_*) )
-        JOB_COUNT=${#LONG_CONTIG_ARRAY[@]}
+        echo "### BLAST aligning queries ### - START: $(date)" >> $PIPELINE_STATUS
+        LONG_QUERY_ARRAY=( $(ls ${IDENTIFY}_long_${QUERY}s_*) )
+        JOB_COUNT=${#LONG_QUERY_ARRAY[@]}
         echo "Jobs to run: $JOB_COUNT" >> $PIPELINE_STATUS
         TEMP_ARRAY_START=1
     fi
 
 
-    TEMP_LONG_CONTIG_ARRAY=( ${LONG_CONTIG_ARRAY[@]:$(($TEMP_ARRAY_START - 1)):$TEMP_ARRAY_INCREMENT} )
-    TEMP_JOB_COUNT=${#TEMP_LONG_CONTIG_ARRAY[@]}
-    echo "Submitting $TEMP_JOB_COUNT jobs for samples $TEMP_ARRAY_START to $(($TEMP_ARRAY_START + ${#TEMP_LONG_CONTIG_ARRAY[@]} - 1))" >> $PIPELINE_STATUS
-    TEMP_LONG_CONTIGS_STRING=$( IFS=$':'; echo "${TEMP_LONG_CONTIG_ARRAY[*]}" )
+    TEMP_LONG_QUERY_ARRAY=( ${LONG_QUERY_ARRAY[@]:$(($TEMP_ARRAY_START - 1)):$TEMP_ARRAY_INCREMENT} )
+    TEMP_JOB_COUNT=${#TEMP_LONG_QUERY_ARRAY[@]}
+    echo "Submitting $TEMP_JOB_COUNT jobs for samples $TEMP_ARRAY_START to $(($TEMP_ARRAY_START + ${#TEMP_LONG_QUERY_ARRAY[@]} - 1))" >> $PIPELINE_STATUS
+    TEMP_LONG_QUERIES_STRING=$( IFS=$':'; echo "${TEMP_LONG_QUERY_ARRAY[*]}" )
     echo -e "\nsbatch --parsable -e $STD_ERR_OUT_DIR/%A_%a_%x.err -o $STD_ERR_OUT_DIR/%A_%a_%x.out \
-        --array=1-${TEMP_JOB_COUNT} ${SCRIPT_DIR}/2_blast_contigs.sh \
-        $SCRATCH_DIR $TOOLS_DIR $BLAST_DB_TYPES $NCBI_DB_DIR_PREFIX $IDENTIFY $NUM_ALIGNMENTS $TEMP_LONG_CONTIGS_STRING\n" >> $PIPELINE_STATUS
+        --array=1-${TEMP_JOB_COUNT} ${SCRIPT_DIR}/2_blast_queries.sh \
+        $SCRATCH_DIR $TOOLS_DIR $BLAST_DB_TYPES $NCBI_DB_DIR_PREFIX $IDENTIFY $NUM_ALIGNMENTS $QUERY $TEMP_LONG_QUERIES_STRING\n" >> $PIPELINE_STATUS
     DEPENDENCY=$(sbatch --parsable -e $STD_ERR_OUT_DIR/%A_%a_%x.err -o $STD_ERR_OUT_DIR/%A_%a_%x.out \
-        --array=1-${TEMP_JOB_COUNT} ${SCRIPT_DIR}/2_blast_contigs.sh \
-        $SCRATCH_DIR $TOOLS_DIR $BLAST_DB_TYPES $NCBI_DB_DIR_PREFIX $IDENTIFY $NUM_ALIGNMENTS $TEMP_LONG_CONTIGS_STRING)
+        --array=1-${TEMP_JOB_COUNT} ${SCRIPT_DIR}/2_blast_queries.sh \
+        $SCRATCH_DIR $TOOLS_DIR $BLAST_DB_TYPES $NCBI_DB_DIR_PREFIX $IDENTIFY $NUM_ALIGNMENTS $QUERY $TEMP_LONG_QUERIES_STRING)
     TEMP_ARRAY_START=$(($TEMP_ARRAY_START + $TEMP_ARRAY_INCREMENT))
     echo -e "$(date)\nNew start: $TEMP_ARRAY_START\nIncrement: $TEMP_ARRAY_INCREMENT" >> $PIPELINE_STATUS
 
@@ -506,20 +531,20 @@ if ([ $STEP -eq 0 ] && [ $ONLY_IDENTIFY -eq 1 ]) || [ $STEP -eq 2 ]; then
     fi
 elif [ $STEP -eq 3 ]; then
     BLAST_DB_TYPES_ARRAY=( $(echo $BLAST_DB_TYPES | sed 's/-/ /g') )
-    CONTIG_NUM_ARRAY=( $(ls ${IDENTIFY}_long_contigs_* | sed "s/${IDENTIFY}_long_contigs_//" | sed "s/.fasta//") )
-    CONTIG_COUNT=1
-    for CONTIG_NUM in ${CONTIG_NUM_ARRAY[@]}; do
+    QUERY_NUM_ARRAY=( $(ls ${IDENTIFY}_long_${QUERY}s_* | sed "s/${IDENTIFY}_long_${QUERY}s_//" | sed "s/.fasta//") )
+    QUERY_COUNT=1
+    for QUERY_NUM in ${QUERY_NUM_ARRAY[@]}; do
         for DB_TYPE in ${BLAST_DB_TYPES_ARRAY[@]}; do
-            if [ ! -f ${IDENTIFY}_blast_results_${DB_TYPE}_${CONTIG_NUM}.json ]; then
-                echo -e "\tLong contig file number $CONTIG_COUNT - ${IDENTIFY}_blast_results_${DB_TYPE}_${CONTIG_NUM}.json not found" >> $PIPELINE_STATUS
+            if [ ! -f ${IDENTIFY}_blast_results_${DB_TYPE}_${QUERY_NUM}.json ]; then
+                echo -e "\tLong $QUERY file number $QUERY_COUNT - ${IDENTIFY}_blast_results_${DB_TYPE}_${QUERY_NUM}.json not found" >> $PIPELINE_STATUS
             else
-                rm ${STD_ERR_OUT_DIR}/*_${CONTIG_COUNT}_2_blast_contigs.out ${STD_ERR_OUT_DIR}/*_${CONTIG_COUNT}_2_blast_contigs.err
+                rm ${STD_ERR_OUT_DIR}/*_${QUERY_COUNT}_2_blast_queries.out ${STD_ERR_OUT_DIR}/*_${QUERY_COUNT}_2_blast_queries.err
             fi
         done
-        CONTIG_COUNT=$((CONTIG_COUNT+1))
+        QUERY_COUNT=$((QUERY_COUNT+1))
     done
     BLAST_RESULTS_COUNT=$(ls ${IDENTIFY}_blast_results_* | wc -l)
-    MAX_RESULTS=$(echo ${#CONTIG_NUM_ARRAY[@]} ${#BLAST_DB_TYPES_ARRAY[@]} | awk '{ print $1 * $2 }')
+    MAX_RESULTS=$(echo ${#QUERY_NUM_ARRAY[@]} ${#BLAST_DB_TYPES_ARRAY[@]} | awk '{ print $1 * $2 }')
     if [ $BLAST_RESULTS_COUNT -eq 0 ]; then
         echo "No BLAST results found. Exiting with code 1" >> $PIPELINE_STATUS
         echo "END: $(date)" >> $PIPELINE_STATUS
@@ -527,7 +552,7 @@ elif [ $STEP -eq 3 ]; then
     else
         echo "$BLAST_RESULTS_COUNT BLAST results out of a possible $MAX_RESULTS maximum" >> $PIPELINE_STATUS
     fi
-    echo "### BLAST aligning contigs ### - END: $(date)" >> $PIPELINE_STATUS
+    echo "### BLAST aligning queries ### - END: $(date)" >> $PIPELINE_STATUS
     
     
     ml python/3.6.1 py-pandas/0.23.0_py36 py-numpy/1.14.3_py36
@@ -563,26 +588,30 @@ elif [ $STEP -eq 3 ]; then
         --project $PROJECT --identify $IDENTIFY \
         --sample_read_count_filename ${PROJECT}.sample_read_counts.tsv \
         --summed_read_targets_filename ${PROJECT}.summed_read_targets.tsv \
-        --contig_read_targets_filename ${PROJECT}.contig_read_targets.tsv \
-        --contig_data_filename ${PROJECT}.contig_data.tsv \
+        --query $QUERY \
+        --query_read_targets_filename ${PROJECT}.${QUERY}_read_targets.tsv \
+        --query_data_filename ${PROJECT}.${QUERY}_data.tsv \
         --kraken_db_types $KRAKEN_DB_TYPES --kraken_jtree_suffix .kraken_jtree.json \
         --blast_db_types $BLAST_DB_TYPES --blast_results_suffix .blast_results.tsv \
-        --contig_alignment_fraction_min $CONTIG_ALIGN_MINIMUM \
+        --blast_hit_rank_min $BLAST_HIT_RANK_MIN \
+        --query_align_min $QUERY_ALIGN_MIN \
         --ncbi_annotations_dir $NCBI_ANNOTATIONS_DIR ${FIGURE_OPTIONS[@]}\n" >> $PIPELINE_STATUS
     Rscript ${SCRIPT_DIR}/analyze_and_plot_results.R \
         --project $PROJECT --identify $IDENTIFY \
         --sample_read_count_filename ${PROJECT}.sample_read_counts.tsv \
         --summed_read_targets_filename ${PROJECT}.summed_read_targets.tsv \
-        --contig_read_targets_filename ${PROJECT}.contig_read_targets.tsv \
-        --contig_data_filename ${PROJECT}.contig_data.tsv \
+        --query $QUERY \
+        --query_read_targets_filename ${PROJECT}.${QUERY}_read_targets.tsv \
+        --query_data_filename ${PROJECT}.${QUERY}_data.tsv \
         --kraken_db_types $KRAKEN_DB_TYPES --kraken_jtree_suffix ".kraken_jtree.json" \
         --blast_db_types $BLAST_DB_TYPES --blast_results_suffix ".blast_results.tsv" \
-        --contig_alignment_fraction_min $CONTIG_ALIGN_MINIMUM \
+        --blast_hit_rank_min $BLAST_HIT_RANK_MIN \
+        --query_align_min $QUERY_ALIGN_MIN \
         --ncbi_annotations_dir $NCBI_ANNOTATIONS_DIR ${FIGURE_OPTIONS[@]}
     echo "### Processing contamination, Kraken results, BLAST results, and making final figures ### - END: $(date)" >> $PIPELINE_STATUS
     
     echo "### Removing intermediate files ### - START: $(date)" >> $PIPELINE_STATUS
-    rm ${IDENTIFY}_long_contigs_*
+    rm ${IDENTIFY}_long_${QUERY}s_*
     rm ${IDENTIFY}.*.kraken_jtree.json 
     rm ${IDENTIFY}_blast_results_*.json
     echo "### Removing intermediate files ### - END: $(date)" >> $PIPELINE_STATUS
