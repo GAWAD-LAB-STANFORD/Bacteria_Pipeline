@@ -30,23 +30,25 @@
         - If you do not specify a fastq directory, the program will assume the fastq.gz files are in the results directory you specified, and will end the program if no fastq.gz files are found
         - If you do not specify a results directory, the program will make a new folder with the current date in the name within the fastq directory 
     - Specify the project name for the final resulting VCF that will be made using *-p* or *--project*
-- Optional arguments: -s/--scratch_dir >arg<, --err_out_dir >arg<, --skip_scratch, -b/--run_dir >arg<, --sample_sheet >arg<, --skip_identify, --only_identify, --identify >arg<, --R1_suffix >arg<, --R2_suffix >arg<, --skip_trimming, --rna, --filter_rhesus, --contig_len_min >arg<, --kraken_db_types >arg<, --blast_db_types >arg<, --num_alignments >arg<, --contig_align_min >arg<, --add_genus, --slurm >arg<
-    - You can specify a directory to perform all intermediate steps in with *-s* or *--scratch_dir*
-    - You can specify a directory to output the standard error and out print statements of all jobs to using *--err_out_dir*
-    - If you want to skip having the pipeline run intermediate steps in scratch, use *--skip_scratch*
-    - You can have the script demultiplex your BCL files into fastq.gz files by specifying a run folder using *-b* or *--run_dir*. The program will look for a sample sheet called SampleSheet.csv in the first level within the run_dir or you can specify a different sample sheet with *--sample_sheet*. The program will make the fastq directory if it does not exist and tell you the sizes of undeteremined vs fully demultiplexed reads
-    - If you only want to process the fastqs, build the contigs, and run Kraken2, add the *--skip_identify* option and only the first phase of the pipeline will be run
-    - If you want to BLAST your data, filter the results, and make the final figures using already existing contig files, you can use the *--only_identify*
+- Optional arguments: -s/--scratch_dir >arg<, --err_out_dir >arg<, --skip_scratch, -b/--run_dir >arg<, --sample_sheet >arg<, --skip_identify, --only_identify, --identify >arg<, --R1_suffix >arg<, --R2_suffix >arg<, --skip_trimming, --rna, --filter_rhesus, --analyze_scaffolds, --query_len_min >arg<, --kraken_db_types >arg<, --blast_db_types >arg<, --num_alignments >arg<, --query_align_min >arg<, --blast_hit_rank_min >arg<, --add_genus, --slurm >arg<
+    - If you want to specify a directory to perform all intermediate steps in, specify with *-s* or *--scratch_dir*
+    - If you want to specify a directory to output the standard error and out print statements of all jobs to, specify with *--err_out_dir*
+    - If you want to skip having the pipeline run intermediate steps in scratch, add *--skip_scratch*
+    - If you want the script to demultiplex your BCL files into fastq.gz files, specify the run folder with *-b* or *--run_dir*. The program will look for a sample sheet called SampleSheet.csv in the first level within the run_dir or you can specify a different sample sheet with *--sample_sheet*. The program will make the fastq directory if it does not exist and tell you the sizes of undeteremined vs fully demultiplexed reads
+    - If you only want to process the fastqs, build the contigs and scaffolds, and run Kraken2, add *--skip_identify* and only the first phase of the pipeline will be run
+    - If you want to BLAST your data, filter the results, and make the final figures using already existing contig/scaffold files, add *--only_identify*
     - If you want to name the results from the 2nd half the pipeline differently from the 1st half, which would be helpful in the case where you want to perform numerous different and simultaneous identification and filtering runs on the same data, add the *--identify* option with a different argument from *--project*
-    - If your read 1 and read 2 fastq.gz files differentiate themselves by some pattern other than _L001_R1_001.fastq.gz and _L001_R2_001.fastq.gz or _R1_001.fastq.gz and _R2_001.fastq.gz or _R1.fastq.gz and R2.fastq.gz, use *--R1_suffix* and *--R2_suffix* options to let the pipeline know
-    - If you don't want trimmomatic to run, add the *--skip_trimming* option
-    - If you want to process RNA instead of DNA data, add the *--rna* option and the program will align the sequences using STAR instead of BWA
-    - If you want to also filter reads from Rhesus monkey, add the *--filter_rhesus* option
-    - You can change the default minimum length for contigs that are kept from 5000 to a chosen number using *--contig_len_min*
+    - If your read 1 and read 2 fastq.gz files differentiate themselves by some pattern other than _L001_R1_001.fastq.gz and _L001_R2_001.fastq.gz or _R1_001.fastq.gz and _R2_001.fastq.gz or _R1.fastq.gz and _R2.fastq.gz, specify with *--R1_suffix* and *--R2_suffix*
+    - If you don't want trimmomatic to run, add *--skip_trimming*
+    - If you want to process RNA instead of DNA data, add *--rna* and the program will align the sequences using STAR instead of BWA
+    - If you want to also filter reads from Rhesus monkey, add *--filter_rhesus*
+    - If you want the 2nd half of the pipeline to analyze scaffolds instead of contigs, add *--analyze_scaffolds*
+    - If you want to change the default minimum length for contigs/scaffolds from 5000 to a chosen number, specify with *--query_len_min*
     - If you want to use different kraken2 databases from the default, specify which ones you want to use with *--kraken_db_types*
     - If you want to use different BLAST databases from the default, specify which ones you want to use with *--blast_db_types*
     - If you want to only have returned a maximum number of BLAST results, choose your maximum number using *--num_alignments*
-    - You can change the default minimum contig alignment for BLAST results from 0.9 (90%) to a chosen number using *--contig_align_min*
+    - If you want to change the default minimum hit rank for BLAST results from 1 to a chosen number, specify with *--blast_hit_rank_min*
+    - If you want to change the default minimum contig/scaffold alignment for BLAST results from 0.9 (90%) to a chosen number, specify with *--query_align_min*
     - Besides the already implemented job name and standard error and output print statements, you can specify additional slurm commands for the pipeline job following the use of the *--slurm* option. If you use this option, **make sure it is the last one you use**
         - A useful example would be setting a future time to run the job and asking for email notifications like so:
 
@@ -73,15 +75,15 @@ Will submit the pipeline_control.sh master script to run the entire pipeline. Wh
     - Trimmomatic trimming
     - Count the reads before trimming, the reads left after trimming, and the reads that were removed after trimming
     - Align all reads to human genome using BWA ALN
-    - De novo assembly of contigs using SPAdes from non-human reads
-    - Align non-human reads to contigs using BWA MEM
+    - De novo assembly of contigs and scaffolds using SPAdes from non-human reads
+    - Align non-human reads to contigs and scaffolds using BWA MEM
     - Collect alignment metrics
-    - Count human, contig, and unaligned reads
+    - Count human, contig, scaffold, and unaligned reads
     - Run kraken2 on non-human reads for microbes, plasmids, and phages
-- Summarize metrics like human and contig alignment metrics, read targets, and kraken2 report output
+- Summarize metrics like human, contig, and scaffold alignment metrics, read targets, and kraken2 report output
     - Create json jtree files from kraken2 report outputs for later Rscript
-- Only keep long contigs (default 5kb) and consolidate them into files (320 contigs each)
-- **2_blast_contigs.sh** - For each file of long contigs, a job will run to classify them using BLAST+ (blastn) against entire nucleotide database, plasmid database, and phage database
+- Only keep long contigs/scaffolds (default 5kb) and consolidate them into files (320 contigs/scaffolds each)
+- **2_blast_queries.sh** - For each file of long contigs/scaffolds, a job will run to classify them using BLAST+ (blastn) against entire nucleotide database, plasmid database, and phage database
 - Parse BLAST results
 - Graph human contamination, kraken results, BLAST results, and other measures
 
