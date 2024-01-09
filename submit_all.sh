@@ -302,7 +302,7 @@ if [ "$TEMP_PIPELINE_DIR" = "$PIPELINE_DIR" ]; then
     if [ $FILTER_RHESUS -eq 1 ]; then
         echo "Option: Filter rhesus - will remove reads that align to macaca mulatta rhesus monkey" >> $PIPELINE_STATUS
     fi
-    if [ "$QUERY" = "contig" ];
+    if [ "$QUERY" = "contig" ]; then
         echo "Default: Contigs will be blasted and analyzed" >> $PIPELINE_STATUS
     else
         echo "Option: Scaffolds will be blasted and analyzed" >> $PIPELINE_STATUS
