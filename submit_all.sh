@@ -258,8 +258,8 @@ fi
 if [ $NUM_ALIGNMENTS -ne 250 ]; then
     OPTIONS+=( "--num_alignments $NUM_ALIGNMENTS" )
 fi
-if [ "$BLAST_HIT_RANK_MINIMUM" != "1" ]; then
-    OPTIONS+=( "--blast_hit_rank_min $BLAST_HIT_RANK_MINIMUM" )
+if [ "$BLAST_HIT_RANK_MIN" != "1" ]; then
+    OPTIONS+=( "--blast_hit_rank_min $BLAST_HIT_RANK_MIN" )
 fi
 if [ "$QUERY_ALIGN_MIN" != "0.9" ]; then
     OPTIONS+=( "--query_align_min $QUERY_ALIGN_MIN" )
@@ -322,10 +322,10 @@ if [ "$TEMP_PIPELINE_DIR" = "$PIPELINE_DIR" ]; then
     else
         echo "Option: Blast db types: $BLAST_DB_TYPES" >> $PIPELINE_STATUS
     fi
-    if [ "$BLAST_HIT_RANK_MINIMUM" = "1" ]; then
+    if [ "$BLAST_HIT_RANK_MIN" = "1" ]; then
         echo "Default: Blast hit rank minimum: 1" >> $PIPELINE_STATUS
     else
-        echo "Option: Blast hit rank minimum: $BLAST_HIT_RANK_MINIMUM" >> $PIPELINE_STATUS
+        echo "Option: Blast hit rank minimum: $BLAST_HIT_RANK_MIN" >> $PIPELINE_STATUS
     fi
     if [ "$QUERY_ALIGN_MIN" = "0.9" ]; then
         echo "Default: Query align minimum: 0.9" >> $PIPELINE_STATUS
