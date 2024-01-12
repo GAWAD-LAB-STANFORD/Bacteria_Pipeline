@@ -217,7 +217,7 @@ rm ${SAMPLE}_contigs.fasta.amb ${SAMPLE}_contigs.fasta.ann ${SAMPLE}_contigs.fas
 rm ${SAMPLE}_contigs.fasta.pac ${SAMPLE}_contigs.fasta.sa
 rm ${SAMPLE}_contig_aligned.bam ${SAMPLE}_contig_aligned.bam.bai
 rm ${SAMPLE}_temp_contig_read_targets.txt
-if [ -f ${SAMPLE}_scaffolds.fasta ]
+if [ -f ${SAMPLE}_scaffolds.fasta ]; then
     rm ${SAMPLE}_scaffolds.fasta.amb ${SAMPLE}_scaffolds.fasta.ann ${SAMPLE}_scaffolds.fasta.bwt
     rm ${SAMPLE}_scaffolds.fasta.pac ${SAMPLE}_scaffolds.fasta.sa
     rm ${SAMPLE}_scaffold_aligned.bam ${SAMPLE}_scaffold_aligned.bam.bai
