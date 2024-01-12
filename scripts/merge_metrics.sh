@@ -2,9 +2,9 @@
 PIPELINE_STATUS=$1
 PROJECT=$2
 KRAKEN_DB_TYPES=$3
-RUN_DIR=$4
-SAMPLE_SHEET=$5
-REF_NAME_ARRAY=( $(echo $6 | sed 's/:/ /g') )
+REF_NAME_ARRAY=( $(echo $4 | sed 's/:/ /g') )
+RUN_DIR=$5
+SAMPLE_SHEET=$6
 
 echo "### Merging metrics ### - START: $(date)" >> $PIPELINE_STATUS
 SAMPLE_READ_COUNTS="${PROJECT}.sample_read_counts.tsv"

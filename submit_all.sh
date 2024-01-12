@@ -453,7 +453,7 @@ elif [ $STEP -eq 2 ] && [ $ONLY_IDENTIFY -eq 0 ]; then
     
     ml R/4.2.0
     export R_LIBS="/home/groups/cgawad/R_libs"
-    bash ${SCRIPT_DIR}/merge_metrics.sh $PIPELINE_STATUS $PROJECT $KRAKEN_DB_TYPES $RUN_DIR $SAMPLE_SHEET $REF_NAME_STRING
+    bash ${SCRIPT_DIR}/merge_metrics.sh $PIPELINE_STATUS $PROJECT $KRAKEN_DB_TYPES $REF_NAME_STRING $RUN_DIR $SAMPLE_SHEET
     
     
     if [ $SKIP_IDENTIFY -eq 1 ]; then
