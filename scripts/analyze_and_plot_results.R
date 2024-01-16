@@ -449,9 +449,9 @@ export_with_ncbi_annotations <- function(summed_df, ncbi_annotation_string, taxo
   ncbi_annotation_string <- tolower(ncbi_annotation_string)
   taxonomic_variable_string <- tolower(taxonomic_variable_string)
   if (ncbi_annotation_string == "bacteria") {
-    write_tsv(summed_df, sprintf("%s.summed_%s_%s_%s.tsv", opt$identify, opt%query, blast_db_string, taxonomic_variable_string))
+    write_tsv(summed_df, sprintf("%s.summed_%s_%s_%s.tsv", opt$identify, opt$query, blast_db_string, taxonomic_variable_string))
   } else {
-    write_tsv(summed_df, sprintf("%s.summed_%s_%s.tsv", opt$identify, opt%query, blast_db_string))
+    write_tsv(summed_df, sprintf("%s.summed_%s_%s.tsv", opt$identify, opt$query, blast_db_string))
   }
   if (opt$ncbi_annotations_dir != "0") {
   tryCatch({
