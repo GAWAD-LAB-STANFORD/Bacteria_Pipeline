@@ -571,12 +571,12 @@ elif [ $STEP -eq 3 ]; then
     KRAKEN_DB_TYPE_ARRAY=( $(echo $KRAKEN_DB_TYPES | sed 's/-/ /g') )
     echo "Samples string: $SAMPLES_STRING"
     for DB_TYPE in ${KRAKEN_DB_TYPE_ARRAY[@]}; do
-        echo -e "\npython3 ${SCRIPT_DIR}/kraken_report_to_jtree.py -p $PROJECT -k $DB_TYPE\n" >> $PIPELINE_STATUS
-        python3 ${SCRIPT_DIR}/kraken_report_to_jtree.py -p $PROJECT -k $DB_TYPE
+        echo -e "\npython3 ${SCRIPT_DIR}/kraken_report_to_jtree.py -p $PROJECT -k $DB_TYPE -q $QUERY\n" >> $PIPELINE_STATUS
+        python3 ${SCRIPT_DIR}/kraken_report_to_jtree.py -p $PROJECT -k $DB_TYPE -q $QUERY
     done
     if [ $ADD_GENUS -eq 1 ]; then
-        echo -e "\npython3 ${SCRIPT_DIR}/kraken_report_to_jtree.py -p $PROJECT -k microbial\n" >> $PIPELINE_STATUS
-        python3 ${SCRIPT_DIR}/kraken_report_to_jtree.py -p $PROJECT -k "microbial"
+        echo -e "\npython3 ${SCRIPT_DIR}/kraken_report_to_jtree.py -p $PROJECT -k microbial -q $QUERY\n" >> $PIPELINE_STATUS
+        python3 ${SCRIPT_DIR}/kraken_report_to_jtree.py -p $PROJECT -k "microbial" -q $QUERY
     fi
     echo "### Converting Kraken reports to TSV ### - END: $(date)" >> $PIPELINE_STATUS
     

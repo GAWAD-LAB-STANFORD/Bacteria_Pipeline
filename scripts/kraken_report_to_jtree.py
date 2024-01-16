@@ -16,7 +16,7 @@ parser.add_argument('-d', '--identify', help="Current identify name", default=""
 parser.add_argument('-o', '--suffix', help="Suffix for output", default="")
 parser.add_argument('-i', '--input', help="Input kraken reports file", default="")
 parser.add_argument('-s', '--samples', help="String of sample names", default="")
-parser.add_argument('-c', '--contig', help="Contig suffix", default="_contigs.fasta")
+parser.add_argument('-q', '--query', help="Query", default="contig")
 parser.add_argument('-g', '--add_genus', help="Add genus", action="store_true", default=False)
 args = parser.parse_args()
 
@@ -32,9 +32,9 @@ if len(args.suffix) == 0:
 if len(args.samples) > 0:
     samples = args.samples.split(":")
 if len(args.samples) == 0:
-    samples = glob.glob("*{}".format(args.contig))
+    samples = glob.glob("*_{}s.fasta".format(args.query))
     for i in range(len(samples)):
-        samples[i] = samples[i].replace(args.contig, '')
+        samples[i] = samples[i].replace("*_{}s.fasta".format(args.query), '')
 
 
 kraken_df = pd.read_csv(args.input, sep="\t")
