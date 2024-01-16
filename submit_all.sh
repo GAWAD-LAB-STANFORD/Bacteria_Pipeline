@@ -480,7 +480,7 @@ if ([ $STEP -eq 0 ] && [ $ONLY_IDENTIFY -eq 1 ]) || [ $STEP -eq 2 ]; then
 
         echo "### Organzing queries ### - START: $(date)" >> $PIPELINE_STATUS
         echo -e "\npython3 ${SCRIPT_DIR}/organize_queries.py \
-            _${QUERY}s.fasta $QUERY_LENGTH_MIN $QUERIES_PER_BLAST_JOB ${IDENTIFY}_long_${QUERY}s_ $PIPELINE_STATUS"
+            _${QUERY}s.fasta $QUERY_LENGTH_MIN $QUERIES_PER_BLAST_JOB ${IDENTIFY}_long_${QUERY}s_ $PIPELINE_STATUS" >> $PIPELINE_STATUS
         python3 ${SCRIPT_DIR}/organize_queries.py \
             "_${QUERY}s.fasta" $QUERY_LENGTH_MIN $QUERIES_PER_BLAST_JOB "${IDENTIFY}_long_${QUERY}s_" $PIPELINE_STATUS
         if [ $(ls ${IDENTIFY}_long_${QUERY}s_* | wc -l) -eq 0 ]; then
