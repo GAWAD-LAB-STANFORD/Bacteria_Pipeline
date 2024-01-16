@@ -560,9 +560,9 @@ elif [ $STEP -eq 3 ]; then
     BLAST_DB_TYPES_ARRAY=( $(echo $BLAST_DB_TYPES | sed 's/-/ /g') )
     for DB_TYPE in ${BLAST_DB_TYPES_ARRAY[@]}; do
         echo -e "\npython3 ${SCRIPT_DIR}/parse_blast_results.py $DB_TYPE \
-            ${IDENTIFY}_blast_results_${DB_TYPE}_ ${IDENTIFY}.${DB_TYPE}.blast_results.tsv $PIPELINE_STATUS\n" >> $PIPELINE_STATUS
+            ${IDENTIFY}_blast_results_${DB_TYPE}_ ${IDENTIFY}.${DB_TYPE}_${QUERY}.blast_results.tsv $PIPELINE_STATUS\n" >> $PIPELINE_STATUS
         python3 ${SCRIPT_DIR}/parse_blast_results.py $DB_TYPE \
-            ${IDENTIFY}_blast_results_${DB_TYPE}_ ${IDENTIFY}.${DB_TYPE}.blast_results.tsv $PIPELINE_STATUS
+            ${IDENTIFY}_blast_results_${DB_TYPE}_ ${IDENTIFY}.${DB_TYPE}_${QUERY}.blast_results.tsv $PIPELINE_STATUS
     done
     echo "### Parsing BLAST results ### - END: $(date)" >> $PIPELINE_STATUS
     
@@ -591,8 +591,8 @@ elif [ $STEP -eq 3 ]; then
         --query $QUERY \
         --query_read_targets_filename ${PROJECT}.${QUERY}_read_targets.tsv \
         --query_data_filename ${PROJECT}.${QUERY}_data.tsv \
-        --kraken_db_types $KRAKEN_DB_TYPES --kraken_jtree_suffix _$QUERY.kraken_jtree.json \
-        --blast_db_types $BLAST_DB_TYPES --blast_results_suffix .blast_results.tsv \
+        --kraken_db_types $KRAKEN_DB_TYPES --kraken_jtree_suffix _${QUERY}.kraken_jtree.json \
+        --blast_db_types $BLAST_DB_TYPES --blast_results_suffix _${QUERY}.blast_results.tsv \
         --blast_hit_rank_min $BLAST_HIT_RANK_MIN \
         --query_align_min $QUERY_ALIGN_MIN \
         --ncbi_annotations_dir $NCBI_ANNOTATIONS_DIR ${FIGURE_OPTIONS[@]}\n" >> $PIPELINE_STATUS
@@ -603,8 +603,8 @@ elif [ $STEP -eq 3 ]; then
         --query $QUERY \
         --query_read_targets_filename ${PROJECT}.${QUERY}_read_targets.tsv \
         --query_data_filename ${PROJECT}.${QUERY}_data.tsv \
-        --kraken_db_types $KRAKEN_DB_TYPES --kraken_jtree_suffix "_$QUERY.kraken_jtree.json" \
-        --blast_db_types $BLAST_DB_TYPES --blast_results_suffix ".blast_results.tsv" \
+        --kraken_db_types $KRAKEN_DB_TYPES --kraken_jtree_suffix "_${QUERY}.kraken_jtree.json" \
+        --blast_db_types $BLAST_DB_TYPES --blast_results_suffix "_${QUERY}.blast_results.tsv" \
         --blast_hit_rank_min $BLAST_HIT_RANK_MIN \
         --query_align_min $QUERY_ALIGN_MIN \
         --ncbi_annotations_dir $NCBI_ANNOTATIONS_DIR ${FIGURE_OPTIONS[@]}
