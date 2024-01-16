@@ -1,9 +1,9 @@
 #!/bin/bash
 #
 #SBATCH --job-name=2_blast_queries
-#SBATCH --mem=64G
-#SBATCH --cpus-per-task=4
-#SBATCH --time=3-00:00:00
+#SBATCH --mem=32G
+#SBATCH --cpus-per-task=2
+#SBATCH --time=1-00:00:00
 #SBATCH --partition=cgawad
 
 START_TIME=$(date +%s)
