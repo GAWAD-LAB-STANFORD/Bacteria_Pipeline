@@ -44,14 +44,14 @@ option_list = list(
               help="optional [default = %default]")
 ); 
 opt <- parse_args(OptionParser(option_list=option_list))
-# project <- "viral_target_BacPipe_rhesus"
+# project <- "viral_BacPipe_wgs_scaffolds"
 # opt <- list(project = project, identify = project, 
 #             sample_read_count_filename = sprintf("%s.sample_read_counts.tsv", project),
 #             summed_read_targets_filename = sprintf("%s.summed_read_targets.tsv", project),
 #             query = "contig",
 #             query_read_targets_filename = sprintf("%s.contig_read_targets.tsv", project),
 #             query_data_filename = sprintf("%s.contig_data.tsv", project),
-#             kraken_db_types = "microbial", kraken_jtree_suffix = "_contig.kraken_jtree.json",
+#             kraken_db_types = "microbial", kraken_jtree_suffix = "_scaffold.kraken_jtree.json",
 #             blast_db_types = "nt", blast_results_suffix = ".blast_results.tsv",
 #             ncbi_annotations_dir = "0", blast_hit_rank_min = 5,
 #             query_align_min = 0.9, add_genus = FALSE)
@@ -379,31 +379,31 @@ metric_bar_plots_list <- function(summed_sample_df, taxonomic_plot_string, taxon
   summed_sample_df <- summed_sample_df %>% top_n(10, summed_query_length)
   plot1 <- ggplot(summed_sample_df, aes(reorder(get(taxonomic_variable_string), percent_read_count), percent_read_count, fill = get(taxonomic_variable_string))) +
     geom_bar(stat="identity") + geom_text(aes(label=round(summed_read_count,2)), vjust=-1) +
-    labs( x = taxonomic_plot_string, y = "Percent of all reads", title = sprintf("%s read count", taxonomic_plot_string)) + 
+    labs(x = taxonomic_plot_string, y = "Percent of all reads", title = sprintf("%s read count", taxonomic_plot_string)) + 
     ylim(0, 100) + ggplot_theme_no_legend + scale_color_manual(values = taxonomic_color_vector)
   plot2 <- ggplot(summed_sample_df, aes(reorder(get(taxonomic_variable_string), percent_largest_query), percent_largest_query, fill = get(taxonomic_variable_string))) +
     geom_bar(stat="identity") + geom_text(aes(label=round(largest_query,2)), vjust=-1) +
-    labs( x = taxonomic_plot_string, y = sprintf("Percent of the largest %s across all %s", taxonomic_variable_string, opt$query), title = sprintf("%s largest %s length", taxonomic_plot_string, opt$query)) + 
+    labs(x = taxonomic_plot_string, y = sprintf("Percent of the largest %s across all %s", taxonomic_variable_string, opt$query), title = sprintf("%s largest %s length", taxonomic_plot_string, opt$query)) + 
     ylim(0, 100) + ggplot_theme_no_legend + scale_color_manual(values = taxonomic_color_vector)
   plot3 <- ggplot(summed_sample_df, aes(reorder(get(taxonomic_variable_string), percent_query_length), percent_query_length, fill = get(taxonomic_variable_string))) +
     geom_bar(stat="identity") + geom_text(aes(label=round(summed_query_length,2)), vjust=-1) +
-    labs( x = taxonomic_plot_string, y = sprintf("Percent of all %s lengths", opt$query), title = sprintf("%s %s lengths", taxonomic_plot_string, opt$query)) + 
+    labs(x = taxonomic_plot_string, y = sprintf("Percent of all %s lengths", opt$query), title = sprintf("%s %s lengths", taxonomic_plot_string, opt$query)) + 
     ylim(0, 100) + ggplot_theme_no_legend + scale_color_manual(values = taxonomic_color_vector)
   plot4 <- ggplot(summed_sample_df, aes(reorder(get(taxonomic_variable_string), percent_blast_length), percent_blast_length, fill = get(taxonomic_variable_string))) +
     geom_bar(stat="identity") + geom_text(aes(label=round(summed_blast_length,2)), vjust=-1) +
-    labs( x = taxonomic_plot_string, y = sprintf("Percent of all aligned %s lengths", opt$query, title = sprintf("%s aligned %s lengths", taxonomic_plot_string, opt$query)) + 
+    labs(x = taxonomic_plot_string, y = sprintf("Percent of all aligned %s lengths", opt$query), opt$query, title = sprintf("%s aligned %s lengths", taxonomic_plot_string, opt$query)) + 
     ylim(0, 100) + ggplot_theme_no_legend + scale_color_manual(values = taxonomic_color_vector)
   plot5 <- ggplot(summed_sample_df, aes(reorder(get(taxonomic_variable_string), percent_reference_covered_by_queries), percent_reference_covered_by_queries, fill = get(taxonomic_variable_string))) +
     geom_bar(stat="identity") + geom_text(aes(label=round(percent_reference_covered_by_queries,2)), vjust=-1) +
-    labs( x = taxonomic_plot_string, y = "Percent of reference genome length", title = sprintf("%s %s lengths\n compared to reference length", taxonomic_plot_string, opt$query)) + 
+    labs(x = taxonomic_plot_string, y = "Percent of reference genome length", title = sprintf("%s %s lengths\n compared to reference length", taxonomic_plot_string, opt$query)) + 
     ylim(0, 100) + ggplot_theme_no_legend + scale_color_manual(values = taxonomic_color_vector)
   plot6 <- ggplot(summed_sample_df, aes(reorder(get(taxonomic_variable_string), percent_reference_covered_by_blasts), percent_reference_covered_by_blasts, fill = get(taxonomic_variable_string))) +
     geom_bar(stat="identity") + geom_text(aes(label=round(percent_reference_covered_by_blasts,2)), vjust=-1) +
-    labs( x = taxonomic_plot_string, y = "Percent of reference genome length", title = sprintf("%s aligned %s lengths\n compared to reference length", taxonomic_plot_string, opt$query)) + 
+    labs(x = taxonomic_plot_string, y = "Percent of reference genome length", title = sprintf("%s aligned %s lengths\n compared to reference length", taxonomic_plot_string, opt$query)) + 
     ylim(0, 100) + ggplot_theme_no_legend + scale_color_manual(values = taxonomic_color_vector)
   plot7 <- ggplot(summed_sample_df, aes(reorder(get(taxonomic_variable_string), percent_reference_covered_by_blasts), lg50_percent, fill = get(taxonomic_variable_string))) +
     geom_bar(stat="identity") + geom_text(aes(label=lg50_count), vjust=-1) +
-    labs( x = taxonomic_plot_string, y = sprintf("Percent of all %ss needed to cover 50% of genome", title = sprintf("%s LG50", taxonomic_plot_string, opt$query)) + 
+    labs(x = taxonomic_plot_string, y = sprintf("Percent of all %ss needed to cover 50% of genome", opt$query), title = sprintf("%s LG50", taxonomic_plot_string, opt$query)) + 
     ylim(0, 100) + ggplot_theme_no_legend + scale_color_manual(values = taxonomic_color_vector)
   return_list = list(plot1, plot2, plot3, plot4, plot5, plot6, plot7)
   return(return_list)
