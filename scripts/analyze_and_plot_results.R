@@ -252,7 +252,7 @@ heatmap_for_all_samples <- function(blast_df, taxonomic_plot_and_variable_string
   unique_taxonomy <- sort(unique(pull(blast_df, taxonomic_variable_string)))
   sample_to_all_counts_list <- lapply(unique(blast_df$sample), function(.sample) {
     sample_df <- filter(blast_df, sample == .sample) %>% 
-      group_by(!!!taxonomic_variable_string) %>% 
+      group_by(!!as.name(taxonomic_variable_string)) %>% 
       summarize(total_query_length = sum(query_length))
     temp_df <- data.frame(sample = .sample, hit_taxon = unique_taxonomy, stringsAsFactors = FALSE)
     temp_with_counts_df <- left_join(temp_df, sample_df, by = c("hit_taxon" = taxonomic_variable_string)) %>% 
@@ -294,7 +294,7 @@ summarize_sample_metrics <- function(sample_df, taxonomic_variable_string) {
            total_blast_length = sum(top_hsp_align_len, na.rm = TRUE),
            total_query_graph_cov = sum(query_graph_cov, na.rm = TRUE),
            total_blast_alignment_fractions = sum(tophit_aln_query_fraction, na.rm = TRUE)) %>%
-    group_by(!!!taxonomic_variable_string) %>%
+    group_by(!!as.name(taxonomic_variable_string)) %>%
     mutate(max_reference_len = max(reference_len),
            largest_query = max(query_length),
            summed_read_count = sum(read_count, na.rm = TRUE),
@@ -434,7 +434,7 @@ scaled_taxonomic_proportion_of_query_length_plot <- function(sample_df, taxonomi
       arrange(desc(query_length))
   }
   cumprop_df <- do.call(rbind, lapply(1:nrow(sample_df), function(.row_num) {
-    sample_df[1:.row_num,] %>% group_by(!!!taxonomic_variable_string) %>% 
+    sample_df[1:.row_num,] %>% group_by(!!as.name(taxonomic_variable_string)) %>% 
       summarize(cum_taxonomy_query_length = sum(query_length)) %>% 
       mutate(total_cumsum_query_length = sum(cum_taxonomy_query_length), prop_cum_taxonomy_query_length = cum_taxonomy_query_length / total_cumsum_query_length)
     })
