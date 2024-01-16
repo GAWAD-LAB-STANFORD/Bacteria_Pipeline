@@ -34,7 +34,7 @@ if len(args.samples) > 0:
 if len(args.samples) == 0:
     samples = glob.glob("*_{}s.fasta".format(args.query))
     for i in range(len(samples)):
-        samples[i] = samples[i].replace("*_{}s.fasta".format(args.query), '')
+        samples[i] = samples[i].replace("_{}s.fasta".format(args.query), '')
 
 
 kraken_df = pd.read_csv(args.input, sep="\t")
