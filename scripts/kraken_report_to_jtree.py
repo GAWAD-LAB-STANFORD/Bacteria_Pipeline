@@ -26,9 +26,9 @@ if len(args.input) == 0:
 if len(args.identify) == 0:
     args.identify = args.project
 if len(args.suffix) == 0:
-    args.suffix = ".{}.kraken_jtree.json".format(args.kraken)
+    args.suffix = ".{}_{}.kraken_jtree.json".format(args.kraken, args.query)
     if args.add_genus:
-        args.suffix = ".genus.kraken_jtree.json"
+        args.suffix = ".genus_{}.kraken_jtree.json".format(args.query)
 if len(args.samples) > 0:
     samples = args.samples.split(":")
 if len(args.samples) == 0:

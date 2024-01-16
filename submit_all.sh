@@ -591,7 +591,7 @@ elif [ $STEP -eq 3 ]; then
         --query $QUERY \
         --query_read_targets_filename ${PROJECT}.${QUERY}_read_targets.tsv \
         --query_data_filename ${PROJECT}.${QUERY}_data.tsv \
-        --kraken_db_types $KRAKEN_DB_TYPES --kraken_jtree_suffix .kraken_jtree.json \
+        --kraken_db_types $KRAKEN_DB_TYPES --kraken_jtree_suffix _$QUERY.kraken_jtree.json \
         --blast_db_types $BLAST_DB_TYPES --blast_results_suffix .blast_results.tsv \
         --blast_hit_rank_min $BLAST_HIT_RANK_MIN \
         --query_align_min $QUERY_ALIGN_MIN \
@@ -603,7 +603,7 @@ elif [ $STEP -eq 3 ]; then
         --query $QUERY \
         --query_read_targets_filename ${PROJECT}.${QUERY}_read_targets.tsv \
         --query_data_filename ${PROJECT}.${QUERY}_data.tsv \
-        --kraken_db_types $KRAKEN_DB_TYPES --kraken_jtree_suffix ".kraken_jtree.json" \
+        --kraken_db_types $KRAKEN_DB_TYPES --kraken_jtree_suffix "_$QUERY.kraken_jtree.json" \
         --blast_db_types $BLAST_DB_TYPES --blast_results_suffix ".blast_results.tsv" \
         --blast_hit_rank_min $BLAST_HIT_RANK_MIN \
         --query_align_min $QUERY_ALIGN_MIN \
