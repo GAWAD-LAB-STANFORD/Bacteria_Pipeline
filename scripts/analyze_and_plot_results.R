@@ -52,7 +52,7 @@ opt <- parse_args(OptionParser(option_list=option_list))
 #             query_read_targets_filename = sprintf("%s.contig_read_targets.tsv", project),
 #             query_data_filename = sprintf("%s.contig_data.tsv", project),
 #             kraken_db_types = "microbial", kraken_jtree_suffix = "_scaffold.kraken_jtree.json",
-#             blast_db_types = "nt", blast_results_suffix = ".blast_results.tsv",
+#             blast_db_types = "nt", blast_results_suffix = "_scaffold.blast_results.tsv",
 #             ncbi_annotations_dir = "0", blast_hit_rank_min = 5,
 #             query_align_min = 0.9, add_genus = FALSE)
 
