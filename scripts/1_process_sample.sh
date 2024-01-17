@@ -134,8 +134,12 @@ done
 
 echo "### De novo assembling contigs ### - START: $(date)"
 mkdir contigs_${SAMPLE}
-python3 /oak/stanford/groups/cgawad/Sequencing_Analysis_Tools/SPAdes-3.14.0-Linux/bin/spades.py \
-    -t 4 -m 64 -1 ${SAMPLE}_ref_filtered${R1_SUFFIX} -2 ${SAMPLE}_ref_filtered${R2_SUFFIX} -o contigs_${SAMPLE}
+if [ $RNA -eq 1 ]; then
+    python3 /oak/stanford/groups/cgawad/Sequencing_Analysis_Tools/SPAdes-3.14.0-Linux/bin/spades.py \
+        -t 4 -m 64 --rna -1 ${SAMPLE}_ref_filtered${R1_SUFFIX} -2 ${SAMPLE}_ref_filtered${R2_SUFFIX} -o contigs_${SAMPLE}
+else
+    python3 /oak/stanford/groups/cgawad/Sequencing_Analysis_Tools/SPAdes-3.14.0-Linux/bin/spades.py \
+        -k 21 -1 ${SAMPLE}_ref_filtered${R1_SUFFIX} -2 ${SAMPLE}_ref_filtered${R2_SUFFIX} -o contigs_${SAMPLE}
 mv contigs_${SAMPLE}/contigs.fasta ${SAMPLE}_contigs.fasta
 echo "### De novo assembling contigs ### - END: $(date)"
 
@@ -212,19 +216,19 @@ if [ $SKIP_TRIMMOMATIC -eq 0 ]; then
     rm $R1_FASTQ $R2_FASTQ
     rm $UNPAIRED_R1_FASTQ $UNPAIRED_R2_FASTQ
 fi
-rm -r contigs_${SAMPLE} 
-rm ${SAMPLE}_contigs.fasta.amb ${SAMPLE}_contigs.fasta.ann ${SAMPLE}_contigs.fasta.bwt
-rm ${SAMPLE}_contigs.fasta.pac ${SAMPLE}_contigs.fasta.sa
-rm ${SAMPLE}_contig_aligned.bam ${SAMPLE}_contig_aligned.bam.bai
-rm ${SAMPLE}_temp_contig_read_targets.txt
-if [ -f ${SAMPLE}_scaffolds.fasta ]; then
-    rm ${SAMPLE}_scaffolds.fasta.amb ${SAMPLE}_scaffolds.fasta.ann ${SAMPLE}_scaffolds.fasta.bwt
-    rm ${SAMPLE}_scaffolds.fasta.pac ${SAMPLE}_scaffolds.fasta.sa
-    rm ${SAMPLE}_scaffold_aligned.bam ${SAMPLE}_scaffold_aligned.bam.bai
-    rm ${SAMPLE}_temp_scaffold_read_targets.txt
-fi
-rm ${SAMPLE}_any_mapping_to_human_query_names.txt
-rm ${SAMPLE}_kraken_vs_ref_filtered.tsv
-rm ${SAMPLE}_ref_filtered${R1_SUFFIX} ${SAMPLE}_ref_filtered${R2_SUFFIX}
-rm ${SAMPLE}_ref_filtered.bam ${SAMPLE}_ref_filtered.bam.bai
+# rm -r contigs_${SAMPLE} 
+# rm ${SAMPLE}_contigs.fasta.amb ${SAMPLE}_contigs.fasta.ann ${SAMPLE}_contigs.fasta.bwt
+# rm ${SAMPLE}_contigs.fasta.pac ${SAMPLE}_contigs.fasta.sa
+# rm ${SAMPLE}_contig_aligned.bam ${SAMPLE}_contig_aligned.bam.bai
+# rm ${SAMPLE}_temp_contig_read_targets.txt
+# if [ -f ${SAMPLE}_scaffolds.fasta ]; then
+#     rm ${SAMPLE}_scaffolds.fasta.amb ${SAMPLE}_scaffolds.fasta.ann ${SAMPLE}_scaffolds.fasta.bwt
+#     rm ${SAMPLE}_scaffolds.fasta.pac ${SAMPLE}_scaffolds.fasta.sa
+#     rm ${SAMPLE}_scaffold_aligned.bam ${SAMPLE}_scaffold_aligned.bam.bai
+#     rm ${SAMPLE}_temp_scaffold_read_targets.txt
+# fi
+# rm ${SAMPLE}_any_mapping_to_human_query_names.txt
+# rm ${SAMPLE}_kraken_vs_ref_filtered.tsv
+# rm ${SAMPLE}_ref_filtered${R1_SUFFIX} ${SAMPLE}_ref_filtered${R2_SUFFIX}
+# rm ${SAMPLE}_ref_filtered.bam ${SAMPLE}_ref_filtered.bam.bai
 echo -e "END: $(date)\nRuntime: $(($(date +%s)-$START_TIME)) seconds"
