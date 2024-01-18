@@ -282,7 +282,7 @@ else
 fi
 cd $SCRATCH_DIR
 if [ "$TEMP_PIPELINE_DIR" = "$PIPELINE_DIR" ]; then
-    echo -e "\nSTART: $(date)\nBacteria Pipeline\n\n$PIPELINE_COMMAND\n\nProject: $PROJECT\nResults dir: $RESULTS_DIR\nFastq dir: $FASTQ_DIR\nScratch dir: $SCRATCH_DIR\nErr out dir: $STD_ERR_OUT_DIR" >> $PIPELINE_STATUS
+    echo -e "\nSTART: $(date)\nBacteria Pipeline\n\n$PIPELINE_DIR/submit_all.sh $PIPELINE_COMMAND\n\nProject: $PROJECT\nResults dir: $RESULTS_DIR\nFastq dir: $FASTQ_DIR\nScratch dir: $SCRATCH_DIR\nErr out dir: $STD_ERR_OUT_DIR" >> $PIPELINE_STATUS
     # Optional variable definition
     if [ $SKIP_SCRATCH -eq 0 ]; then
         echo "Default: Scratch dir is different from Results dir" >> $PIPELINE_STATUS
@@ -326,6 +326,16 @@ if [ "$TEMP_PIPELINE_DIR" = "$PIPELINE_DIR" ]; then
         echo "Default: Blast db types: nt" >> $PIPELINE_STATUS
     else
         echo "Option: Blast db types: $BLAST_DB_TYPES" >> $PIPELINE_STATUS
+    fi
+    if [ $BLAST_NUM_ALIGNMENTS -eq 5 ]; then
+        echo "Default: Blast number of alignments: 5" >> $PIPELINE_STATUS
+    else
+        echo "Option: Blast number of alignments: $BLAST_NUM_ALIGNMENTS" >> $PIPELINE_STATUS
+    fi
+    if [ $BLAST_ALIGN_MIN -eq 0 ]; then
+        echo "Default: Blast alignment minimum: 0" >> $PIPELINE_STATUS
+    else
+        echo "Option: Blast alignment minimum: $BLAST_ALIGN_MIN" >> $PIPELINE_STATUS
     fi
     if [ "$BLAST_HIT_RANK_MIN" = "1" ]; then
         echo "Default: Blast hit rank minimum: 1" >> $PIPELINE_STATUS
