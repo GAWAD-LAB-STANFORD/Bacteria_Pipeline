@@ -16,7 +16,7 @@ Optional arguments: -s/--scratch_dir <arg>, --err_out_dir <arg>, --skip_scratch,
     --sample_sheet <arg>, --skip_identify, --only_identify, --identify <arg>, \n\t\
     --R1_suffix <arg>, --R2_suffix <arg>, --skip_trimming, --rna, --filter_rhesus, \n\t\
     --analyze_scaffolds, --query_len_min <arg>, --kraken_db_types <arg>, --blast_db_types <arg>, \n\t\
-    --num_alignments <arg>, --blast_hit_rank_min <arg>, --query_align_min <arg>, --add_genus, --slurm <arg> \n\
+    --blast_num_alignments <arg>, --blast_align_min <arg>, --blast_hit_rank_min <arg>, --query_align_min <arg>, --add_genus, --slurm <arg> \n\
 Defaults: \n\t\
     If no fastq_dir specified, uses results_dir \n\t\
     If no results_dir specified, makes new directory in fastq_dir \n\t\
@@ -27,7 +27,8 @@ Defaults: \n\t\
     query_len_min: 5000 \n\t\
     kraken_db_types: microbial \n\t\
     blast_db_types: nt \n\t\
-    num_alignments: 5 \n\t\
+    blast_num_alignments: 5 \n\t\
+    blast_align_min: 0 \n\t\
     blast_hit_rank_min: 1 \n\t\
     query_align_min: 0.9 \n\n\
 Run after demultiplexing and with fastq directory: \n\t\
@@ -53,7 +54,8 @@ QUERY="contig"
 QUERY_LENGTH_MIN=5000
 KRAKEN_DB_TYPES="microbial"
 BLAST_DB_TYPES="nt"
-NUM_ALIGNMENTS=5
+BLAST_NUM_ALIGNMENTS=5
+BLAST_ALIGN_MIN=0
 BLAST_HIT_RANK_MIN=1
 QUERY_ALIGN_MIN=0.9
 ADD_GENUS=0
@@ -64,86 +66,89 @@ DEPENDER=""
 FIGURE_OPTIONS=()
 while [ "$1" != "" ]; do
     case $1 in
-        -h | --help )           echo -e $HELP
-                                exit 0
-                                ;;
-        -f | --fastq_dir )      shift
-                                FASTQ_DIR=$1
-                                ;;
-        -r | --results_dir )    shift
-                                RESULTS_DIR=$1
-                                ;;
-        -p | --project )        shift
-                                PROJECT=$1
-                                ;;
-        -d | --pipeline_dir )   shift
-                                PIPELINE_DIR=$1
-                                ;;
-        -s | --scratch_dir )    shift
-                                SCRATCH_DIR=$1
-                                ;;
-        --err_out_dir )         shift
-                                STD_ERR_OUT_DIR=$1
-                                ;;
-        --skip_scratch )        SKIP_SCRATCH=1
-                                ;;
-        -b | --run_dir )        shift
-                                RUN_DIR=$1
-                                ;;
-        --sample_sheet )        shift
-                                SAMPLE_SHEET=$1
-                                ;;
-        --R1_suffix )           shift
-                                R1_SUFFIX=$1
-                                ;;
-        --R2_suffix )           shift
-                                R2_SUFFIX=$1
-                                ;;
-        --skip_identify )       SKIP_IDENTIFY=1
-                                ;;
-        --only_identify )       ONLY_IDENTIFY=1
-                                ;;
-        --identify )            shift
-                                IDENTIFY=$1
-                                ;;
-        --skip_trimming )       SKIP_TRIMMOMATIC=1
-                                ;;
-        --rna )                 RNA=1
-                                ;;
-        --filter_rhesus )       FILTER_RHESUS=1
-                                ;;
-        --analyze_scaffolds )   QUERY="scaffold"
-                                ;;
-        --query_len_min )       shift
-                                QUERY_LENGTH_MIN=$1
-                                ;;
-        --add_genus )           shift
-                                ADD_GENUS=1
-                                ;;
-        --kraken_db_types )     shift
-                                KRAKEN_DB_TYPES=$1
-                                ;;
-        --blast_db_types )      shift
-                                BLAST_DB_TYPES=$1
-                                ;;
-        --num_alignments )      shift
-                                NUM_ALIGNMENTS=$1
-                                ;;
-        --blast_hit_rank_min )  shift
-                                BLAST_HIT_RANK_MIN=$1
-                                ;;
-        --query_align_min )     shift
-                                QUERY_ALIGN_MIN=$1
-                                ;;
-        --step1 )               STEP=1
-                                ;;
-        --step2 )               STEP=2
-                                ;;
-        --step3 )               STEP=3
-                                ;;
-        --slurm )               shift
-                                SLURM_OPTIONS=${@:1}
-                                ;;
+        -h | --help )               echo -e $HELP
+                                    exit 0
+                                    ;;
+        -f | --fastq_dir )          shift
+                                    FASTQ_DIR=$1
+                                    ;;
+        -r | --results_dir )        shift
+                                    RESULTS_DIR=$1
+                                    ;;
+        -p | --project )            shift
+                                    PROJECT=$1
+                                    ;;
+        -d | --pipeline_dir )       shift
+                                    PIPELINE_DIR=$1
+                                    ;;
+        -s | --scratch_dir )        shift
+                                    SCRATCH_DIR=$1
+                                    ;;
+        --err_out_dir )             shift
+                                    STD_ERR_OUT_DIR=$1
+                                    ;;
+        --skip_scratch )            SKIP_SCRATCH=1
+                                    ;;
+        -b | --run_dir )            shift
+                                    RUN_DIR=$1
+                                    ;;
+        --sample_sheet )            shift
+                                    SAMPLE_SHEET=$1
+                                    ;;
+        --R1_suffix )               shift
+                                    R1_SUFFIX=$1
+                                    ;;
+        --R2_suffix )               shift
+                                    R2_SUFFIX=$1
+                                    ;;
+        --skip_identify )           SKIP_IDENTIFY=1
+                                    ;;
+        --only_identify )           ONLY_IDENTIFY=1
+                                    ;;
+        --identify )                shift
+                                    IDENTIFY=$1
+                                    ;;
+        --skip_trimming )           SKIP_TRIMMOMATIC=1
+                                    ;;
+        --rna )                     RNA=1
+                                    ;;
+        --filter_rhesus )           FILTER_RHESUS=1
+                                    ;;
+        --analyze_scaffolds )       QUERY="scaffold"
+                                    ;;
+        --query_len_min )           shift
+                                    QUERY_LENGTH_MIN=$1
+                                    ;;
+        --add_genus )               shift
+                                    ADD_GENUS=1
+                                    ;;
+        --kraken_db_types )         shift
+                                    KRAKEN_DB_TYPES=$1
+                                    ;;
+        --blast_db_types )          shift
+                                    BLAST_DB_TYPES=$1
+                                    ;;
+        --blast_num_alignments )    shift
+                                    BLAST_NUM_ALIGNMENTS=$1
+                                    ;;
+        --blast_align_min )         shift
+                                    BLAST_ALIGN_MIN=$1
+                                    ;;
+        --blast_hit_rank_min )      shift
+                                    BLAST_HIT_RANK_MIN=$1
+                                    ;;
+        --query_align_min )         shift
+                                    QUERY_ALIGN_MIN=$1
+                                    ;;
+        --step1 )                   STEP=1
+                                    ;;
+        --step2 )                   STEP=2
+                                    ;;
+        --step3 )                   STEP=3
+                                    ;;
+        --slurm )                   shift
+                                    SLURM_OPTIONS=${@:1}
+                                    ;;
     esac
     shift
 done
@@ -255,8 +260,8 @@ fi
 if [ "$BLAST_DB_TYPES" != "nt" ]; then
     OPTIONS+=( "--blast_db_types $BLAST_DB_TYPES" )
 fi
-if [ $NUM_ALIGNMENTS -ne 250 ]; then
-    OPTIONS+=( "--num_alignments $NUM_ALIGNMENTS" )
+if [ $BLAST_NUM_ALIGNMENTS -ne 250 ]; then
+    OPTIONS+=( "--blast_num_alignments $BLAST_NUM_ALIGNMENTS" )
 fi
 if [ "$BLAST_HIT_RANK_MIN" != "1" ]; then
     OPTIONS+=( "--blast_hit_rank_min $BLAST_HIT_RANK_MIN" )
@@ -505,10 +510,10 @@ if ([ $STEP -eq 0 ] && [ $ONLY_IDENTIFY -eq 1 ]) || [ $STEP -eq 2 ]; then
     TEMP_LONG_QUERIES_STRING=$( IFS=$':'; echo "${TEMP_LONG_QUERY_ARRAY[*]}" )
     echo -e "\nsbatch --parsable -e $STD_ERR_OUT_DIR/%A_%a_%x.err -o $STD_ERR_OUT_DIR/%A_%a_%x.out \
         --array=1-${TEMP_JOB_COUNT} ${SCRIPT_DIR}/2_blast_queries.sh \
-        $SCRATCH_DIR $TOOLS_DIR $BLAST_DB_TYPES $NCBI_DB_DIR_PREFIX $IDENTIFY $NUM_ALIGNMENTS $QUERY $TEMP_LONG_QUERIES_STRING\n" >> $PIPELINE_STATUS
+        $SCRATCH_DIR $TOOLS_DIR $BLAST_DB_TYPES $NCBI_DB_DIR_PREFIX $IDENTIFY $BLAST_NUM_ALIGNMENTS $BLAST_ALIGN_MIN $QUERY $TEMP_LONG_QUERIES_STRING\n" >> $PIPELINE_STATUS
     DEPENDENCY=$(sbatch --parsable -e $STD_ERR_OUT_DIR/%A_%a_%x.err -o $STD_ERR_OUT_DIR/%A_%a_%x.out \
         --array=1-${TEMP_JOB_COUNT} ${SCRIPT_DIR}/2_blast_queries.sh \
-        $SCRATCH_DIR $TOOLS_DIR $BLAST_DB_TYPES $NCBI_DB_DIR_PREFIX $IDENTIFY $NUM_ALIGNMENTS $QUERY $TEMP_LONG_QUERIES_STRING)
+        $SCRATCH_DIR $TOOLS_DIR $BLAST_DB_TYPES $NCBI_DB_DIR_PREFIX $IDENTIFY $BLAST_NUM_ALIGNMENTS $BLAST_ALIGN_MIN $QUERY $TEMP_LONG_QUERIES_STRING)
     TEMP_ARRAY_START=$(($TEMP_ARRAY_START + $TEMP_ARRAY_INCREMENT))
     echo -e "$(date)\nNew start: $TEMP_ARRAY_START\nIncrement: $TEMP_ARRAY_INCREMENT" >> $PIPELINE_STATUS
 

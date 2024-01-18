@@ -30,7 +30,7 @@
         - If you do not specify a fastq directory, the program will assume the fastq.gz files are in the results directory you specified, and will end the program if no fastq.gz files are found
         - If you do not specify a results directory, the program will make a new folder with the current date in the name within the fastq directory 
     - Specify the project name for the final resulting VCF that will be made using *-p* or *--project*
-- Optional arguments: -s/--scratch_dir >arg<, --err_out_dir >arg<, --skip_scratch, -b/--run_dir >arg<, --sample_sheet >arg<, --skip_identify, --only_identify, --identify >arg<, --R1_suffix >arg<, --R2_suffix >arg<, --skip_trimming, --rna, --filter_rhesus, --analyze_scaffolds, --query_len_min >arg<, --kraken_db_types >arg<, --blast_db_types >arg<, --num_alignments >arg<, --query_align_min >arg<, --blast_hit_rank_min >arg<, --add_genus, --slurm >arg<
+- Optional arguments: -s/--scratch_dir >arg<, --err_out_dir >arg<, --skip_scratch, -b/--run_dir >arg<, --sample_sheet >arg<, --skip_identify, --only_identify, --identify >arg<, --R1_suffix >arg<, --R2_suffix >arg<, --skip_trimming, --rna, --filter_rhesus, --analyze_scaffolds, --query_len_min >arg<, --kraken_db_types >arg<, --blast_db_types >arg<, --blast_num_alignments >arg<, --blast_align_min >arg<, --query_align_min >arg<, --blast_hit_rank_min >arg<, --add_genus, --slurm >arg<
     - If you want to specify a directory to perform all intermediate steps in, specify with *-s* or *--scratch_dir*
     - If you want to specify a directory to output the standard error and out print statements of all jobs to, specify with *--err_out_dir*
     - If you want to skip having the pipeline run intermediate steps in scratch, add *--skip_scratch*
@@ -46,7 +46,7 @@
     - If you want to change the default minimum length for contigs/scaffolds from 5000 to a chosen number, specify with *--query_len_min*
     - If you want to use different kraken2 databases from the default, specify which ones you want to use with *--kraken_db_types*
     - If you want to use different BLAST databases from the default, specify which ones you want to use with *--blast_db_types*
-    - If you want to only have returned a maximum number of BLAST results, choose your maximum number using *--num_alignments*
+    - If you want to only have returned a maximum number of BLAST results, choose your maximum number using *--blast_num_alignments*
     - If you want to change the default minimum hit rank for BLAST results from 1 to a chosen number, specify with *--blast_hit_rank_min*
     - If you want to change the default minimum contig/scaffold alignment for BLAST results from 0.9 (90%) to a chosen number, specify with *--query_align_min*
     - Besides the already implemented job name and standard error and output print statements, you can specify additional slurm commands for the pipeline job following the use of the *--slurm* option. If you use this option, **make sure it is the last one you use**
