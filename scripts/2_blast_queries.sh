@@ -25,7 +25,9 @@ cd $SCRATCH_DIR
 for DB_TYPE in ${BLAST_DB_TYPES_ARRAY[@]}; do
     echo "DB type: $DB_TYPE"
     export BLASTDB=${NCBI_DB_DIR_PREFIX}${DB_TYPE}
-    ${TOOLS_DIR}/ncbi-blast-2.10.0+/bin/blastn -db $DB_TYPE -num_alignments $BLAST_NUM_ALIGNMENTS -perc_identity $BLAST_ALIGN \
+    echo "${TOOLS_DIR}/ncbi-blast-2.10.0+/bin/blastn -db $DB_TYPE -num_alignments $BLAST_NUM_ALIGNMENTS -perc_identity $BLAST_ALIGN_MIN \
+        -num_threads 4 -outfmt 15 -query $BLAST_QUERY -out ${IDENTIFY}_blast_results_${DB_TYPE}_${QUERY_NUM}.json"
+    ${TOOLS_DIR}/ncbi-blast-2.10.0+/bin/blastn -db $DB_TYPE -num_alignments $BLAST_NUM_ALIGNMENTS -perc_identity $BLAST_ALIGN_MIN \
         -num_threads 4 -outfmt 15 -query $BLAST_QUERY -out ${IDENTIFY}_blast_results_${DB_TYPE}_${QUERY_NUM}.json
 done
 echo -e "END: $(date)\nRuntime: $(($(date +%s)-$START_TIME)) seconds"
