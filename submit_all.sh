@@ -170,8 +170,9 @@ if ([ -z $FASTQ_DIR ] && [ -z $RESULTS_DIR ]) || [ -z $PROJECT ] || [ -z $PIPELI
     echo "Variables not supplied correctly. Use -h/--help options for assistance. Ending program..."
     exit 1
 fi
-if [ -z $FASTQ_DIR ]; then
+if ([ -z $FASTQ_DIR ] && [ $ONLY_IDENTIFY -eq 0 ]); then
     FASTQ_DIR="$RESULTS_DIR"
+    OPTIONS+=( "-f $FASTQ_DIR" )
 elif [ -z $RESULTS_DIR ]; then
     RESULTS_DIR="${FASTQ_DIR}/$(date '+%Y-%m-%d')_${PROJECT}_Results"
 fi
@@ -196,7 +197,7 @@ fi
 if [ ! -d $STD_ERR_OUT_DIR ]; then
     mkdir $STD_ERR_OUT_DIR
 fi
-OPTIONS=( "-f $FASTQ_DIR -r $RESULTS_DIR -d $PIPELINE_DIR -p $PROJECT -s $SCRATCH_DIR --err_out_dir $STD_ERR_OUT_DIR " )
+OPTIONS=( "-r $RESULTS_DIR -d $PIPELINE_DIR -p $PROJECT -s $SCRATCH_DIR --err_out_dir $STD_ERR_OUT_DIR " )
 if [ ! -z $RUN_DIR ] && [ $ONLY_IDENTIFY -eq 1 ]; then
     echo "Variables not supplied correctly. Cannot perform demultiplexing while only identifying data. Exiting with code 1"
     exit 1
@@ -282,8 +283,11 @@ else
 fi
 cd $SCRATCH_DIR
 if [ "$TEMP_PIPELINE_DIR" = "$PIPELINE_DIR" ]; then
-    echo -e "\nSTART: $(date)\nBacteria Pipeline\n\n$PIPELINE_DIR/submit_all.sh $PIPELINE_COMMAND\n\nProject: $PROJECT\nResults dir: $RESULTS_DIR\nFastq dir: $FASTQ_DIR\nScratch dir: $SCRATCH_DIR\nErr out dir: $STD_ERR_OUT_DIR" >> $PIPELINE_STATUS
+    echo -e "\nSTART: $(date)\nBacteria Pipeline\n\n$PIPELINE_DIR/submit_all.sh $PIPELINE_COMMAND\n\nProject: $PROJECT\nResults dir: $RESULTS_DIR\nScratch dir: $SCRATCH_DIR\nErr out dir: $STD_ERR_OUT_DIR" >> $PIPELINE_STATUS
     # Optional variable definition
+    if [ ! -z $FASTQ_DIR ]; then
+        echo "Option: Fastq dir: $FASTQ_DIR"
+    fi
     if [ $SKIP_SCRATCH -eq 0 ]; then
         echo "Default: Scratch dir is different from Results dir" >> $PIPELINE_STATUS
     else
@@ -363,7 +367,7 @@ if [ ! -z $SLURM_OPTIONS ]; then
 fi
 
 
-if ([ $STEP -eq 0 ] && [ -z $RUN_DIR ]) || [ $STEP -eq 1 ] || [ $STEP -eq 2 ]; then
+if ([ $STEP -eq 0 ] && [ -z $RUN_DIR ] && [ $ONLY_IDENTIFY -eq 0 ]) || [ $STEP -eq 1 ] || [ $STEP -eq 2 ]; then
     if [ -z $R1_SUFFIX ] || [ -z $R2_SUFFIX ]; then
         R1_SUFFIX="_L001_R1_001.fastq.gz"
         R2_SUFFIX="_L001_R2_001.fastq.gz"
