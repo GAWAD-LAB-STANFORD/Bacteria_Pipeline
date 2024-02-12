@@ -7,21 +7,58 @@
 #SBATCH --partition=cgawad
 
 START_TIME=$(date +%s)
-FASTQ_DIR=$1
-SCRATCH_DIR=$2
-R1_SUFFIX=$3
-R2_SUFFIX=$4
-SKIP_TRIMMOMATIC=$5
-RNA=$6
-REF_FASTA_ARRAY=( $(echo $7 | sed 's/:/ /g') )
-REF_NAME_ARRAY=( $(echo $8 | sed 's/:/ /g') )
-KRAKEN_DB_TYPES_ARRAY=( $(echo $9 | sed 's/-/ /g') )
-KRAKEN_DB_DIR_PREFIX=${10}
-TOOLS_DIR=${11}
-SAMPLE_ARRAY=( $(echo ${12} | sed 's/:/ /g') )
-SAMPLE=${SAMPLE_ARRAY[$(( $SLURM_ARRAY_TASK_ID - 1 ))]}
+SCRIPT_COMMAND="$@"
+while [ "$1" != "" ]; do
+    case $1 in
+        --fastq_dir )               shift
+                                    FASTQ_DIR=$1
+                                    ;;
+        --scratch_dir )             shift
+                                    SCRATCH_DIR=$1
+                                    ;;
+        --R1_suffix )               shift
+                                    R1_SUFFIX=$1
+                                    ;;
+        --R2_suffix )               shift
+                                    R2_SUFFIX=$1
+                                    ;;
+        --skip_trimmomatic )        shift
+                                    SKIP_TRIMMOMATIC=$1
+                                    ;;
+        --rna )                     shift
+                                    RNA=$1
+                                    ;;
+        --ref_fasta_string )        shift
+                                    REF_FASTA_ARRAY=( $(echo $1 | sed 's/:/ /g') )
+                                    ;;
+        --ref_name_string )         shift
+                                    REF_NAME_ARRAY=( $(echo $1 | sed 's/:/ /g') )
+                                    ;;
+        --kraken_db_types_string )  shift
+                                    KRAKEN_DB_TYPES_ARRAY=( $(echo $1 | sed 's/-/ /g') )
+                                    ;;
+        --kraken_db_dir_prefix )    shift
+                                    KRAKEN_DB_DIR_PREFIX=$1
+                                    ;;
+        --tools_dir )               shift
+                                    TOOLS_DIR=$1
+                                    ;;
+        --sample_string )           shift
+                                    SAMPLE_ARRAY=( $(echo $1 | sed 's/:/ /g') )
+                                    ;;
+    esac
+    shift
+done
 
-echo -e "START: $(date)\nBacteria Pipeline\nFastq dir: $FASTQ_DIR\nScratch dir: $SCRATCH_DIR\nSample: $SAMPLE"
+if [ -z $FASTQ_DIR ] || [ -z $SCRATCH_DIR ] || [ -z $R1_SUFFIX ] || [ -z $R2_SUFFIX ] || \
+    [ -z $SKIP_TRIMMOMATIC ] || [ -z $RNA ] || [ -z $REF_FASTA_ARRAY ] || [ -z $REF_NAME_ARRAY ] || \
+    [ -z $KRAKEN_DB_TYPES_ARRAY ] || [ -z $KRAKEN_DB_DIR_PREFIX ] || [ -z $TOOLS_DIR ] || [ -z $SAMPLE_ARRAY ]; then
+    echo "Variables not supplied correctly. Check script for intake parameters. All are required to be specified. Exiting with code 1"
+    exit 1
+fi
+
+SAMPLE=${SAMPLE_ARRAY[$(( $SLURM_ARRAY_TASK_ID - 1 ))]}
+echo -e "START: $(date)\nBacteria Pipeline\nScript command: $SCRIPT_COMMAND\nSample: $SAMPLE"
 cd $SCRATCH_DIR
 
 ml python/3.6.1 java/11.0.11 
@@ -216,19 +253,19 @@ if [ $SKIP_TRIMMOMATIC -eq 0 ]; then
     rm $R1_FASTQ $R2_FASTQ
     rm $UNPAIRED_R1_FASTQ $UNPAIRED_R2_FASTQ
 fi
-# rm -r contigs_${SAMPLE} 
-# rm ${SAMPLE}_contigs.fasta.amb ${SAMPLE}_contigs.fasta.ann ${SAMPLE}_contigs.fasta.bwt
-# rm ${SAMPLE}_contigs.fasta.pac ${SAMPLE}_contigs.fasta.sa
-# rm ${SAMPLE}_contig_aligned.bam ${SAMPLE}_contig_aligned.bam.bai
-# rm ${SAMPLE}_temp_contig_read_targets.txt
-# if [ -f ${SAMPLE}_scaffolds.fasta ]; then
-#     rm ${SAMPLE}_scaffolds.fasta.amb ${SAMPLE}_scaffolds.fasta.ann ${SAMPLE}_scaffolds.fasta.bwt
-#     rm ${SAMPLE}_scaffolds.fasta.pac ${SAMPLE}_scaffolds.fasta.sa
-#     rm ${SAMPLE}_scaffold_aligned.bam ${SAMPLE}_scaffold_aligned.bam.bai
-#     rm ${SAMPLE}_temp_scaffold_read_targets.txt
-# fi
-# rm ${SAMPLE}_any_mapping_to_human_query_names.txt
-# rm ${SAMPLE}_kraken_vs_ref_filtered.tsv
-# rm ${SAMPLE}_ref_filtered${R1_SUFFIX} ${SAMPLE}_ref_filtered${R2_SUFFIX}
-# rm ${SAMPLE}_ref_filtered.bam ${SAMPLE}_ref_filtered.bam.bai
+rm -r contigs_${SAMPLE} 
+rm ${SAMPLE}_contigs.fasta.amb ${SAMPLE}_contigs.fasta.ann ${SAMPLE}_contigs.fasta.bwt
+rm ${SAMPLE}_contigs.fasta.pac ${SAMPLE}_contigs.fasta.sa
+rm ${SAMPLE}_contig_aligned.bam ${SAMPLE}_contig_aligned.bam.bai
+rm ${SAMPLE}_temp_contig_read_targets.txt
+if [ -f ${SAMPLE}_scaffolds.fasta ]; then
+    rm ${SAMPLE}_scaffolds.fasta.amb ${SAMPLE}_scaffolds.fasta.ann ${SAMPLE}_scaffolds.fasta.bwt
+    rm ${SAMPLE}_scaffolds.fasta.pac ${SAMPLE}_scaffolds.fasta.sa
+    rm ${SAMPLE}_scaffold_aligned.bam ${SAMPLE}_scaffold_aligned.bam.bai
+    rm ${SAMPLE}_temp_scaffold_read_targets.txt
+fi
+rm ${SAMPLE}_any_mapping_to_human_query_names.txt
+rm ${SAMPLE}_kraken_vs_ref_filtered.tsv
+rm ${SAMPLE}_ref_filtered${R1_SUFFIX} ${SAMPLE}_ref_filtered${R2_SUFFIX}
+rm ${SAMPLE}_ref_filtered.bam ${SAMPLE}_ref_filtered.bam.bai
 echo -e "END: $(date)\nRuntime: $(($(date +%s)-$START_TIME)) seconds"

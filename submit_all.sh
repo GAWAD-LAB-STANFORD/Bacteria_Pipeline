@@ -170,7 +170,7 @@ QUERIES_PER_BLAST_JOB=320
 
 # Ensure we have the required variables set and set other variables
 if ([ -z $FASTQ_DIR ] && [ -z $RESULTS_DIR ]) || [ -z $PROJECT ] || [ -z $PIPELINE_DIR ]; then
-    echo "Variables not supplied correctly. Use -h/--help options for assistance. Ending program..."
+    echo "Variables not supplied correctly. Use -h/--help options for assistance. Exiting with code 1"
     exit 1
 fi
 if ([ -z $FASTQ_DIR ] && [ $ONLY_IDENTIFY -eq 0 ]); then
@@ -352,12 +352,16 @@ elif ([ $STEP -eq 0 ] && [ -z $RUN_DIR ] && [ $ONLY_IDENTIFY -eq 0 ]) || [ $STEP
     TEMP_SAMPLES_STRING=$( IFS=$':'; echo "${TEMP_SAMPLE_ARRAY[*]}" )
     echo -e "\nsbatch --parsable -e $STD_ERR_OUT_DIR/%A_%a_%x.err -o $STD_ERR_OUT_DIR/%A_%a_%x.out \
         --array=1-${TEMP_JOB_COUNT} ${SCRIPT_DIR}/1_process_sample.sh \
-        $FASTQ_DIR $SCRATCH_DIR $R1_SUFFIX $R2_SUFFIX $SKIP_TRIMMOMATIC $RNA $REF_FASTA_STRING $REF_NAME_STRING \
-        $KRAKEN_DB_TYPES $KRAKEN_DB_DIR_PREFIX $TOOLS_DIR $TEMP_SAMPLES_STRING\n" >> $PIPELINE_STATUS
+        --fastq_dir $FASTQ_DIR --scratch_dir $SCRATCH_DIR --R1_suffix $R1_SUFFIX --R2_suffix $R2_SUFFIX \
+        --skip_trimmomatic $SKIP_TRIMMOMATIC --rna $RNA --ref_fasta_string $REF_FASTA_STRING \
+        --ref_name_string $REF_NAME_STRING --kraken_db_types_string $KRAKEN_DB_TYPES \
+        --kraken_db_dir_prefix $KRAKEN_DB_DIR_PREFIX --tools_dir $TOOLS_DIR --sample_string $TEMP_SAMPLES_STRING\n" >> $PIPELINE_STATUS
     DEPENDENCY=$(sbatch --parsable -e $STD_ERR_OUT_DIR/%A_%a_%x.err -o $STD_ERR_OUT_DIR/%A_%a_%x.out \
         --array=1-${TEMP_JOB_COUNT} ${SCRIPT_DIR}/1_process_sample.sh \
-        $FASTQ_DIR $SCRATCH_DIR $R1_SUFFIX $R2_SUFFIX $SKIP_TRIMMOMATIC $RNA $REF_FASTA_STRING $REF_NAME_STRING \
-        $KRAKEN_DB_TYPES $KRAKEN_DB_DIR_PREFIX $TOOLS_DIR $TEMP_SAMPLES_STRING)
+        --fastq_dir $FASTQ_DIR --scratch_dir $SCRATCH_DIR --R1_suffix $R1_SUFFIX --R2_suffix $R2_SUFFIX \
+        --skip_trimmomatic $SKIP_TRIMMOMATIC --rna $RNA --ref_fasta_string $REF_FASTA_STRING \
+        --ref_name_string $REF_NAME_STRING --kraken_db_types_string $KRAKEN_DB_TYPES \
+        --kraken_db_dir_prefix $KRAKEN_DB_DIR_PREFIX --tools_dir $TOOLS_DIR --sample_string $TEMP_SAMPLES_STRING)
     TEMP_ARRAY_START=$(($TEMP_ARRAY_START + $TEMP_ARRAY_INCREMENT))
     echo -e "$(date)\nIncrement: $TEMP_ARRAY_INCREMENT\nNew start: $TEMP_ARRAY_START" >> $PIPELINE_STATUS
     
@@ -459,11 +463,16 @@ if ([ $STEP -eq 0 ] && [ $ONLY_IDENTIFY -eq 1 ]) || [ $STEP -eq 2 ]; then
     TEMP_LONG_QUERIES_STRING=$( IFS=$':'; echo "${TEMP_LONG_QUERY_ARRAY[*]}" )
     echo -e "\nsbatch --parsable -e $STD_ERR_OUT_DIR/%A_%a_%x.err -o $STD_ERR_OUT_DIR/%A_%a_%x.out \
         --array=1-${TEMP_JOB_COUNT} ${SCRIPT_DIR}/2_blast_queries.sh \
-        $SCRATCH_DIR $TOOLS_DIR $BLAST_DB_TYPES $NCBI_DB_DIR_PREFIX $IDENTIFY $BLAST_NUM_ALIGNMENTS $BLAST_ALIGN_MIN $QUERY $TEMP_LONG_QUERIES_STRING\n" >> $PIPELINE_STATUS
+        --scratch_dir $SCRATCH_DIR --tools_dir $TOOLS_DIR --blast_db_types_string $BLAST_DB_TYPES \
+        --ncbi_db_dir_prefix $NCBI_DB_DIR_PREFIX --identify $IDENTIFY \
+        --blast_num_alignments $BLAST_NUM_ALIGNMENTS --blast_align_min $BLAST_ALIGN_MIN \
+        --query $QUERY --long_query_string $TEMP_LONG_QUERIES_STRING\n" >> $PIPELINE_STATUS
     DEPENDENCY=$(sbatch --parsable -e $STD_ERR_OUT_DIR/%A_%a_%x.err -o $STD_ERR_OUT_DIR/%A_%a_%x.out \
         --array=1-${TEMP_JOB_COUNT} ${SCRIPT_DIR}/2_blast_queries.sh \
-        $SCRATCH_DIR $TOOLS_DIR $BLAST_DB_TYPES $NCBI_DB_DIR_PREFIX $IDENTIFY $BLAST_NUM_ALIGNMENTS $BLAST_ALIGN_MIN $QUERY $TEMP_LONG_QUERIES_STRING)
-    TEMP_ARRAY_START=$(($TEMP_ARRAY_START + $TEMP_ARRAY_INCREMENT))
+        --scratch_dir $SCRATCH_DIR --tools_dir $TOOLS_DIR --blast_db_types_string $BLAST_DB_TYPES \
+        --ncbi_db_dir_prefix $NCBI_DB_DIR_PREFIX --identify $IDENTIFY \
+        --blast_num_alignments $BLAST_NUM_ALIGNMENTS --blast_align_min $BLAST_ALIGN_MIN \
+        --query $QUERY --long_query_string $TEMP_LONG_QUERIES_STRING))
     echo -e "$(date)\nNew start: $TEMP_ARRAY_START\nIncrement: $TEMP_ARRAY_INCREMENT" >> $PIPELINE_STATUS
 
     if [ $TEMP_ARRAY_START -le ${#FASTQ_ARRAY[@]} ]; then
