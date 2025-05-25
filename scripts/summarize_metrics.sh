@@ -2,11 +2,10 @@
 PIPELINE_STATUS=$1
 PROJECT=$2
 KRAKEN_DB_TYPES=$3
-REF_NAME_ARRAY=( $(echo $4 | sed 's/:/ /g') )
-RUN_DIR=$5
-SAMPLE_SHEET=$6
+RUN_DIR=$4
+SAMPLE_SHEET=$5
 
-echo "### Merging metrics ### - START: $(date)" >> $PIPELINE_STATUS
+echo "### Summarizing metrics ### - START: $(date)" >> $PIPELINE_STATUS
 SAMPLE_READ_COUNTS="${PROJECT}.sample_read_counts.tsv"
 READ_COUNT_FILENAMES=( $(ls *_read_counts.tsv) )
 head -n 1 ${READ_COUNT_FILENAMES[0]} > $SAMPLE_READ_COUNTS
@@ -36,22 +35,16 @@ if [ ! -z $RUN_DIR ]; then
     fi
 fi
 
-for ((REF_INDEX = 0 ; REF_INDEX < ${#REF_NAME_ARRAY[@]} ; REF_INDEX++)); do
-    REF_NAME=${REF_NAME_ARRAY[$REF_INDEX]}
-
-    REF_ALIGNMENT_METRICS_FILENAMES=( $(ls *_${REF_NAME}_alignment_metrics.tsv) )
-    echo -e sample"\t"$(head -n 7 ${REF_ALIGNMENT_METRICS_FILENAMES[0]} | tail -n 1) | sed 's/ /\t/g' > ${PROJECT}.${REF_NAME}_alignment_metrics.tsv
-    for i in ${REF_ALIGNMENT_METRICS_FILENAMES[@]}; do 
-        SAMPLE=$(echo $i | sed "s/_${REF_NAME}_alignment_metrics.tsv//")
-        R1=$(head -n 8 $i | tail -n 1)
-        R2=$(head -n 9 $i | tail -n 1)
-        PAIR=$(head -n 10 $i | tail -n 1)
-        echo -e "$SAMPLE\t$R1\n$SAMPLE\t$R2\n$SAMPLE\t$PAIR"
-    done | sed 's/ /\t/g' >> ${PROJECT}.${REF_NAME}_alignment_metrics.tsv
-    echo "Merged $REF_NAME alignment metrics" >> $PIPELINE_STATUS
-
-    rm ${REF_ALIGNMENT_METRICS_FILENAMES[@]}
-done
+HUMAN_ALIGNMENT_METRICS_FILENAMES=( $(ls *_human_alignment_metrics.tsv) )
+echo -e sample"\t"$(head -n 7 ${HUMAN_ALIGNMENT_METRICS_FILENAMES[0]} | tail -n 1) | sed 's/ /\t/g' > ${PROJECT}.human_alignment_metrics.tsv
+for i in ${HUMAN_ALIGNMENT_METRICS_FILENAMES[@]}; do 
+    SAMPLE=$(echo $i | sed "s/_human_alignment_metrics.tsv//")
+    R1=$(head -n 8 $i | tail -n 1)
+    R2=$(head -n 9 $i | tail -n 1)
+    PAIR=$(head -n 10 $i | tail -n 1)
+    echo -e "$SAMPLE\t$R1\n$SAMPLE\t$R2\n$SAMPLE\t$PAIR"
+done | sed 's/ /\t/g' >> ${PROJECT}.human_alignment_metrics.tsv
+echo "Merged human alignment metrics" >> $PIPELINE_STATUS
 
 CONTIG_ALIGNMENT_METRICS_FILENAMES=( $(ls *_contig_alignment_metrics.tsv) )
 echo -e sample"\t"$(head -n 7 ${CONTIG_ALIGNMENT_METRICS_FILENAMES[0]} | tail -n 1) | sed 's/ /\t/g' > ${PROJECT}.contig_alignment_metrics.tsv
@@ -64,17 +57,6 @@ for i in ${CONTIG_ALIGNMENT_METRICS_FILENAMES[@]}; do
 done | sed 's/ /\t/g' >> ${PROJECT}.contig_alignment_metrics.tsv
 echo "Merged contig alignment metrics" >> $PIPELINE_STATUS
 
-SCAFFOLD_ALIGNMENT_METRICS_FILENAMES=( $(ls *_scaffold_alignment_metrics.tsv) )
-echo -e sample"\t"$(head -n 7 ${SCAFFOLD_ALIGNMENT_METRICS_FILENAMES[0]} | tail -n 1) | sed 's/ /\t/g' > ${PROJECT}.scaffold_alignment_metrics.tsv
-for i in ${SCAFFOLD_ALIGNMENT_METRICS_FILENAMES[@]}; do 
-    SAMPLE=$(echo $i | sed "s/_scaffold_alignment_metrics.tsv//")
-    R1=$(head -n 8 $i | tail -n 1)
-    R2=$(head -n 9 $i | tail -n 1)
-    PAIR=$(head -n 10 $i | tail -n 1)
-    echo -e "$SAMPLE\t$R1\n$SAMPLE\t$R2\n$SAMPLE\t$PAIR"
-done | sed 's/ /\t/g' >> ${PROJECT}.scaffold_alignment_metrics.tsv
-echo "Merged scaffold alignment metrics" >> $PIPELINE_STATUS
-
 KRAKEN_DB_TYPES_ARRAY=( $(echo $KRAKEN_DB_TYPES | sed 's/-/ /g') )
 for DB_TYPE in ${KRAKEN_DB_TYPES_ARRAY[@]}; do
     echo -e "sample\tpercent_fragments_covered\tfragments_covered\tfragments_assigned\trank_code\ttaxid\tsciname" > \
@@ -82,29 +64,22 @@ for DB_TYPE in ${KRAKEN_DB_TYPES_ARRAY[@]}; do
     KRAKEN_REPORT_FILENAMES=( $(ls *_${DB_TYPE}_kraken_report.tsv) )
     for i in ${KRAKEN_REPORT_FILENAMES[@]}; do
         SAMPLE=$(echo $i | sed "s/_${DB_TYPE}_kraken_report.tsv//")
-        cat $i | sed 's/^ \+/'${SAMPLE}'\t/' | awk '$2>=0.01' >> ${PROJECT}.${DB_TYPE}.kraken_reports.tsv
+        cat $i | sed 's/^ \+/'${SAMPLE}'\t/' | awk '$2>=1.00' >> ${PROJECT}.${DB_TYPE}.kraken_reports.tsv
     done
 done
 KRAKEN_REPORT_FILENAMES=( $(ls *_kraken_report.tsv) )
 echo "Merged kraken reports" >> $PIPELINE_STATUS
 
 echo -e "sample\tfasta_header" > ${PROJECT}.contig_data.tsv
-CONTIG_FILENAMES=( $(ls *_contigs.fasta) )
-for i in ${CONTIG_FILENAMES[@]}; do 
+CONTIGS_FILENAMES=( $(ls *_contigs.fasta) )
+for i in ${CONTIGS_FILENAMES[@]}; do 
     grep ">" $i | xargs -i echo -e $(echo $i | sed "s/_contigs.fasta//")"\t"{} >> ${PROJECT}.contig_data.tsv
 done
-echo "Merged contig data" >> $PIPELINE_STATUS
-
-echo -e "sample\tfasta_header" > ${PROJECT}.scaffold_data.tsv
-SCAFFOLD_FILENAMES=( $(ls *_scaffolds.fasta) )
-for i in ${SCAFFOLD_FILENAMES[@]}; do 
-    grep ">" $i | xargs -i echo -e $(echo $i | sed "s/_scaffolds.fasta//")"\t"{} >> ${PROJECT}.scaffold_data.tsv
-done
-echo "Merged scaffold data" >> $PIPELINE_STATUS
+echo "Merged contigs" >> $PIPELINE_STATUS
 
 SUMMED_READ_TARGETS_FILENAMES=( $(ls *_summed_read_targets.tsv) )
 head -n 1 ${SUMMED_READ_TARGETS_FILENAMES[0]} > ${PROJECT}.summed_read_targets.tsv
-for i in ${SUMMED_READ_TARGETS_FILENAMES[@]}; do tail -n +2 $i >> ${PROJECT}.summed_read_targets.tsv; done
+for i in ${SUMMED_READ_TARGETS_FILENAMES[@]}; do sed -n 2p $i >> ${PROJECT}.summed_read_targets.tsv; done
 echo "Merged summarized read targets" >> $PIPELINE_STATUS
 
 CONTIG_READ_TARGETS_FILENAMES=( $(ls *_contig_read_targets.tsv) )
@@ -112,14 +87,8 @@ head -n 1 ${CONTIG_READ_TARGETS_FILENAMES[0]} > ${PROJECT}.contig_read_targets.t
 for i in ${CONTIG_READ_TARGETS_FILENAMES[@]}; do tail -n +2 $i >> ${PROJECT}.contig_read_targets.tsv; done
 echo "Merged contig read targets" >> $PIPELINE_STATUS
 
-SCAFFOLD_READ_TARGETS_FILENAMES=( $(ls *_scaffold_read_targets.tsv) )
-head -n 1 ${SCAFFOLD_READ_TARGETS_FILENAMES[0]} > ${PROJECT}.scaffold_read_targets.tsv
-for i in ${SCAFFOLD_READ_TARGETS_FILENAMES[@]}; do tail -n +2 $i >> ${PROJECT}.scaffold_read_targets.tsv; done
-echo "Merged scaffold read targets" >> $PIPELINE_STATUS
-
-# rm ${READ_COUNT_FILENAMES[@]} ${KRAKEN_REPORT_FILENAMES[@]}
-#rm ${SUMMED_READ_TARGETS_FILENAMES[@]} 
-#rm ${CONTIG_READ_TARGETS_FILENAMES[@]} ${SCAFFOLD_READ_TARGETS_FILENAMES[@]}
-#rm ${CONTIG_ALIGNMENT_METRICS_FILENAMES[@]} ${SCAFFOLD_ALIGNMENT_METRICS_FILENAMES[@]} 
+rm ${READ_COUNT_FILENAMES[@]} ${KRAKEN_REPORT_FILENAMES[@]}
+rm ${SUMMED_READ_TARGETS_FILENAMES[@]} ${CONTIG_READ_TARGETS_FILENAMES[@]}
+rm ${HUMAN_ALIGNMENT_METRICS_FILENAMES[@]} ${CONTIG_ALIGNMENT_METRICS_FILENAMES[@]}
 echo "Deleted intermediate files" >> $PIPELINE_STATUS
-echo "### Merging metrics ### - END: $(date)" >> $PIPELINE_STATUS
+echo "### Summarizing metrics ### - END: $(date)" >> $PIPELINE_STATUS

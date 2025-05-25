@@ -61,4 +61,7 @@ for DB_TYPE in ${BLAST_DB_TYPES_ARRAY[@]}; do
     ${TOOLS_DIR}/ncbi-blast-2.10.0+/bin/blastn -db $DB_TYPE -num_alignments $BLAST_NUM_ALIGNMENTS -perc_identity $BLAST_ALIGN_MIN \
         -num_threads 2 -outfmt 15 -query $BLAST_QUERY -out ${IDENTIFY}_blast_results_${DB_TYPE}_${QUERY_NUM}.json
 done
+
+#find ./ -name "*json" -size 0 -print -delete
+
 echo -e "END: $(date)\nRuntime: $(($(date +%s)-$START_TIME)) seconds"

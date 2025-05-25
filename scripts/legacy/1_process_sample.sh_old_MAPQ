@@ -1,69 +1,31 @@
 #!/bin/bash
 #
 #SBATCH --job-name=1_process_sample
-#SBATCH --mem=180G
+#SBATCH --mem=64G
+#SBATCH --cpus-per-task=4
 #SBATCH --time=5-00:00:00
 #SBATCH --partition=cgawad
 
 START_TIME=$(date +%s)
-SCRIPT_COMMAND="$@"
-while [ "$1" != "" ]; do
-    case $1 in
-        --fastq_dir )               shift
-                                    FASTQ_DIR=$1
-                                    ;;
-        --scratch_dir )             shift
-                                    SCRATCH_DIR=$1
-                                    ;;
-        --R1_suffix )               shift
-                                    R1_SUFFIX=$1
-                                    ;;
-        --R2_suffix )               shift
-                                    R2_SUFFIX=$1
-                                    ;;
-        --skip_trimmomatic )        shift
-                                    SKIP_TRIMMOMATIC=$1
-                                    ;;
-        --rna )                     shift
-                                    RNA=$1
-                                    ;;
-        --ref_fasta_string )        shift
-                                    REF_FASTA_ARRAY=( $(echo $1 | sed 's/:/ /g') )
-                                    ;;
-        --ref_name_string )         shift
-                                    REF_NAME_ARRAY=( $(echo $1 | sed 's/:/ /g') )
-                                    ;;
-        --kraken_db_types_string )  shift
-                                    KRAKEN_DB_TYPES_ARRAY=( $(echo $1 | sed 's/-/ /g') )
-                                    ;;
-        --kraken_db_dir_prefix )    shift
-                                    KRAKEN_DB_DIR_PREFIX=$1
-                                    ;;
-        --tools_dir )               shift
-                                    TOOLS_DIR=$1
-                                    ;;
-        --sample_string )           shift
-                                    SAMPLE_ARRAY=( $(echo $1 | sed 's/:/ /g') )
-                                    ;;
-    esac
-    shift
-done
-
-if [ -z $FASTQ_DIR ] || [ -z $SCRATCH_DIR ] || [ -z $R1_SUFFIX ] || [ -z $R2_SUFFIX ] || \
-    [ -z $SKIP_TRIMMOMATIC ] || [ -z $RNA ] || [ -z $REF_FASTA_ARRAY ] || [ -z $REF_NAME_ARRAY ] || \
-    [ -z $KRAKEN_DB_TYPES_ARRAY ] || [ -z $KRAKEN_DB_DIR_PREFIX ] || [ -z $TOOLS_DIR ] || [ -z $SAMPLE_ARRAY ]; then
-    echo "Variables not supplied correctly. Check script for intake parameters. All are required to be specified. Exiting with code 1"
-    exit 1
-fi
-
+FASTQ_DIR=$1
+SCRATCH_DIR=$2
+R1_SUFFIX=$3
+R2_SUFFIX=$4
+SKIP_TRIMMOMATIC=$5
+RNA=$6
+REF_FASTA_ARRAY=( $(echo $7 | sed 's/:/ /g') )
+REF_NAME_ARRAY=( $(echo $8 | sed 's/:/ /g') )
+KRAKEN_DB_TYPES_ARRAY=( $(echo $9 | sed 's/-/ /g') )
+KRAKEN_DB_DIR_PREFIX=${10}
+TOOLS_DIR=${11}
+SAMPLE_ARRAY=( $(echo ${12} | sed 's/:/ /g') )
 SAMPLE=${SAMPLE_ARRAY[$(( $SLURM_ARRAY_TASK_ID - 1 ))]}
-echo -e "START: $(date)\nBacteria Pipeline\nScript command: $SCRIPT_COMMAND\nSample: $SAMPLE"
+
+echo -e "START: $(date)\nBacteria Pipeline\nFastq dir: $FASTQ_DIR\nScratch dir: $SCRATCH_DIR\nSample: $SAMPLE"
 cd $SCRATCH_DIR
 
-ml python/3.6.1 java/11.0.11
+ml python/3.6.1 java/11.0.11 
 ml biology bwa samtools gatk star/2.5.4b
-
-export OMP_NUM_THREADS=16
 
 R1_FASTQ=${FASTQ_DIR}/${SAMPLE}${R1_SUFFIX}
 R2_FASTQ=${FASTQ_DIR}/${SAMPLE}${R2_SUFFIX}
@@ -77,7 +39,7 @@ if [ $SKIP_TRIMMOMATIC -eq 0 ]; then
     R2_FASTQ=$(echo ${SAMPLE}${R2_SUFFIX} | sed "s/_R2/_R2_trimmed/")
     UNPAIRED_R1_FASTQ=$(echo ${SAMPLE}${R1_SUFFIX} | sed "s/_R1/_R1_trimmed_unpaired/")
     UNPAIRED_R2_FASTQ=$(echo ${SAMPLE}${R2_SUFFIX} | sed "s/_R2/_R2_trimmed_unpaired/")
-
+    
     echo "### Trimming fastqs ### - START: $(date)"
     java -jar ${TOOLS_DIR}/Trimmomatic-0.35/trimmomatic-0.35.jar PE -phred33 -trimlog \
         ${SAMPLE}_trimmomatic_log.txt ${UNTRIMMED_R1_FASTQ} ${UNTRIMMED_R2_FASTQ} \
@@ -107,39 +69,26 @@ for ((REF_INDEX = 0 ; REF_INDEX < ${#REF_FASTA_ARRAY[@]} ; REF_INDEX++)); do
         UNZIPPED_R2_FASTQ=$(basename $PREV_R2_FASTQ | sed "s/.gz//")
         zcat $PREV_R1_FASTQ > $UNZIPPED_R1_FASTQ
         zcat $PREV_R2_FASTQ > $UNZIPPED_R2_FASTQ
-
-      STAR --genomeDir \
+        STAR --genomeDir \
             /oak/stanford/groups/cgawad/Reference_Files/GATK_Resource_Bundle_hg38/hg38_STAR_index/ \
             --readFilesIn $UNZIPPED_R1_FASTQ $UNZIPPED_R2_FASTQ \
-            --runThreadN 8 \
+            --runThreadN 2 \
             --outFileNamePrefix $SAMPLE \
             --outSAMtype BAM SortedByCoordinate \
             --outSAMunmapped Within \
-            --outSAMattributes Standard \
-	    --outFilterMultimapNmax 200
+            --outSAMattributes Standard
         rm $UNZIPPED_R1_FASTQ $UNZIPPED_R2_FASTQ
         mv ${SAMPLE}Aligned.sortedByCoord.out.bam ${SAMPLE}_${REF_NAME}_aligned.bam
-
-
-#      /oak/stanford/groups/cgawad/Sequencing_Analysis_Tools/BBTools/bbmap_33.92/bbmap.sh in1=$PREV_R1_FASTQ in2=$PREV_R2_FASTQ \
-#        out=${SAMPLE}_${REF_NAME}_aligned.bam ref=$REF_FASTA
-
         samtools index ${SAMPLE}_${REF_NAME}_aligned.bam
         echo "### Aligning RNA fastqs to $REF_NAME ### - END: $(date)"
     else
         echo "### Aligning DNA fastqs to $REF_NAME ### - START: $(date)"
-#        bwa aln -t 4 $REF_FASTA $PREV_R1_FASTQ > ${SAMPLE}_R1.sai
-#        bwa aln -t 4 $REF_FASTA $PREV_R2_FASTQ > ${SAMPLE}_R2.sai
-#        bwa sampe -a 700 $REF_FASTA ${SAMPLE}_R1.sai ${SAMPLE}_R2.sai $PREV_R1_FASTQ $PREV_R2_FASTQ | \
-#            samtools view -b - | samtools sort -o ${SAMPLE}_${REF_NAME}_aligned.bam -
-
-
-        /oak/stanford/groups/cgawad/Sequencing_Analysis_Tools/BBTools/bbmap_39.06/bbmap.sh in1=$PREV_R1_FASTQ in2=$PREV_R2_FASTQ \
-        out=${SAMPLE}_${REF_NAME}_aligned.bam ref=$REF_FASTA #slow k=12 #fast
-
+        bwa aln -t 4 $REF_FASTA $PREV_R1_FASTQ > ${SAMPLE}_R1.sai
+        bwa aln -t 4 $REF_FASTA $PREV_R2_FASTQ > ${SAMPLE}_R2.sai
+        bwa sampe -a 700 $REF_FASTA ${SAMPLE}_R1.sai ${SAMPLE}_R2.sai $PREV_R1_FASTQ $PREV_R2_FASTQ | \
+            samtools view -b - | samtools sort -o ${SAMPLE}_${REF_NAME}_aligned.bam -
         samtools index ${SAMPLE}_${REF_NAME}_aligned.bam
-
-#        rm ${SAMPLE}_R1.sai ${SAMPLE}_R2.sai
+        rm ${SAMPLE}_R1.sai ${SAMPLE}_R2.sai
         echo "### Aligning DNA fastqs to $REF_NAME ### - END: $(date)"
     fi
 
@@ -149,7 +98,7 @@ for ((REF_INDEX = 0 ; REF_INDEX < ${#REF_FASTA_ARRAY[@]} ; REF_INDEX++)); do
     echo "### Collecting ${REF_NAME} alignment metrics ### - END: $(date)"
 
     echo "### Filtering unmapped reads from $REF_NAME into a new BAM ### - START: $(date)"
-    samtools view -b -f 12 -F 256 ${SAMPLE}_${REF_NAME}_aligned.bam > ${SAMPLE}_no_${REF_NAME}.bam
+    samtools view -b -f 4 ${SAMPLE}_${REF_NAME}_aligned.bam > ${SAMPLE}_no_${REF_NAME}.bam
     samtools index ${SAMPLE}_no_${REF_NAME}.bam
     echo "### Filtering unmapped reads from $REF_NAME into a new BAM ### - END: $(date)"
 
@@ -166,35 +115,31 @@ echo -e "sample\tbam\treads" > ${SAMPLE}_summed_read_targets.tsv
 for ((REF_INDEX = 0 ; REF_INDEX < ${#REF_FASTA_ARRAY[@]} ; REF_INDEX++)); do
     REF_FASTA=${REF_FASTA_ARRAY[$REF_INDEX]}
     REF_NAME=${REF_NAME_ARRAY[$REF_INDEX]}
-
+    
     NEXT_INDEX=$((REF_INDEX+1))
     TEMP_ALIGNED_READS=$(samtools view -c ${SAMPLE}_${REF_NAME}_aligned.bam)
     echo -e "${SAMPLE}\t${REF_NAME}\t${TEMP_ALIGNED_READS}" >> ${SAMPLE}_summed_read_targets.tsv
     TEMP_NO_READS=$(samtools view -c ${SAMPLE}_no_${REF_NAME}.bam)
     echo -e "${SAMPLE}\tno_${REF_NAME}\t${TEMP_NO_READS}" >> ${SAMPLE}_summed_read_targets.tsv
-#    rm ${SAMPLE}_${REF_NAME}_aligned.bam ${SAMPLE}_${REF_NAME}_aligned.bam.bai
+    # rm ${SAMPLE}_${REF_NAME}_aligned.bam ${SAMPLE}_${REF_NAME}_aligned.bam.bai
     if [ $NEXT_INDEX -eq ${#REF_FASTA_ARRAY[@]} ]; then
         cp ${SAMPLE}_no_${REF_NAME}${R1_SUFFIX} ${SAMPLE}_ref_filtered${R1_SUFFIX}
         cp ${SAMPLE}_no_${REF_NAME}${R2_SUFFIX} ${SAMPLE}_ref_filtered${R2_SUFFIX}
         cp ${SAMPLE}_no_${REF_NAME}.bam ${SAMPLE}_ref_filtered.bam
         cp ${SAMPLE}_no_${REF_NAME}.bam.bai ${SAMPLE}_ref_filtered.bam.bai
     fi
-    rm ${SAMPLE}_no_${REF_NAME}${R1_SUFFIX} ${SAMPLE}_no_${REF_NAME}${R2_SUFFIX}
-    rm ${SAMPLE}_no_${REF_NAME}.bam ${SAMPLE}_no_${REF_NAME}.bam.bai
+    # rm ${SAMPLE}_no_${REF_NAME}${R1_SUFFIX} ${SAMPLE}_no_${REF_NAME}${R2_SUFFIX}
+    # rm ${SAMPLE}_no_${REF_NAME}.bam ${SAMPLE}_no_${REF_NAME}.bam.bai
 done
 
 echo "### De novo assembling contigs ### - START: $(date)"
 mkdir contigs_${SAMPLE}
-#if [ $RNA -eq 1 ]; then
-#    python3 /oak/stanford/groups/cgawad/Sequencing_Analysis_Tools/SPAdes-3.14.0-Linux/bin/spades.py \
-#        -t 8 -m 350 -1 ${SAMPLE}_ref_filtered${R1_SUFFIX} -2 ${SAMPLE}_ref_filtered${R2_SUFFIX} -o contigs_${SAMPLE}
-#else
-
-#    /oak/stanford/groups/cgawad/Sequencing_Analysis_Tools/BBTools/bbmap_39.06/bbnorm.sh in1=${SAMPLE}_ref_filtered${R1_SUFFIX} in2=${SAMPLE}_ref_filtered${R2_SUFFIX} \
-#        out1=${SAMPLE}_ref_filtered_norm${R1_SUFFIX} out2=${SAMPLE}_ref_filtered_norm${R2_SUFFIX} target=100 min=3
-
+if [ $RNA -eq 1 ]; then
     python3 /oak/stanford/groups/cgawad/Sequencing_Analysis_Tools/SPAdes-3.14.0-Linux/bin/spades.py \
-        -1 ${SAMPLE}_ref_filtered${R1_SUFFIX} -2 ${SAMPLE}_ref_filtered${R2_SUFFIX} -o contigs_${SAMPLE} -m 180
+        -t 4 -m 64 --rna -1 ${SAMPLE}_ref_filtered${R1_SUFFIX} -2 ${SAMPLE}_ref_filtered${R2_SUFFIX} -o contigs_${SAMPLE}
+else
+    python3 /oak/stanford/groups/cgawad/Sequencing_Analysis_Tools/SPAdes-3.14.0-Linux/bin/spades.py \
+        -k 21 -1 ${SAMPLE}_ref_filtered${R1_SUFFIX} -2 ${SAMPLE}_ref_filtered${R2_SUFFIX} -o contigs_${SAMPLE}
 mv contigs_${SAMPLE}/contigs.fasta ${SAMPLE}_contigs.fasta
 echo "### De novo assembling contigs ### - END: $(date)"
 
@@ -262,29 +207,28 @@ for DB_TYPE in ${KRAKEN_DB_TYPES_ARRAY[@]}; do
 done
 echo "### Running kraken2 on non-human matches ### - END: $(date)"
 
-#if [ ! -f ${SAMPLE}_contigs.fasta ]; then
-#    echo "Final file ${SAMPLE}_contigs.fasta not found. Exiting with code 1"
-#    exit 1
-#fi
+if [ ! -f ${SAMPLE}_contigs.fasta ]; then
+    echo "Final file ${SAMPLE}_contigs.fasta not found. Exiting with code 1"
+    exit 1
+fi
 if [ $SKIP_TRIMMOMATIC -eq 0 ]; then
     rm ${SAMPLE}_trimmomatic_log.txt
-#    rm $R1_FASTQ $R2_FASTQ
-#    rm $UNPAIRED_R1_FASTQ $UNPAIRED_R2_FASTQ
+    rm $R1_FASTQ $R2_FASTQ
+    rm $UNPAIRED_R1_FASTQ $UNPAIRED_R2_FASTQ
 fi
-rm -r contigs_${SAMPLE}
-rm ${SAMPLE}_contigs.fasta.amb ${SAMPLE}_contigs.fasta.ann ${SAMPLE}_contigs.fasta.bwt
-rm ${SAMPLE}_contigs.fasta.pac ${SAMPLE}_contigs.fasta.sa
-rm ${SAMPLE}_contig_aligned.bam ${SAMPLE}_contig_aligned.bam.bai
-rm ${SAMPLE}_temp_contig_read_targets.txt
-if [ -f ${SAMPLE}_scaffolds.fasta ]; then
-    rm ${SAMPLE}_scaffolds.fasta.amb ${SAMPLE}_scaffolds.fasta.ann ${SAMPLE}_scaffolds.fasta.bwt
-    rm ${SAMPLE}_scaffolds.fasta.pac ${SAMPLE}_scaffolds.fasta.sa
-    rm ${SAMPLE}_scaffold_aligned.bam ${SAMPLE}_scaffold_aligned.bam.bai
-    rm ${SAMPLE}_temp_scaffold_read_targets.txt
-fi
-rm ${SAMPLE}_any_mapping_to_human_query_names.txt
-#rm ${SAMPLE}_kraken_vs_ref_filtered.tsv
-#rm ${SAMPLE}_ref_filtered${R1_SUFFIX} ${SAMPLE}_ref_filtered${R2_SUFFIX}
-#rm ${SAMPLE}_ref_filtered.bam ${SAMPLE}_ref_filtered.bam.bai
-
+# rm -r contigs_${SAMPLE} 
+# rm ${SAMPLE}_contigs.fasta.amb ${SAMPLE}_contigs.fasta.ann ${SAMPLE}_contigs.fasta.bwt
+# rm ${SAMPLE}_contigs.fasta.pac ${SAMPLE}_contigs.fasta.sa
+# rm ${SAMPLE}_contig_aligned.bam ${SAMPLE}_contig_aligned.bam.bai
+# rm ${SAMPLE}_temp_contig_read_targets.txt
+# if [ -f ${SAMPLE}_scaffolds.fasta ]; then
+#     rm ${SAMPLE}_scaffolds.fasta.amb ${SAMPLE}_scaffolds.fasta.ann ${SAMPLE}_scaffolds.fasta.bwt
+#     rm ${SAMPLE}_scaffolds.fasta.pac ${SAMPLE}_scaffolds.fasta.sa
+#     rm ${SAMPLE}_scaffold_aligned.bam ${SAMPLE}_scaffold_aligned.bam.bai
+#     rm ${SAMPLE}_temp_scaffold_read_targets.txt
+# fi
+# rm ${SAMPLE}_any_mapping_to_human_query_names.txt
+# rm ${SAMPLE}_kraken_vs_ref_filtered.tsv
+# rm ${SAMPLE}_ref_filtered${R1_SUFFIX} ${SAMPLE}_ref_filtered${R2_SUFFIX}
+# rm ${SAMPLE}_ref_filtered.bam ${SAMPLE}_ref_filtered.bam.bai
 echo -e "END: $(date)\nRuntime: $(($(date +%s)-$START_TIME)) seconds"

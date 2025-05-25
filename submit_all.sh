@@ -345,7 +345,7 @@ elif ([ $STEP -eq 0 ] && [ -z $RUN_DIR ] && [ $ONLY_IDENTIFY -eq 0 ]) || [ $STEP
         echo "Jobs to run: $JOB_COUNT" >> $PIPELINE_STATUS
         TEMP_ARRAY_START=1
     fi
-    
+
     TEMP_SAMPLE_ARRAY=( ${SAMPLE_ARRAY[@]:$(($TEMP_ARRAY_START - 1)):$TEMP_ARRAY_INCREMENT} )
     TEMP_JOB_COUNT=${#TEMP_SAMPLE_ARRAY[@]}
     echo "Submitting $TEMP_JOB_COUNT jobs for samples $TEMP_ARRAY_START to $(($TEMP_ARRAY_START + ${#TEMP_SAMPLE_ARRAY[@]} - 1))" >> $PIPELINE_STATUS
@@ -364,7 +364,7 @@ elif ([ $STEP -eq 0 ] && [ -z $RUN_DIR ] && [ $ONLY_IDENTIFY -eq 0 ]) || [ $STEP
         --kraken_db_dir_prefix $KRAKEN_DB_DIR_PREFIX --tools_dir $TOOLS_DIR --sample_string $TEMP_SAMPLES_STRING)
     TEMP_ARRAY_START=$(($TEMP_ARRAY_START + $TEMP_ARRAY_INCREMENT))
     echo -e "$(date)\nIncrement: $TEMP_ARRAY_INCREMENT\nNew start: $TEMP_ARRAY_START" >> $PIPELINE_STATUS
-    
+
     if [ $TEMP_ARRAY_START -le ${#SAMPLE_ARRAY[@]} ]; then
         echo -e "\nsbatch --parsable --dependency=afterany:$DEPENDENCY -J $PROJECT \
             -e ${STD_ERR_OUT_DIR}/%A_submit_all_%x.err -o ${STD_ERR_OUT_DIR}/%A_submit_all_%x.out \
@@ -387,8 +387,9 @@ elif [ $STEP -eq 2 ] && [ $TEMP_ARRAY_START -eq 0 ]; then
         if [ ! -f ${SAMPLE}_contigs.fasta ]; then
             echo -e "\tSample number $SAMPLE_COUNT - ${SAMPLE}_contigs.fasta file not found" >> $PIPELINE_STATUS
         else
-            rm ${STD_ERR_OUT_DIR}/*_${SAMPLE_COUNT}_1_process_sample.out ${STD_ERR_OUT_DIR}/*_${SAMPLE_COUNT}_1_process_sample.err
-        fi
+#            rm ${STD_ERR_OUT_DIR}/*_${SAMPLE_COUNT}_1_process_sample.out ${STD_ERR_OUT_DIR}/*_${SAMPLE_COUNT}_1_process_sample.err
+		echo "next" 
+       fi
         SAMPLE_COUNT=$((SAMPLE_COUNT+1))
     done
     CONTIG_FILE_COUNT=$(ls *_contigs.fasta | wc -l)
@@ -402,13 +403,11 @@ elif [ $STEP -eq 2 ] && [ $TEMP_ARRAY_START -eq 0 ]; then
         echo "$SCAFFOLD_FILE_COUNT scaffold files out of a possible ${#SAMPLE_ARRAY[@]} maximum" >> $PIPELINE_STATUS
     fi
     echo "### De novo assembling contigs and scaffolds, and detecting contamination ### - END: $(date)" >> $PIPELINE_STATUS
-    
-    
+
     ml R/4.2.0
     export R_LIBS="/home/groups/cgawad/R_libs"
     bash ${SCRIPT_DIR}/merge_metrics.sh $PIPELINE_STATUS $PROJECT $KRAKEN_DB_TYPES $REF_NAME_STRING $RUN_DIR $SAMPLE_SHEET
-    
-    
+
     if [ $SKIP_IDENTIFY -eq 1 ]; then
         echo "Ending without identfication of data" >> $PIPELINE_STATUS
         if [ "$SCRATCH_DIR" != "$RESULTS_DIR" ]; then
@@ -447,7 +446,6 @@ if ([ $STEP -eq 0 ] && [ $ONLY_IDENTIFY -eq 1 ]) || [ $STEP -eq 2 ]; then
             exit 1
         fi
         echo "### Organzing queries ### - END: $(date)" >> $PIPELINE_STATUS
-        
 
         echo "### BLAST aligning queries ### - START: $(date)" >> $PIPELINE_STATUS
         LONG_QUERY_ARRAY=( $(ls ${IDENTIFY}_long_${QUERY}s_*) )
@@ -472,7 +470,7 @@ if ([ $STEP -eq 0 ] && [ $ONLY_IDENTIFY -eq 1 ]) || [ $STEP -eq 2 ]; then
         --scratch_dir $SCRATCH_DIR --tools_dir $TOOLS_DIR --blast_db_types_string $BLAST_DB_TYPES \
         --ncbi_db_dir_prefix $NCBI_DB_DIR_PREFIX --identify $IDENTIFY \
         --blast_num_alignments $BLAST_NUM_ALIGNMENTS --blast_align_min $BLAST_ALIGN_MIN \
-        --query $QUERY --long_query_string $TEMP_LONG_QUERIES_STRING))
+        --query $QUERY --long_query_string $TEMP_LONG_QUERIES_STRING)
     echo -e "$(date)\nNew start: $TEMP_ARRAY_START\nIncrement: $TEMP_ARRAY_INCREMENT" >> $PIPELINE_STATUS
 
     if [ $TEMP_ARRAY_START -le ${#FASTQ_ARRAY[@]} ]; then
@@ -500,7 +498,8 @@ elif [ $STEP -eq 3 ]; then
             if [ ! -f ${IDENTIFY}_blast_results_${DB_TYPE}_${QUERY_NUM}.json ]; then
                 echo -e "\tLong $QUERY file number $QUERY_COUNT - ${IDENTIFY}_blast_results_${DB_TYPE}_${QUERY_NUM}.json not found" >> $PIPELINE_STATUS
             else
-                rm ${STD_ERR_OUT_DIR}/*_${QUERY_COUNT}_2_blast_queries.out ${STD_ERR_OUT_DIR}/*_${QUERY_COUNT}_2_blast_queries.err
+		echo "next"
+#                rm ${STD_ERR_OUT_DIR}/*_${QUERY_COUNT}_2_blast_queries.out ${STD_ERR_OUT_DIR}/*_${QUERY_COUNT}_2_blast_queries.err
             fi
         done
         QUERY_COUNT=$((QUERY_COUNT+1))
@@ -515,8 +514,7 @@ elif [ $STEP -eq 3 ]; then
         echo "$BLAST_RESULTS_COUNT BLAST results out of a possible $MAX_RESULTS maximum" >> $PIPELINE_STATUS
     fi
     echo "### BLAST aligning queries ### - END: $(date)" >> $PIPELINE_STATUS
-    
-    
+
     ml python/3.6.1 py-pandas/0.23.0_py36 py-numpy/1.14.3_py36
     echo "### Parsing BLAST results ### - START: $(date)" >> $PIPELINE_STATUS
     BLAST_DB_TYPES_ARRAY=( $(echo $BLAST_DB_TYPES | sed 's/-/ /g') )
@@ -527,8 +525,7 @@ elif [ $STEP -eq 3 ]; then
             ${IDENTIFY}_blast_results_${DB_TYPE}_ ${IDENTIFY}.${DB_TYPE}_${QUERY}.blast_results.tsv $PIPELINE_STATUS
     done
     echo "### Parsing BLAST results ### - END: $(date)" >> $PIPELINE_STATUS
-    
-    
+
     echo "### Converting Kraken reports to TSV ### - START: $(date)" >> $PIPELINE_STATUS
     KRAKEN_DB_TYPE_ARRAY=( $(echo $KRAKEN_DB_TYPES | sed 's/-/ /g') )
     echo "Samples string: $SAMPLES_STRING"
@@ -541,7 +538,6 @@ elif [ $STEP -eq 3 ]; then
         python3 ${SCRIPT_DIR}/kraken_report_to_jtree.py -p $PROJECT -k "microbial" -q $QUERY
     fi
     echo "### Converting Kraken reports to TSV ### - END: $(date)" >> $PIPELINE_STATUS
-    
 
     ml R/4.2.0
     export R_LIBS="/home/groups/cgawad/R_LIBS"
@@ -571,13 +567,13 @@ elif [ $STEP -eq 3 ]; then
         --query_align_min $QUERY_ALIGN_MIN \
         --ncbi_annotations_dir $NCBI_ANNOTATIONS_DIR ${FIGURE_OPTIONS[@]}
     echo "### Processing contamination, Kraken results, BLAST results, and making final figures ### - END: $(date)" >> $PIPELINE_STATUS
-    
+
     echo "### Removing intermediate files ### - START: $(date)" >> $PIPELINE_STATUS
-    rm ${IDENTIFY}_long_${QUERY}s_*
-    rm ${IDENTIFY}.*.kraken_jtree.json 
-    rm ${IDENTIFY}_blast_results_*.json
+#    rm ${IDENTIFY}_long_${QUERY}s_*
+#    rm ${IDENTIFY}.*.kraken_jtree.json
+#    rm ${IDENTIFY}_blast_results_*.json
     echo "### Removing intermediate files ### - END: $(date)" >> $PIPELINE_STATUS
-    
+
     if [ "$SCRATCH_DIR" != "$RESULTS_DIR" ]; then
         echo "### Moving results from scratch dir to results dir ### - START: $(date)"
         rsync -ar $SCRATCH_DIR/ $RESULTS_DIR/
